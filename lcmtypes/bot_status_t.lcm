@@ -1,0 +1,6 @@
+struct bot_status_t
+{
+	int64_t utime;
+
+	double xyt[3]; 
+}
