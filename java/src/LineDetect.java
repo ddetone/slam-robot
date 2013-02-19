@@ -11,21 +11,24 @@ import april.jmat.*;
 public class LineDetect
 {
 
-	static final int DEFAULT_GRAY_THRESHOLD = 235;
+	//static final int DEFAULT_GRAY_THRESHOLD = 235;
     ImageSource is;
 
-    JFrame jf = new JFrame("LED Tracker Demo");
+    JFrame jf = new JFrame("Calibration");
+    
     JImage jim = new JImage();
 
     ParameterGUI pg = new ParameterGUI();
 
+	int width = 1028;
+	int height = 768;
 
     public LineDetect(ImageSource _is)
     {
         is = _is;
 
         // Determine which slider values we want
-        pg.addIntSlider("kthresh","Brightness Threshold",0,255,DEFAULT_GRAY_THRESHOLD);
+        pg.addIntSlider("calib","Calibrate",0,5,2);
 
         jim.setFit(true);
 
@@ -33,9 +36,98 @@ public class LineDetect
         jf.setLayout(new BorderLayout());
         jf.add(jim, BorderLayout.CENTER);
         jf.add(pg, BorderLayout.SOUTH);
-        jf.setSize(1024, 768);
+        jf.setSize(width, height);
         jf.setVisible(true);
         jf.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    }
+   
+	public double dist2d(double x1, double x2, double y1, double y2)
+	{
+		return Math.sqrt(Math.pow(x2-x1,2)+Math.pow(y2-y1,2));
+	}
+	    
+    public int convertPix(int index)
+    {
+    	int val;
+    	
+    	//need to shift to corner
+    	int x = index%width;
+    	int y = (index - x)/width;
+    	
+		double th_out = 0;
+		
+		//first quad
+		if(x >=0 && y >= 0)
+			th_out = Math.atan(y/x);
+		//second quad
+		else if(x < 0 && y >= 0)
+			th_out = Math.atan(y/x) + Math.PI;
+		//third quad
+		else if(x < 0 && y < 0)
+			th_out = Math.atan(y/x) - Math.PI;
+		//fourth quad
+		else if(x >= 0 && y < 0) 
+			th_out = Math.atan(y/x);
+			
+		double B = 0.1;	
+			
+		double r = dist2d(0,x,0,y);
+		r = r + B*r*r;
+		
+		double nx = x;
+		double ny = y;
+		nx = r*Math.cos(th_out);
+		ny = r*Math.sin(th_out);
+		
+		
+		if (nx < 0 || nx >= width || ny < 0 || ny >= height)
+			val = -1;
+		else
+			val = (int)(ny*width+nx);
+		
+		return val;
+    
+    }
+    
+    
+    public void calibrate(BufferedImage im, ParameterGUI pg)
+    {
+    
+    	int data[] = ((DataBufferInt) (im.getRaster().getDataBuffer())).getData();
+    
+    	int[] datanew = new int[data.length];
+    	int[] table = new int[data.length];
+    	
+    	for (int i=0; i<height; i++)
+    	{
+    		for (int j=0; j<width; j++)
+    		{
+    			datanew[i*width+j] = data[i*width+j];
+    		}	
+    	}
+    	
+    	int index;
+    	
+    	for (int i=0; i<height; i++)
+    	{
+    		for (int j=0; j<width; j++)
+    		{
+    			index = convertPix(i*width+j);
+    			if (index != -1)
+    			{
+    				datanew[index] = data[i*width+j];
+    			}
+    		}	
+    	}
+    	
+    	for (int i=0; i<height; i++)
+    	{
+    		for (int j=0; j<width; j++)
+    		{
+    			data[i*width+j] = datanew[i*width+j];
+    		}	
+    	}    	
+    
     }
 	
 	public void run()
@@ -54,24 +146,12 @@ public class LineDetect
             // Grab the image, and convert it to gray scale immediately
             BufferedImage im = ImageConvert.convertToImage(fmt.format, fmt.width, fmt.height, buf);
 
-            int bounds[] = findLED(im, pg);
+            calibrate(im, pg);
+				
 
-            // Display the detection, by drawing on the image
-            if (true) {
-                // draw the horizontal lines
-                for (int y : new int[]{bounds[1], bounds[3]})
-                    for (int x = bounds[0]; x <=bounds[2]; x++) {
-                        im.setRGB(x,y, 0xff0000ff); //Go Blue!
-                    }
 
-                // draw the horizontal lines
-                for (int x : new int[]{bounds[0], bounds[2]})
-                    for (int y = bounds[1]; y <=bounds[3]; y++) {
-                        im.setRGB(x,y, 0xff0000ff); //Go Blue!
-                    }
-
-                jim.setImage(im);
-            }
+            jim.setImage(im);
+           
         }
 	}
 
