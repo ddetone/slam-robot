@@ -8,6 +8,7 @@ import april.jcam.*;
 import april.util.*;
 import april.jmat.*;
 
+
 public class LineDetect
 {
 
@@ -20,15 +21,15 @@ public class LineDetect
 
     ParameterGUI pg = new ParameterGUI();
 
-	int width = 1028;
-	int height = 768;
+	int width=1028;
+	int height=768;
 
     public LineDetect(ImageSource _is)
     {
         is = _is;
 
         // Determine which slider values we want
-        pg.addIntSlider("calib","Calibrate",0,5,2);
+        pg.addIntSlider("calib","Calibrate",0,2000,500);
 
         jim.setFit(true);
 
@@ -49,43 +50,54 @@ public class LineDetect
     public int convertPix(int index)
     {
     	int val;
-    	
-    	//need to shift to corner
+
+		//calculate x & y pos
     	int x = index%width;
     	int y = (index - x)/width;
+
+		//x = 750;
+		//y = 550;
     	
+		//need to shift x&y so that middle pixel is (0,0) 
+		x = x - (int)(width/2);
+		y = y - (int)(height/2);
+	
 		double th_out = 0;
 		
-		//first quad
-		if(x >=0 && y >= 0)
-			th_out = Math.atan(y/x);
-		//second quad
-		else if(x < 0 && y >= 0)
-			th_out = Math.atan(y/x) + Math.PI;
-		//third quad
-		else if(x < 0 && y < 0)
-			th_out = Math.atan(y/x) - Math.PI;
-		//fourth quad
-		else if(x >= 0 && y < 0) 
-			th_out = Math.atan(y/x);
+
+		th_out = MathUtil.atan2(y,x);
+		//double B = pg.gi("calib");	
 			
-		double B = 0.1;	
-			
+
+		double B = (1/(double)pg.gi("calib"));
 		double r = dist2d(0,x,0,y);
+
+		//System.out.printf("x:%d, y:%d, TH:%f, B:%f\n",x,y,th_out,B);
+		//System.out.printf("before r:%f\n",r);
 		r = r + B*r*r;
+		//System.out.printf("after r:%f\n",r);
 		
+
 		double nx = x;
 		double ny = y;
 		nx = r*Math.cos(th_out);
+		
 		ny = r*Math.sin(th_out);
+				
+		//System.out.printf("nx:%f, ny:%f\n\n",nx,ny);
+
+
+		//nx = nx + (int)(width/2);
+		//ny = ny + (int)(height/2);
 		
-		
+		//System.out.printf("nx:%f, ny:%f\n\n",nx,ny);
+
 		if (nx < 0 || nx >= width || ny < 0 || ny >= height)
 			val = -1;
 		else
 			val = (int)(ny*width+nx);
 		
-		return val;
+		return index;
     
     }
     
@@ -96,16 +108,10 @@ public class LineDetect
     	int data[] = ((DataBufferInt) (im.getRaster().getDataBuffer())).getData();
     
     	int[] datanew = new int[data.length];
-    	int[] table = new int[data.length];
+    	//int[] table = new int[data.length];
     	
-    	for (int i=0; i<height; i++)
-    	{
-    		for (int j=0; j<width; j++)
-    		{
-    			datanew[i*width+j] = data[i*width+j];
-    		}	
-    	}
-    	
+
+
     	int index;
     	
     	for (int i=0; i<height; i++)
@@ -113,20 +119,28 @@ public class LineDetect
     		for (int j=0; j<width; j++)
     		{
     			index = convertPix(i*width+j);
-    			if (index != -1)
-    			{
-    				datanew[index] = data[i*width+j];
-    			}
+    			datanew[i*width+j] = index;
+    			
     		}	
     	}
     	
+		int loc;
     	for (int i=0; i<height; i++)
     	{
     		for (int j=0; j<width; j++)
     		{
-    			data[i*width+j] = datanew[i*width+j];
+    			//data[i*width+j] = datanew[i*width+j];
+				//data[i*width+j] = 0x00FF00FF;
+				loc = datanew[i*width+j];
+				if (loc != -1)
+				{
+					data[loc] = data[i*width+j];
+
+				}
     		}	
-    	}    	
+    	}  
+
+		return;  	
     
     }
 	
@@ -145,10 +159,11 @@ public class LineDetect
 
             // Grab the image, and convert it to gray scale immediately
             BufferedImage im = ImageConvert.convertToImage(fmt.format, fmt.width, fmt.height, buf);
-
+			
             calibrate(im, pg);
 				
-
+			//width = fmt.width;
+			//height = fmt.height;
 
             jim.setImage(im);
            
