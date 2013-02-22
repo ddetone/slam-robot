@@ -1,0 +1,17 @@
+//Default arguments, others will inherit there
+:process : object {
+    auto-restart = "true";
+    restart-delay-ms = "500";
+    auto-start = "true";
+    host = "panda";
+ }
+
+proc# : process {
+    cmd = "$ARL_HOME/bin/motordriver";
+    name = "Motor Driver";
+}
+
+proc# : process {
+    cmd = "$ARL_HOME/bin/pimud";
+    name = "Pimu Driver";
+}
