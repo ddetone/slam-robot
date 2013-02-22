@@ -14,7 +14,7 @@ import april.jmat.*;
 public class LineDetect
 {
 
-	//static final int DEFAULT_GRAY_THRESHOLD = 235;
+	static final int DEFAULT_CALIBRATE_VAL = -2600;
 	ImageSource is;
 
 	JFrame jf = new JFrame("Calibration");
@@ -34,7 +34,7 @@ public class LineDetect
 		is = _is;
 
 		// Determine which slider values we want
-		pg.addDoubleSlider("calib","Calibrate",-5000,-1,-500);
+		pg.addDoubleSlider("calib", "Calibrate Constant", -5000, -1, DEFAULT_CALIBRATE_VAL);
 
 		jim.setFit(true);
 
