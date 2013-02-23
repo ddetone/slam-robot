@@ -26,6 +26,7 @@ public class AgglomerativeLineFitter
 	ArrayList<double[]> lines = null;
 	ArrayList<ArrayList<double[]> > lineSegs = new ArrayList<ArrayList <double[]> >();
 	ArrayList<double []> corners = null;
+	double longestSeg[] = new double[2];
 
 	public AgglomerativeLineFitter(double _threshold, double _numSteps, double _pointSpreadMax, double _cornerAngleThresh)
 	{
@@ -52,6 +53,10 @@ public class AgglomerativeLineFitter
 		return lines;
 	}
 
+	public double[] getLongestSeg(){
+		return longestSeg;
+	}
+
 	public void plotLineSegs(VisWorld.Buffer vb){
 		for(int i = 0; i < lineSegs.size(); i++){
 			vb.addBack(new VisChain(LinAlg.translate(0,0,5),new VzLines(new VisVertexData(lineSegs.get(i)), 
@@ -61,7 +66,7 @@ public class AgglomerativeLineFitter
 
 	public void plotCorners(VisWorld.Buffer vb){
 		vb.addBack(new VisChain(LinAlg.translate(0,0,5),new VzPoints(new VisVertexData(corners),
-					new VzPoints.Style(Color.green, 5))));
+					new VzPoints.Style(Color.yellow, 5))));
 	}
 	
 	public void findSegs(){
@@ -121,6 +126,7 @@ public class AgglomerativeLineFitter
 		// accept any segments greater than 3 points in length
 		// Make a list of (x,y, theta)
 		lines = new ArrayList<double[]>();
+		double maxMagHalf = Double.MIN_VALUE;
 
 		for(int j = 0; j < segments.size(); j++){
 			if(segments.get(j)[1] - segments.get(j)[0] > 5){
@@ -148,9 +154,14 @@ public class AgglomerativeLineFitter
 				magHalf = Math.sqrt(magHalf) / 2.0;
 
 				line.timesEquals(magHalf);
-
 				
 				Matrix myu = Matrix.columnMatrix(errorCheck.getMean());
+				
+				if(magHalf > maxMagHalf){
+					maxMagHalf = magHalf;
+					longestSeg[0] = myu.get(0,0);
+					longestSeg[1] = myu.get(1,0);
+				}
 				
 
 				ArrayList<double[]> lineSeg = new ArrayList<double[]>();

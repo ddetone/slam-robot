@@ -21,6 +21,10 @@ public class WallDetector extends VisEventAdapter
 	static final int DEFAULT_POINT_SPREAD = 50;
 	static final double DEFAULT_CORNER_ANG_THRESH = 0.6;
 	static final double DEFAULT_BLUE_THRESH = 100;
+	static final boolean DEFAULT_DISP_LONG_LINE = false;
+	static final boolean DEFAULT_DISP_BLUE_PIXELS = false;
+	static final boolean DEFAULT_DISP_LINES = false;
+	static final boolean DEFAULT_DISP_CORNERS = false;
 
 	double calibrateVal = DEFAULT_CALIBRATE_VAL;
 	double threshold = DEFAULT_THRESH_VAL;
@@ -28,6 +32,10 @@ public class WallDetector extends VisEventAdapter
 	int pointSpreadMax = DEFAULT_POINT_SPREAD;
 	double cornerAngleThresh = DEFAULT_CORNER_ANG_THRESH;
 	double blueThresh = DEFAULT_BLUE_THRESH;
+	boolean dispLongLine  = DEFAULT_DISP_LONG_LINE;
+	boolean dispBluePixels = DEFAULT_DISP_BLUE_PIXELS;
+	boolean dispLines = DEFAULT_DISP_LINES;
+	boolean dispCorners = DEFAULT_DISP_CORNERS;
 
 	public enum BLUE_STATE {PREBLUE, INBLUE, POSTBLUE};
 
@@ -69,6 +77,10 @@ public class WallDetector extends VisEventAdapter
 		pg.addIntSlider("num_steps", "Num Steps", 0,200,DEFAULT_NUM_STEPS);
 		pg.addIntSlider("point_spread", "Point Spread Max", 0,100,DEFAULT_POINT_SPREAD);
 		pg.addDoubleSlider("cornerAngleThresh", "Corner Angle Threshold", 0,1,DEFAULT_CORNER_ANG_THRESH);
+		pg.addCheckBoxes("dispLongLine", "Show Longest Line Mean", DEFAULT_DISP_LONG_LINE);
+		pg.addCheckBoxes("dispBluePixels", "Show Pixels", DEFAULT_DISP_BLUE_PIXELS);
+		pg.addCheckBoxes("dispLines", "Show Lines", DEFAULT_DISP_LINES);
+		pg.addCheckBoxes("dispCorners", "Show Corners", DEFAULT_DISP_CORNERS);
 		
 		
 		pg.addListener(new ParameterListener() {
@@ -94,6 +106,18 @@ public class WallDetector extends VisEventAdapter
 				if(name == "cornerAngleThresh"){
 					cornerAngleThresh = pg.gd("cornerAngleThresh");
 					alf.cornerAngleThresh = cornerAngleThresh;
+				}
+				if(name == "dispLongLine"){
+					dispLongLine = pg.gb("dispLongLine");
+				}
+				if(name == "dispBluePixels"){
+					dispBluePixels = pg.gb("dispBluePixels");
+				}
+				if(name == "dispLines"){
+					dispLines = pg.gb("dispLines");
+				}
+				if(name == "dispCorners"){
+					dispCorners = pg.gb("dispCorners");
 				}
 			}
 		});
@@ -288,18 +312,19 @@ public class WallDetector extends VisEventAdapter
 
 			ArrayList<double []> topBluePixels = findTape();
 			Collections.sort(topBluePixels,new PointComparator());
-			/*for(int j = 0; j < height; j++){		
-				for(int i = 0; i < width; i++){
-					if(blueScore(data[j * width + i]) > blueThresh) data[j * width + i] = 0xffff0000;
-				}
-			}*/
-			vb.addBack(new VisChain(LinAlg.translate(0,0,5), new VzPoints(new VisVertexData(topBluePixels),
-					new VzPoints.Style(Color.green, 5))));
+
+
 			alf.setPoints(topBluePixels);
 			alf.findSegs();
 
-			alf.plotLineSegs(vb);
+			if(dispBluePixels) vb.addBack(new VisChain(LinAlg.translate(0,0,5), new VzPoints(new VisVertexData(topBluePixels),
+					new VzPoints.Style(Color.green, 5))));
+			if(dispLines) alf.plotLineSegs(vb);
+			if(dispCorners) alf.plotCorners(vb);
 			vb.addBack(new VzImage(im, VzImage.FLIP));
+			if(dispLongLine) vb.addBack(new VisPixCoords(VisPixCoords.ORIGIN.BOTTOM_LEFT,
+						new VzText(VzText.ANCHOR.BOTTOM_LEFT, 
+						"Longest Segment Mean:" + alf.getLongestSeg()[0] + ", " + alf.getLongestSeg()[1])));
 			vb.swap();
 		   
 		}
