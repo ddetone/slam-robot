@@ -16,11 +16,11 @@ public class WallDetector extends VisEventAdapter
 {
 
 	static final double DEFAULT_CALIBRATE_VAL = -2550;
-	static final double DEFAULT_THRESH_VAL = 0.00005;
-	static final int DEFAULT_NUM_STEPS = 15;
-	static final int DEFAULT_POINT_SPREAD = 10;
+	static final double DEFAULT_THRESH_VAL = 100;
+	static final int DEFAULT_NUM_STEPS = 200;
+	static final int DEFAULT_POINT_SPREAD = 50;
 	static final double DEFAULT_CORNER_ANG_THRESH = 0.6;
-	static final double DEFAULT_BLUE_THRESH = 220;
+	static final double DEFAULT_BLUE_THRESH = 100;
 
 	double calibrateVal = DEFAULT_CALIBRATE_VAL;
 	double threshold = DEFAULT_THRESH_VAL;
@@ -55,6 +55,8 @@ public class WallDetector extends VisEventAdapter
         static VisCanvas vc = new VisCanvas(vl);
 	static VisWorld.Buffer vb;
 
+	static AgglomerativeLineFitter alf = null;
+
 
 	public WallDetector(ImageSource _is)
 	{
@@ -63,9 +65,9 @@ public class WallDetector extends VisEventAdapter
 		// Determine which slider values we want
 		pg.addDoubleSlider("calib", "Calibrate Constant", -5000, -1, DEFAULT_CALIBRATE_VAL);
 		pg.addDoubleSlider("blueThresh", "Blue Thresh", 0, 360, DEFAULT_BLUE_THRESH);
-		pg.addDoubleSlider("thresh", "Error Threshold", 0, 0.001,DEFAULT_THRESH_VAL);
-		pg.addIntSlider("num_steps", "Num Steps", 0,15,DEFAULT_NUM_STEPS);
-		pg.addIntSlider("point_spread", "Point Spread Max", 0,50,DEFAULT_POINT_SPREAD);
+		pg.addDoubleSlider("thresh", "Error Threshold", 0, 200,DEFAULT_THRESH_VAL);
+		pg.addIntSlider("num_steps", "Num Steps", 0,200,DEFAULT_NUM_STEPS);
+		pg.addIntSlider("point_spread", "Point Spread Max", 0,100,DEFAULT_POINT_SPREAD);
 		pg.addDoubleSlider("cornerAngleThresh", "Corner Angle Threshold", 0,1,DEFAULT_CORNER_ANG_THRESH);
 		
 		
@@ -77,10 +79,22 @@ public class WallDetector extends VisEventAdapter
 					calculateLookupTable();
 				}
 				if(name == "blueThresh")blueThresh = pg.gd("blueThresh");
-				if(name == "thresh")threshold = pg.gd("thresh");
-				if(name == "num_steps")numSteps = pg.gi("num_steps"); 
-				if(name == "point_spread")pointSpreadMax = pg.gi("point_spread"); 
-				if(name == "cornerAngleThresh")cornerAngleThresh = pg.gd("cornerAngleThresh");
+				if(name == "thresh"){
+					threshold = pg.gd("thresh");
+					alf.threshold = threshold;
+				}
+				if(name == "num_steps"){
+					numSteps = pg.gi("num_steps"); 
+					alf.numSteps = numSteps;
+				}
+				if(name == "point_spread"){
+					pointSpreadMax = pg.gi("point_spread"); 
+					alf.pointSpreadMax = pointSpreadMax;
+				}
+				if(name == "cornerAngleThresh"){
+					cornerAngleThresh = pg.gd("cornerAngleThresh");
+					alf.cornerAngleThresh = cornerAngleThresh;
+				}
 			}
 		});
 		
@@ -208,12 +222,13 @@ public class WallDetector extends VisEventAdapter
 		Arrays.fill(state, BLUE_STATE.PREBLUE);
 
 		for(int j = height - 1; j >= height/2; j--){
-			for(int i = 0; i < width; i++){
+			for(int i = 0; i < width; i += 10){
 				if(state[i] != BLUE_STATE.POSTBLUE){
 					if(blueScore(data[j * width + i]) > blueThresh){
 					//if((data[j * width + i] & 0x000000ff) > blueThresh){
 						//maxBlue[i] = j;
-						state[i] = BLUE_STATE.INBLUE;
+						state[i] = BLUE_STATE.POSTBLUE;
+						maxes.add(new double[]{(double)i, height-(double)j});
 					}else if(state[i] == BLUE_STATE.INBLUE){
 						state[i] = BLUE_STATE.POSTBLUE;
 						maxes.add(new double[]{(double)i, height-(double)j});
@@ -256,7 +271,7 @@ public class WallDetector extends VisEventAdapter
 		calculatePixelsState();
 		calculateLookupTable();
 
-		AgglomerativeLineFitter alf = new AgglomerativeLineFitter(threshold, numSteps, pointSpreadMax, cornerAngleThresh);
+		alf = new AgglomerativeLineFitter(threshold, numSteps, pointSpreadMax, cornerAngleThresh);
 
 		while(true) {
 			// read a frame
@@ -271,12 +286,13 @@ public class WallDetector extends VisEventAdapter
 			
 			calibrate();
 
-			for(int j = 0; j < height; j++){		
+			ArrayList<double []> topBluePixels = findTape();
+			Collections.sort(topBluePixels,new PointComparator());
+			/*for(int j = 0; j < height; j++){		
 				for(int i = 0; i < width; i++){
 					if(blueScore(data[j * width + i]) > blueThresh) data[j * width + i] = 0xffff0000;
 				}
-			}
-			ArrayList<double []> topBluePixels = findTape();
+			}*/
 			vb.addBack(new VisChain(LinAlg.translate(0,0,5), new VzPoints(new VisVertexData(topBluePixels),
 					new VzPoints.Style(Color.green, 5))));
 			alf.setPoints(topBluePixels);
@@ -287,6 +303,14 @@ public class WallDetector extends VisEventAdapter
 			vb.swap();
 		   
 		}
+	}
+
+	static class PointComparator implements Comparator<double[]>
+	{
+	     public int compare(double[] p1, double[] p2)
+	     {
+		 return (int)(p2[0] - p1[0]);
+	     }
 	}
 
 	public static void main(String args[]) throws IOException

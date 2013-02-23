@@ -54,19 +54,19 @@ public class AgglomerativeLineFitter
 
 	public void plotLineSegs(VisWorld.Buffer vb){
 		for(int i = 0; i < lineSegs.size(); i++){
-			vb.addBack(new VzLines(new VisVertexData(lineSegs.get(i)), 
-					VzLines.LINES, new VzLines.Style(Color.red, 4)));
+			vb.addBack(new VisChain(LinAlg.translate(0,0,5),new VzLines(new VisVertexData(lineSegs.get(i)), 
+					VzLines.LINES, new VzLines.Style(Color.red, 4))));
 		}
-		lineSegs.clear();
 	}
 
 	public void plotCorners(VisWorld.Buffer vb){
-		vb.addBack(new VzPoints(new VisVertexData(corners),
-					new VzPoints.Style(Color.green, 5)));
+		vb.addBack(new VisChain(LinAlg.translate(0,0,5),new VzPoints(new VisVertexData(corners),
+					new VzPoints.Style(Color.green, 5))));
 	}
 	
 	public void findSegs(){
 		ArrayList<int[]> segments = new ArrayList<int[]>();
+		lineSegs.clear();
 
 		for(int i = 0 ; i < points.size() - 1; i++){
 			Matrix a = Matrix.columnMatrix(points.get(i));
@@ -123,7 +123,7 @@ public class AgglomerativeLineFitter
 		lines = new ArrayList<double[]>();
 
 		for(int j = 0; j < segments.size(); j++){
-			if(segments.get(j)[1] - segments.get(j)[0] > 3){
+			if(segments.get(j)[1] - segments.get(j)[0] > 5){
 
 				int first = segments.get(j)[0];
 				int last = segments.get(j)[1];
