@@ -38,10 +38,20 @@ public class PoseGenerator implements LCMSubscriber
 
     static boolean first = true;
 
+    //covariance
+    double[][] sigmaB = new double[3][3];
+    double[][] sigmaA = new double[3][3];
+    double[][] sigmaT = new double[3][3];
+
     PoseGenerator()
     {
         this.lcm = LCM.getSingleton();
 		lcm.subscribe("MOTOR_FEEDBACK", this);
+
+        //initial uncertainty
+        sigmaA = new double[][]{{0.00001,0,0},
+                                {0,0.00001,0},
+                                {0,0,0.00001}};
     }
 
 	public void messageReceived(LCM lcm, String channel, LCMDataInputStream dins)
@@ -82,30 +92,35 @@ public class PoseGenerator implements LCMSubscriber
 
         double encoder_delta[] = new double[]{(encoder_curr[0] - encoder_prev[0]), (encoder_curr[1] - encoder_prev[1])};
 
-        double x_T = (encoder_delta[1] + encoder_delta[0]) / 2 * metersPerTick;
-        double y_T = 0;
-        double t_T = (encoder_delta[1] - encoder_delta[0]) / base * metersPerTick;
+
+        double[] xyt_T = new double[3];
+        xyt_T[0] = (encoder_delta[1] + encoder_delta[0]) / 2 * metersPerTick;
+        xyt_T[1] = 0;
+        xyt_T[2] = (encoder_delta[1] - encoder_delta[0]) / base * metersPerTick;
 
         encoder_prev[0] = encoder_curr[0];
         encoder_prev[1] = encoder_curr[1];
 
 
-        //pose global
-        double x_A = bot.xyt[0];
-        double y_A = bot.xyt[1];
-        double t_A = bot.xyt[2];
+        //pose prev global
+        double[] xyt_A = new double[3];
+        xyt_A[0] = bot.xyt[0];
+        xyt_A[1] = bot.xyt[1];
+        xyt_A[2] = bot.xyt[2];
 
-        double ca = Math.cos(t_A);
-        double sa = Math.sin(t_A);
+        double ca = Math.cos(xyt_A[2]);
+        double sa = Math.sin(xyt_A[2]);
 
-        double x_B = x_T*ca - y_T*sa + x_A;
-        double y_B = x_T*sa + y_T*ca + y_A;
-        double t_B = t_A + t_T;
+        double[] xyt_B = new double[3];
+        xyt_B[0] = xyt_T[0]*ca - xyt_T[1]*sa + xyt_A[0];
+        xyt_B[1] = xyt_T[0]*sa + xyt_T[1]*ca + xyt_A[1];
+        xyt_B[2] = xyt_A[2] + xyt_T[2];
 
+        computeCov(xyt_A, xyt_B, xyt_T);
 
-        bot.xyt[0] = x_B;
-        bot.xyt[1] = y_B;
-        bot.xyt[2] = t_B;
+        bot.xyt[0] = xyt_B[0];
+        bot.xyt[1] = xyt_B[1];
+        bot.xyt[2] = xyt_B[2];
 
         bot.utime = TimeUtil.utime();
 
@@ -118,6 +133,40 @@ public class PoseGenerator implements LCMSubscriber
 
     }
 
+
+    public void computeCov(double[] xyt_A, double[] xyt_B, double[] xyt_T)
+    {
+        double alpha = 0.1;
+        double beta  = 0.01;
+
+        double sigmaT_xx = (alpha*xyt_T[0])*(alpha*xyt_T[0]);
+        double sigmaT_tt = (alpha*xyt_T[2])*(alpha*xyt_T[2]);
+
+        sigmaT = new double[][]{{sigmaT_xx, 0   , 0        },
+                                {0        , beta, 0        },
+                                {0        , 0   , sigmaT_tt}};
+
+        double sa = Math.sin(xyt_A[2]);
+        double ca = Math.cos(xyt_A[2]);
+        double xt = xyt_T[0];
+        double yt = xyt_T[1];
+
+        double[][] Ja = new double[][]{{1, 0,-xt*sa-yt*ca },
+                                        {0, 1, xt*ca-yt*sa },
+                                        {0, 0, 1           }};
+
+        double[][] Jt = new double[][]{{ca,-sa, 0 },
+                                        {sa, ca, 0 },
+                                        {0 , 0 , 1 }};
+
+        double[][] Jt_T = LinAlg.transpose(Jt);
+        double[][] Ja_T = LinAlg.transpose(Ja);
+
+        sigmaB = LinAlg.add(LinAlg.matrixABC(Ja,sigmaA,Ja_T) , LinAlg.matrixABC(Jt,sigmaT,Jt_T));
+
+        sigmaA = LinAlg.copy(sigmaB);
+
+    }
 
 	public static void main(String[] args) throws Exception
 	{
