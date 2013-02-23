@@ -18,7 +18,7 @@ import botlab.lcmtypes.*;
 
 import lcm.lcm.*;
 
-public class PandaListener implements LCMSubscriber
+public class PoseGenerator implements LCMSubscriber
 {
 	
 	static LCM lcm = LCM.getSingleton();
@@ -31,7 +31,7 @@ public class PandaListener implements LCMSubscriber
 			if(channel.equals("MOTOR_FEEDBACK"))
 			{
 				motors = new motor_feedback_t(dins);
-				generatePose();
+				//generatePose();
 //				System.out.println("utime:" + bot_status.utime);
 //				System.out.println("X:" + bot_status.xyt[0]);
 //				System.out.println("Y:" + bot_status.xyt[1]);
@@ -48,7 +48,7 @@ public class PandaListener implements LCMSubscriber
 
 	public static void main(String[] args)
 	{
-		PandaListener pl = new PandaListener();
+		PoseGenerator pl = new PoseGenerator();
 
 		/* Subscribe to 6_POSE */
 		lcm.subscribe("6_POSE", pl);
