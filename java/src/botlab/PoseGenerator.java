@@ -80,7 +80,7 @@ public class PoseGenerator implements LCMSubscriber
             first = false;
         }
 
-        double encoder_delta[] = new double[]{-(encoder_curr[0] - encoder_prev[0]), (encoder_curr[1] - encoder_prev[1])};
+        double encoder_delta[] = new double[]{(encoder_curr[0] - encoder_prev[0]), (encoder_curr[1] - encoder_prev[1])};
 
         double x_T = (encoder_delta[1] + encoder_delta[0]) / 2 * metersPerTick;
         double y_T = 0;
