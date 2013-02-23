@@ -1,0 +1,11 @@
+struct pimu_t
+{
+    int64_t utime;
+
+    int64_t utime_pimu;
+
+    int32_t integrator[8];
+    int32_t accel[3];
+    int32_t mag[3];
+    int32_t alttemp[2];
+}

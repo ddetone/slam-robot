@@ -24,7 +24,7 @@ clear
 
 echo "Starting procman on panda..."
 
-LCM_LOGFILE="\$BOTLAB_HOME/data/laser.$(date -u +%m"."%d"."%g"."%H"."%M)"
+LCM_LOGFILE="\$BOTLAB_HOME/data/$(date -u +%m"."%d"."%g"."%H"."%M)"
 PROCMAN_CMD="/home/panda-user/botlab/scripts/runproc_panda.sh"
 
 #set -x

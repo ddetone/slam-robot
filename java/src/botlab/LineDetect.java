@@ -14,7 +14,9 @@ import april.jmat.*;
 public class LineDetect
 {
 
-	static final int DEFAULT_CALIBRATE_VAL = -2600;
+	static final int DEFAULT_CALIBRATE_VAL = -2550;
+	double calibrateVal = DEFAULT_CALIBRATE_VAL;
+
 	ImageSource is;
 
 	JFrame jf = new JFrame("Calibration");
@@ -29,13 +31,23 @@ public class LineDetect
 	float pixelDists[] = null;
 	float pixelThetas[] = null;
 
+
 	public LineDetect(ImageSource _is)
 	{
 		is = _is;
 
 		// Determine which slider values we want
 		pg.addDoubleSlider("calib", "Calibrate Constant", -5000, -1, DEFAULT_CALIBRATE_VAL);
-
+		
+		
+		pg.addListener(new ParameterListener() {
+			public void parameterChanged(ParameterGUI pg, String name)
+			{
+				if(name == "calib")calibrateVal = pg.gd("calib");
+			}
+		});
+		
+		
 		jim.setFit(true);
 
 		// Setup window layout
@@ -65,7 +77,8 @@ public class LineDetect
 		//x = 750;
 		//y = 550;
 		
-		double B = 1.0 / pg.gd("calib");
+		double B = 1.0 / calibrateVal;
+		//double B = 1.0 / pg.gd("calib");
 		double r = (double)pixelDists[y * width + x];
 		
 		double th_out = (double)pixelThetas[y * width + x];
@@ -107,7 +120,7 @@ public class LineDetect
 		int data[] = ((DataBufferInt) (im.getRaster().getDataBuffer())).getData();
 	
 		int[] temp = new int[data.length];
-		Arrays.fill(temp, 0);
+		//Arrays.fill(temp, 0);
 
 		int index;
 		

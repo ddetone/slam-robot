@@ -1,0 +1,11 @@
+struct motor_feedback_t
+{
+	int64_t utime;
+
+    boolean estop;
+
+    int16_t nmotors;
+    int32_t encoders[nmotors];
+    float current[nmotors];
+    float applied_voltage[nmotors];
+}
