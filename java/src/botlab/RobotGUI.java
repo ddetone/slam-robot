@@ -45,9 +45,13 @@ public class RobotGUI implements LCMSubscriber
         jf.setVisible(true);
         jf.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        vl.cameraManager.uiLookAt(new double[] {-0.21867, -1.71540, 10.96653 },
-                                  new double[] {-0.21867, -1.71540, 0.00000 },
-                                  new double[] { 0.00000,   1.00000, 0.00000 }, true);
+        //vl.cameraManager.uiLookAt(new double[] {-0.21867, -1.71540, 10.96653 },
+        //                          new double[] {-0.21867, -1.71540, 0.00000 },
+        //                          new double[] { 0.00000,   1.00000, 0.00000 }, true);
+
+        vl.cameraManager.uiLookAt(new double[] {-2.19919, -6.22111, 4.10494 },
+                                  new double[] {-0.02769, 3.86996,  0.00000 },
+                                  new double[] {0.07774, 0.36127,  0.92922 }, true);
 
         VisWorld.Buffer vb = vw.getBuffer("Ground");
         vb.addBack(new VisChain(LinAlg.translate(0,0,-0.025),new VzBox(30,30,0.05,new VzMesh.Style(Color.darkGray))));
