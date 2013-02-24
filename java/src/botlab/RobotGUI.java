@@ -63,6 +63,7 @@ public class RobotGUI implements LCMSubscriber
 			{
 				bot_status = new bot_status_t(dins);
                 drawRobot();
+                drawCovariance();
 			}
 		}
 		catch (IOException e)
@@ -104,9 +105,20 @@ public class RobotGUI implements LCMSubscriber
         vb.swap();
     }
 
+    public void drawCovariance()
+    {
+        //double[] eigTheta = computerEigenValues();
+        VisWorld.Buffer vb = vw.getBuffer("Covariance Ellipse");
+        double[][] cov22 = new double[][]{{bot_status.cov[0][0], bot_status.cov[0][1]},
+                                          {bot_status.cov[1][0], bot_status.cov[1][1]}};
+
+        vb.addBack(new VisChain(LinAlg.translate(0,0,0.01),new VzEllipse(new double[]{bot_status.xyt[0],bot_status.xyt[1]}, cov22, new VzMesh.Style(Color.black))));
+        vb.swap();
+    }
     //returns two eigen values (first one larger) and theta of max eigen vector
     /*double[] computeEigenValues()
     {
+        double[][] cov = bot_status.cov;
         double a = cov[0][0];
         double b = cov[0][1];
         double d = cov[1][1];
