@@ -16,11 +16,11 @@ public class WallDetector extends VisEventAdapter
 {
 
 	static final double DEFAULT_CALIBRATE_VAL = -2550;
-	static final double DEFAULT_THRESH_VAL = 100;
+	static final double DEFAULT_THRESH_VAL = 90;
 	static final int DEFAULT_NUM_STEPS = 200;
-	static final int DEFAULT_POINT_SPREAD = 50;
+	static final int DEFAULT_POINT_SPREAD = 26;
 	static final double DEFAULT_CORNER_ANG_THRESH = 0.6;
-	static final double DEFAULT_BLUE_THRESH = 100;
+	static final double DEFAULT_BLUE_THRESH = 90;
 	static final boolean DEFAULT_DISP_LONG_LINE = false;
 	static final boolean DEFAULT_DISP_BLUE_PIXELS = false;
 	static final boolean DEFAULT_DISP_LINES = false;
@@ -64,6 +64,9 @@ public class WallDetector extends VisEventAdapter
 	static VisWorld.Buffer vb;
 
 	static AgglomerativeLineFitter alf = null;
+
+	// homography matrix
+	Matrix H = null;
 
 
 	public WallDetector(ImageSource _is)
@@ -136,6 +139,42 @@ public class WallDetector extends VisEventAdapter
 		jf.setVisible(true);
 		jf.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 	}
+
+
+	public void computeHomography(int numCorrespondences, ArrayList<double[]> realWorld, ArrayList<double[]> pixels){
+		
+		// Compute H
+		Matrix j = new Matrix(3 * numCorrespondences, 9);
+	
+		for(int i = 0; i < numCorrespondences; i++){
+			j.set(0 + 3 * i, 0, J_Cross( realWorld.get(i)[0], realWorld.get(i)[1], pixels.get(i)[0], pixels.get(i)[1]));
+		}
+
+		SingularValueDecomposition svd = new SingularValueDecomposition(j);
+		System.out.println(svd.getV().getRowDimension());
+		System.out.println(svd.getV().getColumnDimension());
+		double[][] htemp = svd.getV().copyArray(0, 8, 9, 1);
+		H = new Matrix(new double[][]{
+			{htemp[0][0], htemp[1][0], htemp[2][0]},
+			{htemp[3][0], htemp[4][0], htemp[5][0]},
+			{htemp[6][0], htemp[7][0], htemp[8][0]}});
+		
+	}
+
+
+	public static double[][] J_Cross(double x, double y, double cx, double cy){
+		
+		double cw = 1;
+		
+		double[][] jacobian = new double[][]{
+			{     0,     0,   0, -cw*x, -cw*y, -cw,  cy*x,  cy*y,  cy},
+			{  cw*x,  cw*y,  cw,     0,     0,   0, -cx*x, -cx*y, -cx},
+			{ -cy*x, -cy*y, -cy,  cx*x,  cx*y,  cx,     0,     0,   0}};
+
+		return jacobian;
+		
+	}
+
    
 	public static float dist2d(float x1, float x2, float y1, float y2)
 	{
@@ -245,7 +284,7 @@ public class WallDetector extends VisEventAdapter
 
 		Arrays.fill(state, BLUE_STATE.PREBLUE);
 
-		for(int j = height - 1; j >= height/2; j--){
+		for(int j = height - 1; j >= height-480; j--){
 			for(int i = 0; i < width; i += 10){
 				if(state[i] != BLUE_STATE.POSTBLUE){
 					if(blueScore(data[j * width + i]) > blueThresh){
@@ -278,10 +317,34 @@ public class WallDetector extends VisEventAdapter
 	
 	public void run()
 	{
-
-		//System.out.println(blueScore(0xff0000ff));
-		//System.exit(1);		
-
+/*
+		ArrayList<double[]> realWorld = new ArrayList<double[]>();
+		realWorld.add(new double[]{1,.01});
+		realWorld.add(new double[]{2,.01});
+		realWorld.add(new double[]{3,.01});
+		realWorld.add(new double[]{4,.01});
+		realWorld.add(new double[]{5,.01});
+		realWorld.add(new double[]{6,.01});
+		realWorld.add(new double[]{7,.01});
+		realWorld.add(new double[]{8,.01});
+		realWorld.add(new double[]{9,.01});
+		ArrayList<double[]> pixels = new ArrayList<double[]>();
+		pixels.add(new double[]{1,185});
+		pixels.add(new double[]{1,324});
+		pixels.add(new double[]{1,378});
+		pixels.add(new double[]{1,407});
+		pixels.add(new double[]{1,425});
+		pixels.add(new double[]{1,438});
+		pixels.add(new double[]{1,447});
+		pixels.add(new double[]{1,454});
+		pixels.add(new double[]{1,459});
+		
+		computeHomography(9,pixels,realWorld);
+		Matrix newPoint = Matrix.columnMatrix(new double[]{0,407,1});
+		//H.print();
+		//H.times(newPoint).print();
+		//System.exit(1);
+*/		
 		is.start();
 		ImageSourceFormat fmt = is.getCurrentFormat();
 
@@ -322,9 +385,12 @@ public class WallDetector extends VisEventAdapter
 			if(dispLines) alf.plotLineSegs(vb);
 			if(dispCorners) alf.plotCorners(vb);
 			vb.addBack(new VzImage(im, VzImage.FLIP));
-			if(dispLongLine) vb.addBack(new VisPixCoords(VisPixCoords.ORIGIN.BOTTOM_LEFT,
+			if(dispLongLine){
+				double dist = -413.1089/(alf.getLongestSeg()[1]-503.80119)-0.30247;
+				vb.addBack(new VisPixCoords(VisPixCoords.ORIGIN.BOTTOM_LEFT,
 						new VzText(VzText.ANCHOR.BOTTOM_LEFT, 
-						"Longest Segment Mean:" + alf.getLongestSeg()[0] + ", " + alf.getLongestSeg()[1])));
+						"Longest Segment Mean:" + alf.getLongestSeg()[0] + ", " + alf.getLongestSeg()[1] + "\n" + "Distance to Target:" + dist)));
+			}
 			vb.swap();
 		   
 		}
