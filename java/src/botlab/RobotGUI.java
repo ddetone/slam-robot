@@ -49,7 +49,9 @@ public class RobotGUI implements LCMSubscriber
                                   new double[] {-0.21867, -1.71540, 0.00000 },
                                   new double[] { 0.00000,   1.00000, 0.00000 }, true);
 
-
+        VisWorld.Buffer vb = vw.getBuffer("Ground");
+        vb.addBack(new VisChain(LinAlg.translate(0,0,-0.025),new VzBox(30,30,0.05,new VzMesh.Style(Color.darkGray))));
+        vb.swap();
 
     }
 
@@ -86,10 +88,13 @@ public class RobotGUI implements LCMSubscriber
         VzCylinder wheels = new VzCylinder(wheelRadius,0.01, new VzMesh.Style(Color.white));
         VisObject vo_wheels = new VisChain(LinAlg.rotateY(Math.PI/2),LinAlg.translate(-wheelRadius,0,0.10),wheels,LinAlg.translate(0,0,-0.20),wheels);
 
+        double castorRad = 0.03;
+        VzCylinder castor = new VzCylinder(castorRad,0.02, new VzMesh.Style(Color.black));
+        VisObject vo_castor = new VisChain(LinAlg.rotateY(Math.PI/2), LinAlg.translate(-castorRad,0.16,0),castor);
 
         VisChain pandaBot = new VisChain();
 
-        pandaBot.add(vo_base,vo_cameraBase,vo_wheels);
+        pandaBot.add(vo_base,vo_cameraBase,vo_wheels,vo_castor);
 
         VisWorld.Buffer vb = vw.getBuffer("Robot");
         vb.addBack(new VzAxes());
