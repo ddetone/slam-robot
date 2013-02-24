@@ -29,6 +29,7 @@ public class Pimu implements LCMSubscriber
 	public static int[] prev_integrator = new int[8];
 	public static int[] integrator = new int[8];
 	public static double prev_time,time;
+	public statis int num_msgs;
 	
 	LCM lcm;
 	pimu_t gyros;	
@@ -49,6 +50,7 @@ public class Pimu implements LCMSubscriber
 		jf.setVisible(true);    
     
     	//Initialize previous variables to zero
+    	num_msgs = 0;
     	prev_time=0;
     	for (int i=0; i<8; i++)
 			prev_integrator[i] = 0;
@@ -65,7 +67,8 @@ public class Pimu implements LCMSubscriber
 			if(channel.equals("PIMU"))
 			{
 				gyros = new pimu_t(dins);
-				generateAngle();
+				updateData();
+				//printAngles();
 				update();
 			}
 		}
@@ -77,33 +80,16 @@ public class Pimu implements LCMSubscriber
 		
 	}
 	
-    public void generateAngle()
+    public void updateData()
     {
     	for (int i=0; i<8; i++)
 			integrator[i] = gyros.integrator[i];
 			
 		time = gyros.utime_pimu;
-		double timediff = time-prev_time;
-		
-		System.out.printf("timediff:%f\n",timediff);
-		for (int i=0; i<8; i++)
-		{
-			System.out.printf("integratordiff%d is:%f\n",i,
-					(integrator[i]-prev_integrator[i])/timediff);	
-		}
-		System.out.printf("\n");
-		
-		
-		
-		prev_time = time;
-		for (int i=0; i<8; i++)
-			prev_integrator[i] = integrator[i];			
     }	
 
 	synchronized void update()
     {  
-    
-    	
     	//Intialize an Array of colors for bars
     	ArrayList<VzMesh.Style> meshColors = new ArrayList<VzMesh.Style>();
 		for (int i=0; i<8; i++)
@@ -114,38 +100,51 @@ public class Pimu implements LCMSubscriber
 				meshColors.add(i,new VzMesh.Style(Color.blue));
 		}    
     	
-    	VzAxes axes = new VzAxes();
-    
+		//Create Bars
+     	double timediff = time-prev_time; 	
     	ArrayList<VisObject> bars = new ArrayList<VisObject>();
     	for (int i=0; i<8; i++)
     	{
-    		double diff = integrator[0]-prev_integrator[0];
-    		
-    		diff = 20;
-    		
-    		bars.add(i,	new VisChain(LinAlg.translate((0.05*i),0.0,0.0),
-						new VzBox(0.05,0.05,diff*0.01, meshColors.get(i))));
+    		double diff = (integrator[i]-prev_integrator[i])/timediff;
+    		bars.add(i,	new VisChain(LinAlg.translate((0.05*i),0.0,0.001*diff),
+						new VzBox(0.05,0.05,Math.abs(diff*0.002), meshColors.get(i))));
     	}
     
-		
-		VisChain chart = new VisChain(axes,bars);
-
+    	//Create Buffer and swap
 		VisWorld.Buffer vb = vw.getBuffer("chart");
-    	vb.addBack(chart);
+		for (int i=0; i<8; i++)
+		{
+			vb.addBack(bars.get(i));
+		}
     	vb.swap();
-    
+    	
+    	//Update prev
+    	prev_time = time;
+		for (int i=0; i<8; i++)
+			prev_integrator[i] = integrator[i];    	
     }
       	
 	public static void main(String[] args) throws Exception
 	{
 		Pimu pg = new Pimu();
 
-		/* Subscribe to 6_POSE */
+		/* Wait 1 sec to subscribe to PIMU */
 		while(true){
             Thread.sleep(1000);
         }
-	}  	
-    	
+	} 
+	
+	public void printAngles()
+	{
+		double timediff = time-prev_time;
+		System.out.printf("timediff:%f\n",timediff);
+		for (int i=0; i<8; i++)
+		{
+			System.out.printf("integratordiff%d is:%f\n",i,
+					(integrator[i]-prev_integrator[i])/timediff);	
+		}
+		System.out.printf("\n");	
+	} 	 	
 }	
     	
     	
