@@ -140,11 +140,12 @@ public class PoseGenerator implements LCMSubscriber
         double beta  = 0.01;
 
         double sigmaT_xx = (alpha*xyt_T[0])*(alpha*xyt_T[0]);
+        double sigmaT_yy = (beta *xyt_T[0])*(beta *xyt_T[0]);
         double sigmaT_tt = (alpha*xyt_T[2])*(alpha*xyt_T[2]);
 
-        sigmaT = new double[][]{{sigmaT_xx, 0   , 0        },
-                                {0        , beta, 0        },
-                                {0        , 0   , sigmaT_tt}};
+        sigmaT = new double[][]{{sigmaT_xx, 0        , 0        },
+                                {0        , sigmaT_yy, 0        },
+                                {0        , 0        , sigmaT_tt}};
 
         double sa = Math.sin(xyt_A[2]);
         double ca = Math.cos(xyt_A[2]);
@@ -152,12 +153,12 @@ public class PoseGenerator implements LCMSubscriber
         double yt = xyt_T[1];
 
         double[][] Ja = new double[][]{{1, 0,-xt*sa-yt*ca },
-                                        {0, 1, xt*ca-yt*sa },
-                                        {0, 0, 1           }};
+                                       {0, 1, xt*ca-yt*sa },
+                                       {0, 0, 1           }};
 
         double[][] Jt = new double[][]{{ca,-sa, 0 },
-                                        {sa, ca, 0 },
-                                        {0 , 0 , 1 }};
+                                       {sa, ca, 0 },
+                                       {0 , 0 , 1 }};
 
         double[][] Jt_T = LinAlg.transpose(Jt);
         double[][] Ja_T = LinAlg.transpose(Ja);
