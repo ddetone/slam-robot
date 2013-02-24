@@ -114,7 +114,7 @@ public class PoseGenerator implements LCMSubscriber
         double[] xyt_B = new double[3];
         xyt_B[0] = xyt_T[0]*ca - xyt_T[1]*sa + xyt_A[0];
         xyt_B[1] = xyt_T[0]*sa + xyt_T[1]*ca + xyt_A[1];
-        xyt_B[2] = ((xyt_A[2] + xyt_T[2] + Math.PI)%2)-Math.PI;
+        xyt_B[2] = ((xyt_A[2] + xyt_T[2] + Math.PI)%(2*Math/PI))-Math.PI;
 
         computeCov(xyt_A, xyt_B, xyt_T);
 
