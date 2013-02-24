@@ -156,21 +156,23 @@ public class AgglomerativeLineFitter
 				line.timesEquals(magHalf);
 				
 				Matrix myu = Matrix.columnMatrix(errorCheck.getMean());
-				
+				double myuPoint[] = new double[]{myu.get(0,0), myu.get(1,0)};
 				if(magHalf > maxMagHalf){
 					maxMagHalf = magHalf;
-					longestSeg[0] = myu.get(0,0);
-					longestSeg[1] = myu.get(1,0);
+					longestSeg[0] = myuPoint[0];
+					longestSeg[1] = myuPoint[1];
 				}
 				
 
 				ArrayList<double[]> lineSeg = new ArrayList<double[]>();
-				lineSeg.add(points.get(first));
-				lineSeg.add(points.get(last));
+				//lineSeg.add(points.get(first));
+				//lineSeg.add(points.get(last));
+				lineSeg.add(new double[]{myuPoint[0] + magHalf * Math.cos(theta), myuPoint[1] + magHalf * Math.sin(theta)});
+				lineSeg.add(new double[]{myuPoint[0] - magHalf * Math.cos(theta), myuPoint[1] - magHalf * Math.sin(theta)});
 				lineSegs.add(lineSeg);
 
 				// Add line with one point associated to line (offset) and theta (line orientation)
-				lines.add(new double[]{myu.get(0,0), myu.get(1,0), theta});
+				lines.add(new double[]{myuPoint[0], myuPoint[1], theta, magHalf});
 
 			}
 		}

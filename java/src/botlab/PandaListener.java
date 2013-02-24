@@ -20,9 +20,15 @@ import lcm.lcm.*;
 
 public class PandaListener implements LCMSubscriber
 {
-	
-	LCM lcm = LCM.getSingleton();
+
+	LCM lcm;
 	bot_status_t bot_status;
+
+    PandaListener()
+    {
+        this.lcm =  LCM.getSingleton();
+        lcm.subscribe("6_POSE",this);
+    }
 
 	public void messageReceived(LCM lcm, String channel, LCMDataInputStream dins)
 	{
@@ -45,14 +51,16 @@ public class PandaListener implements LCMSubscriber
 		}
 	}
 
-	public static void main(String[] args)
+	public static void main(String[] args) throws Exception
 	{
 		PandaListener pl = new PandaListener();
 
-		/* Subscribe to 6_POSE */
-		LCM.getSingleton().subscribe("6_POSE", pl);
-								  //      LCM.getSingleton().subscribe("BALLS_LIST", gui);
-									
+        while(true)
+        {
+            Thread.sleep(1000);
+        }
+
+
 	}
 
 

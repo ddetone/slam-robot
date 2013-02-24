@@ -5,3 +5,5 @@ LineDetect calibration could use lookup table for Sin and Cos
 Do we need utime to be synchronized between local and remote?
 
 How can we use environment variables on remote for an ssh command?
+
+Log camera and odometry info simultaneously

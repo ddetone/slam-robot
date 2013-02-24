@@ -386,7 +386,7 @@ public class WallDetector extends VisEventAdapter
 			if(dispCorners) alf.plotCorners(vb);
 			vb.addBack(new VzImage(im, VzImage.FLIP));
 			if(dispLongLine){
-				double dist = -413.1089/(alf.getLongestSeg()[1]-503.80119)-0.30247;
+				double dist = (-413.1089/(alf.getLongestSeg()[1]-503.80119)-0.30247)*0.3048;
 				vb.addBack(new VisPixCoords(VisPixCoords.ORIGIN.BOTTOM_LEFT,
 						new VzText(VzText.ANCHOR.BOTTOM_LEFT, 
 						"Longest Segment Mean:" + alf.getLongestSeg()[0] + ", " + alf.getLongestSeg()[1] + "\n" + "Distance to Target:" + dist)));
