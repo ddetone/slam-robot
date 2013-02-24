@@ -3,4 +3,5 @@ struct bot_status_t
 	int64_t utime;
 
 	double xyt[3]; 
+	double cov[3][3];           // covariance matrix for x,y,z
 }

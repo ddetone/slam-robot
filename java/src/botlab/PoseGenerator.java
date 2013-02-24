@@ -124,6 +124,8 @@ public class PoseGenerator implements LCMSubscriber
 
         bot.utime = TimeUtil.utime();
 
+	bot.cov = sigmaB;
+
         lcm.publish("6_POSE",bot);
         try{
             Thread.sleep(33);
