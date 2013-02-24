@@ -25,16 +25,20 @@ public class Pimu implements LCMSubscriber
 	VisWorld vw = new VisWorld();
     VisLayer vl  = new VisLayer(vw);
     VisCanvas vc = new VisCanvas(vl);
+    CalibrateGyro cg = new CalibrateGyro();
 	
 	public static int[] prev_integrator = new int[8];
+	public static int[] sum_angvel = new int[8];	
 	public static int[] integrator = new int[8];
 	public static double prev_time,time;
-	public statis int num_msgs;
+	public static int num_calibs;
+
+	
 	
 	LCM lcm;
 	pimu_t gyros;	
 	
-	Pimu()
+	public void Pimu()
     {
     	//Jfram and VisLayer initialization
 		JFrame jf = new JFrame();
@@ -47,14 +51,18 @@ public class Pimu implements LCMSubscriber
 
 		jf.setSize(800, 800);
 		jf.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		jf.setVisible(true);    
+		jf.setVisible(true);
+		
+		vl.addEventHandler(cg);    
     
     	//Initialize previous variables to zero
-    	num_msgs = 0;
+    	num_calibs = 0;
     	prev_time=0;
     	for (int i=0; i<8; i++)
+    	{
 			prev_integrator[i] = 0;
-			
+			sum_angvel[i] = 0;
+		}	
 		//Create singleton and subscribe to LCM	
        	this.lcm = LCM.getSingleton();
 		lcm.subscribe("PIMU", this);
@@ -67,9 +75,27 @@ public class Pimu implements LCMSubscriber
 			if(channel.equals("PIMU"))
 			{
 				gyros = new pimu_t(dins);
-				updateData();
+				
+				if (!cg.isCalibrating() && !cg.isCalibrated())
+				{
+					updateData();
+					updateGUI();
+					for (int i=0; i<8; i++)
+						sum_angvel[i] = 0;						
+				}
+				else if (cg.isCalibrating())
+				{
+					num_calibs++;
+					updateData();
+					getAvgs();
+				}
+				else if (cg.isCalibrated())
+				{
+					updateData();
+					updateGUI();
+				}
+				
 				//printAngles();
-				update();
 			}
 		}
 		catch (IOException e)
@@ -80,6 +106,16 @@ public class Pimu implements LCMSubscriber
 		
 	}
 	
+	public void getAvgs()
+	{	
+		double timediff = time-prev_time;
+		for (int i=0; i<8; i++)
+		{
+			double diff = (integrator[i]-prev_integrator[i])/timediff;
+			sum_angvel[i] += diff;
+		}
+	}
+	
     public void updateData()
     {
     	for (int i=0; i<8; i++)
@@ -88,7 +124,7 @@ public class Pimu implements LCMSubscriber
 		time = gyros.utime_pimu;
     }	
 
-	synchronized void update()
+	synchronized void updateGUI()
     {  
     	//Intialize an Array of colors for bars
     	ArrayList<VzMesh.Style> meshColors = new ArrayList<VzMesh.Style>();
@@ -106,6 +142,7 @@ public class Pimu implements LCMSubscriber
     	for (int i=0; i<8; i++)
     	{
     		double diff = (integrator[i]-prev_integrator[i])/timediff;
+    		diff = diff - (sum_angvel[i]/num_calibs);
     		bars.add(i,	new VisChain(LinAlg.translate((0.05*i),0.0,0.001*diff),
 						new VzBox(0.05,0.05,Math.abs(diff*0.002), meshColors.get(i))));
     	}
