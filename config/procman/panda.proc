@@ -15,3 +15,20 @@ proc# : process {
     cmd = "$ARL_HOME/bin/pimud";
     name = "Pimu Driver";
 }
+proc# : process {
+    cmd = "java botlab.PoseGenerator";
+    name = "Pose Generator";
+}
+
+
+proc# : process {
+    cmd = "java botlab.WallDetector dc1394://b09d0100aea34b?fidx=0&white-balance-manual=1&white-balance-red=531&white-balance-blue=754&exposure-manual=0&exposure=288&brightness-manual=1&brightness=0&shutter-manual=1&shutter=55.57&gain-manual=1&gain=6.65&gamma-manual=0&gamma=1024&hdr=0&frame-rate-manual=0&frame-rate=18.00&timestamps-enable=0&frame-counter-enable=0&strobe-0-manual=0&strobe-0-polarity=1&strobe-0-delay=0&strobe-0-duration=0&strobe-1-manual=0&strobe-1-polarity=1&strobe-1-delay=0&strobe-1-duration=0&strobe-2-manual=0&strobe-2-polarity=0&strobe-2-delay=0&strobe-2-duration=0&strobe-3-manual=0&strobe-3-polarity=1&strobe-3-delay=0&strobe-3-duration=0&external-trigger-manual=0&external-trigger-mode=0&external-trigger-polarity=704&external-trigger-source=576&software-trigger=1";
+    name = "Wall Detector";
+}
+
+
+
+
+
+
+
