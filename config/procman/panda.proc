@@ -12,7 +12,7 @@ proc# : process {
 }
 
 proc# : process {
-    cmd = "$ARL_HOME/bin/pimud";
+    cmd = "$ARL_HOME/bin/pimud -u";
     name = "Pimu Driver";
 }
 proc# : process {
