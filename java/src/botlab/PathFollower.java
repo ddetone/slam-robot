@@ -28,10 +28,13 @@ public class PathFollower implements LCMSubscriber
 	//Robot is actively following if isFollow = true else if does not move
 	static boolean isFollow = false;
 	static double[] currXYT = new double[3];
+	static double[] currDotXYT = new double[3];
 	static double[] destXYT = new double[3];
 
 	double Kp_turn = 0.7;
 	double Kp = 1;
+	double Kd = 0;
+	double Kd_turn = 0;
 
 	PathFollower()
 	{
@@ -64,8 +67,8 @@ public class PathFollower implements LCMSubscriber
 		double destAngle = Math.atan2((y_d - y_c),(x_d - x_c));
 		double errorAngle = destAngle - currXYT[2];
 
-		if(errorAngle > Math.PI)errorAngle-=2*Math.PI;
-		else if(errorAngle < -Math.PI)errorAngle+=2*Math.PI;
+		if(errorAngle > Math.PI)errorAngle -= 2 * Math.PI;
+		else if(errorAngle < -Math.PI)errorAngle += 2 * Math.PI;
 
 		double errorDist = LinAlg.distance(new double[]{x_c,y_c}, new double[]{x_d, y_d});
 
@@ -73,8 +76,9 @@ public class PathFollower implements LCMSubscriber
 
 		if(Math.abs(errorAngle) > Math.toRadians(10))
 		{
-			right =  Kp_turn * errorAngle;
-			left  = -Kp_turn * errorAngle;
+			right =  Kp_turn * errorAngle - Kd_turn * currDotXYT[2];
+			left  = -Kp_turn * errorAngle + Kd_turn * currDotXYT[2];
+
 			System.out.println("angle error:" + Math.toDegrees(errorAngle) 
 					+ "  dest Angle:" + Math.toDegrees(destAngle) 
 					+ "  curr Angle:" + Math.toDegrees(currXYT[2]));
@@ -98,7 +102,7 @@ public class PathFollower implements LCMSubscriber
 			}
 
 
-			double delta = Kp * errorAngle;
+			double delta = Kp * errorAngle - Kd * currDotXYT[2];
 			if(delta > 0)
 				left -= delta;
 			else
@@ -144,6 +148,10 @@ public class PathFollower implements LCMSubscriber
 				currXYT[0] = bot_status.xyt[0];
 				currXYT[1] = bot_status.xyt[1];
 				currXYT[2] = bot_status.xyt[2];
+				currDotXYT[0] = bot_status.xyt_dot[0];
+				currDotXYT[1] = bot_status.xyt_dot[1];
+				currDotXYT[2] = bot_status.xyt_dot[2];
+				
 				if(isFollow)
 					moveRobot();
 			}
