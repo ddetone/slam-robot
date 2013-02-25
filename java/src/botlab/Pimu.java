@@ -18,14 +18,16 @@ import botlab.lcmtypes.*;
 
 import lcm.lcm.*;
 
-public class Pimu implements LCMSubscriber
+public class Pimu extends VisEventAdapter implements LCMSubscriber 
 {
 
 
-	VisWorld vw = new VisWorld();
-    VisLayer vl  = new VisLayer(vw);
-    VisCanvas vc = new VisCanvas(vl);
-    CalibrateGyro cg = new CalibrateGyro();
+	static VisWorld vw = new VisWorld();
+    static VisLayer vl  = new VisLayer(vw);
+    static VisCanvas vc = new VisCanvas(vl);
+	static JFrame jf = new JFrame("Gyro Visualization");  
+	  
+    //CalibrateGyro cg = new CalibrateGyro();
 	
 	public static int[] prev_integrator = new int[8];
 	public static int[] sum_angvel = new int[8];	
@@ -33,15 +35,15 @@ public class Pimu implements LCMSubscriber
 	public static double prev_time,time;
 	public static int num_calibs;
 
+	LCM lcm = LCM.getSingleton();
+	pimu_t gyros;
+	boolean calibrating;
+	boolean calibdone;
+	int clickcount;	
 	
-	
-	LCM lcm;
-	pimu_t gyros;	
-	
-	public void Pimu()
+	Pimu()
     {
     	//Jfram and VisLayer initialization
-		JFrame jf = new JFrame();
 		jf.setLayout(new BorderLayout());
 		jf.add(vc, BorderLayout.CENTER);    
 		vl.cameraManager.uiLookAt(
@@ -52,50 +54,80 @@ public class Pimu implements LCMSubscriber
 		jf.setSize(800, 800);
 		jf.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		jf.setVisible(true);
-		
-		vl.addEventHandler(cg);    
-    
+		vl.addEventHandler(this);   
+
     	//Initialize previous variables to zero
     	num_calibs = 0;
     	prev_time=0;
+    	calibrating=false;
+    	calibdone=false;
+    	clickcount = 0;
     	for (int i=0; i<8; i++)
     	{
 			prev_integrator[i] = 0;
 			sum_angvel[i] = 0;
-		}	
+		}
+
 		//Create singleton and subscribe to LCM	
-       	this.lcm = LCM.getSingleton();
 		lcm.subscribe("PIMU", this);
+		
     }
     
+	public boolean keyTyped(VisCanvas vc, VisLayer vl, VisCanvas.RenderInfo rinfo, KeyEvent e)
+    {
+		char c = e.getKeyChar();        
+		if(c =='c')
+		{	
+			System.out.printf("C\n");
+			if ((clickcount % 2) == 0)
+			{	
+				System.out.printf("CALIBRATING\n");
+				calibdone = false;
+				calibrating = true;
+			}
+			else
+			{
+				System.out.printf("CALIBDONE\n");
+				calibdone = true;
+				calibrating = false;			
+			}
+		}
+		clickcount++;
+		return false;	
+    }   
+     
     public void messageReceived(LCM lcm, String channel, LCMDataInputStream dins)
 	{
+	
 		try
 		{
 			if(channel.equals("PIMU"))
 			{
+			
 				gyros = new pimu_t(dins);
-				
-				if (!cg.isCalibrating() && !cg.isCalibrated())
+
+				if (!calibrating && !calibdone)
+				{
+					updateData();
+					System.out.printf("NOT CALIBRATED\n");
+					for (int i=0; i<8; i++)
+						sum_angvel[i] = 0;
+					updateGUI();						
+				}
+				else if (calibdone && !calibrating)
 				{
 					updateData();
 					updateGUI();
-					for (int i=0; i<8; i++)
-						sum_angvel[i] = 0;						
-				}
-				else if (cg.isCalibrating())
+				}				
+				else if (calibrating  && !calibdone)
 				{
+					System.out.printf("numcalibs:%d\n",num_calibs);
 					num_calibs++;
 					updateData();
 					getAvgs();
 				}
-				else if (cg.isCalibrated())
-				{
-					updateData();
-					updateGUI();
-				}
+
 				
-				//printAngles();
 			}
 		}
 		catch (IOException e)
@@ -126,6 +158,7 @@ public class Pimu implements LCMSubscriber
 
 	synchronized void updateGUI()
     {  
+    	
     	//Intialize an Array of colors for bars
     	ArrayList<VzMesh.Style> meshColors = new ArrayList<VzMesh.Style>();
 		for (int i=0; i<8; i++)
@@ -137,16 +170,26 @@ public class Pimu implements LCMSubscriber
 		}    
     	
 		//Create Bars
-     	double timediff = time-prev_time; 	
+     	double timediff = time-prev_time;
+     	double[] sub = new double[8]; 	
     	ArrayList<VisObject> bars = new ArrayList<VisObject>();
     	for (int i=0; i<8; i++)
     	{
     		double diff = (integrator[i]-prev_integrator[i])/timediff;
-    		diff = diff - (sum_angvel[i]/num_calibs);
+    		if (num_calibs==0)
+    		{
+    			System.out.printf("NUM_Calibs is zero\n");
+    			num_calibs++;
+    		}
+    		sub[i] = (sum_angvel[i]/num_calibs);
+    		//System.out.printf("It:%d,Sum:%d,NumCalib:%d,Sub:%f\n",i,sum_angvel[i],num_calibs,sub[i]);
+
+    		diff = diff - sub[i];
+
     		bars.add(i,	new VisChain(LinAlg.translate((0.05*i),0.0,0.001*diff),
 						new VzBox(0.05,0.05,Math.abs(diff*0.002), meshColors.get(i))));
     	}
-    
+    		//System.out.println();    
     	//Create Buffer and swap
 		VisWorld.Buffer vb = vw.getBuffer("chart");
 		for (int i=0; i<8; i++)
@@ -164,11 +207,13 @@ public class Pimu implements LCMSubscriber
 	public static void main(String[] args) throws Exception
 	{
 		Pimu pg = new Pimu();
-
-		/* Wait 1 sec to subscribe to PIMU */
-		while(true){
+	
+		while(true)
+		{
             Thread.sleep(1000);
         }
+        	
+
 	} 
 	
 	public void printAngles()
