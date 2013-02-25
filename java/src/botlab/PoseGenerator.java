@@ -43,15 +43,19 @@ public class PoseGenerator implements LCMSubscriber
 	double[][] sigmaA = new double[3][3];
 	double[][] sigmaT = new double[3][3];
 
+	Pimu pimu;
+
 	PoseGenerator()
 	{
-	this.lcm = LCM.getSingleton();
-	lcm.subscribe("MOTOR_FEEDBACK", this);
+		this.lcm = LCM.getSingleton();
+		lcm.subscribe("MOTOR_FEEDBACK", this);
 
+		pimu = new Pimu();
+		pimu.calibrate();
 		//initial uncertainty
 		sigmaA = new double[][]{{0.00001,0,0},
-								{0,0.00001,0},
-								{0,0,0.00001}};
+					{0,0.00001,0},
+					{0,0,0.00001}};
 	}
 
 	public void messageReceived(LCM lcm, String channel, LCMDataInputStream dins)
@@ -123,9 +127,9 @@ public class PoseGenerator implements LCMSubscriber
 		bot.xyt[1] = xyt_B[1];
 		bot.xyt[2] = xyt_B[2];
 	
-		bot.xyt_dot[0] = 0;
-		bot.xyt_dot[1] = 0;
-		bot.xyt_dot[2] = 0;
+		bot.xyt_dot[0] = pimu.getXDot();
+		bot.xyt_dot[1] = pimu.getYDot();
+		bot.xyt_dot[2] = pimu.getTDot();
 
 		bot.utime = TimeUtil.utime();
 
