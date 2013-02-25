@@ -18,16 +18,18 @@ import botlab.lcmtypes.*;
 
 import lcm.lcm.*;
 
-public class Pimu extends VisEventAdapter implements LCMSubscriber 
+public class Pimu implements LCMSubscriber 
 {
 
-
-	static VisWorld vw = new VisWorld();
-	static VisLayer vl  = new VisLayer(vw);
-	static VisCanvas vc = new VisCanvas(vl);
-	static JFrame jf = new JFrame("Gyro Visualization");  
+	//GUI Variables
+	static VisWorld vw;
+	static VisLayer vl;
+	static VisCanvas vc;
+	static JFrame jf;  
 	  
-	//CalibrateGyro cg = new CalibrateGyro();
+	//Gyro and Accelerometer values
+	public static double[] RPYdot = new double[8]; 	
+	public static double[] XYZdot = new double[3];
 	
 	public static int[] prev_integrator = new int[8];	
 	public static int[] integrator = new int[8];
@@ -35,6 +37,10 @@ public class Pimu extends VisEventAdapter implements LCMSubscriber
 	public static int[] accel = new int[3];	
 	
 	public static int[] sum_angvel = new int[8];
+	public static int[] sum_accel = new int[8];
+
+	public static int[] RPYdiff = new int[8]; 	
+	public static int[] XYZdiff = new int[3];
 		
 	public static double prev_time,time;
 	public static int num_calibs;
@@ -43,33 +49,50 @@ public class Pimu extends VisEventAdapter implements LCMSubscriber
 	pimu_t gyros;
 	boolean calibrating;
 	boolean calibdone;
-	int clickcount;	
+	boolean displayGUI;
 	
-	Pimu()
+	Pimu(boolean DisplayGUI)
 	{
-		//Jfram and VisLayer initialization
-		jf.setLayout(new BorderLayout());
-		jf.add(vc, BorderLayout.CENTER);	
-		vl.cameraManager.uiLookAt(
-				new double[] {-1, -1, 1 },
-				new double[] { 0,  0, 0.00000 },
-				new double[] { 0.13802,  0.40084, 0.90569 }, true);
+	
+		if (DisplayGUI)
+		{	
+			//Jframe and VisLayer initialization
+			vw = new VisWorld();
+			vl  = new VisLayer(vw);
+			vc = new VisCanvas(vl);
+			jf = new JFrame("Gyro Visualization"); 		
+			jf.setLayout(new BorderLayout());
+			jf.add(vc, BorderLayout.CENTER);	
+			VzGrid.addGrid(vw);
+			vl.cameraManager.uiLookAt(
+					new double[] {-1, -1, 1 },
+					new double[] { 0,  0, 0.00000 },
+					new double[] { 0.13802,  0.40084, 0.90569 }, true);
 
-		jf.setSize(800, 800);
-		jf.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		jf.setVisible(true);
-		vl.addEventHandler(this);   
+			jf.setSize(800, 800);
+			jf.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+			jf.setVisible(true);
+			//vl.addEventHandler(this); 
+			displayGUI = true;
+		}  
 
 		//Initialize previous variables to zero
 		num_calibs = 0;
 		prev_time=0;
 		calibrating=false;
 		calibdone=false;
-		clickcount = 0;
 		for (int i=0; i<8; i++)
 		{
+			if (i<3)
+			{	
+				prev_accel[i] = 0;
+				sum_accel[i] = 0;
+				XYZdot[i] = 0;
+				RPYdot[i] = 0;
+			}
 			prev_integrator[i] = 0;
 			sum_angvel[i] = 0;
+			RPYdot[i] = 0;
 		}
 
 		//Create singleton and subscribe to LCM	
@@ -77,29 +100,11 @@ public class Pimu extends VisEventAdapter implements LCMSubscriber
 		
 	}
 	
-	public boolean keyTyped(VisCanvas vc, VisLayer vl, VisCanvas.RenderInfo rinfo, KeyEvent e)
+	public void calibrate()
 	{
-		char c = e.getKeyChar();		
-		if(c =='c')
-		{	
-			System.out.printf("C\n");
-			if ((clickcount % 2) == 0)
-			{	
-				System.out.printf("CALIBRATING\n");
-				calibdone = false;
-				calibrating = true;
-			}
-			else
-			{
-				System.out.printf("CALIBDONE\n");
-				calibdone = true;
-				calibrating = false;			
-			}
-		}
-		clickcount++;
-		return false;	
-	}   
-	 
+		calibrating = true;
+	}
+
 	public void messageReceived(LCM lcm, String channel, LCMDataInputStream dins)
 	{
 	
@@ -107,42 +112,62 @@ public class Pimu extends VisEventAdapter implements LCMSubscriber
 		{
 			if(channel.equals("PIMU"))
 			{
-			
 				gyros = new pimu_t(dins);
-
-				if (!calibrating && !calibdone)
+				
+				if (calibrating  && !calibdone)
 				{
-					updateData();
-					System.out.printf("NOT CALIBRATED\n");
-					//for (int i=0; i<8; i++)
-						//sum_angvel[i] = 0;
-					updateGUI();						
+					getSensorData();
+					System.out.printf("numcalibs:%d\n",num_calibs);
+					num_calibs++;
+					if (num_calibs == 30)  
+					{
+						calibdone = true;
+						calibrating = false;
+						System.out.printf("CALIBRATED!\n");
+						//create the diff values used in calibration
+						for (int i=0; i<8; i++)
+						{
+							if (i<3)
+								XYZdiff[i] = sum_accel[i]/num_calibs;
+							RPYdiff[i] = sum_angvel[i]/num_calibs;
+						}
+						calculateDots();	
+					}
+					else	
+						addToSums();
 				}
 				else if (calibdone && !calibrating)
 				{
-					updateData();
-					updateGUI();
-				}				
-				else if (calibrating  && !calibdone)
-				{
-					System.out.printf("numcalibs:%d\n",num_calibs);
-					num_calibs++;
-					updateData();
-					getAvgs();
+					getSensorData();
+					calculateDots();
 				}
-
 				
+				if (displayGUI) //display graphs of data for debugging
+					updateGUI();
+					
+
+				updatePrevs();				
+
 			}
 		}
 		catch (IOException e)
 		{
 			e.printStackTrace();
-		}
-		
-		
+		}	
 	}
 	
-	public void getAvgs()
+	public void getSensorData()
+	{
+		for (int i=0; i<8; i++)
+		{
+			if (i<3)
+				accel[i] = gyros.accel[i];
+			integrator[i] = gyros.integrator[i];
+		}	
+		time = gyros.utime_pimu;
+	}
+		
+	public void addToSums()
 	{	
 		double timediff = time-prev_time;
 		for (int i=0; i<8; i++)
@@ -150,14 +175,54 @@ public class Pimu extends VisEventAdapter implements LCMSubscriber
 			double diff = (integrator[i]-prev_integrator[i])/timediff;
 			sum_angvel[i] += diff;
 		}
+		for (int i=0; i<3; i++)
+		{
+			double diff = accel[i]-prev_accel[i];
+			sum_accel[i] += diff;
+		}
 	}
 	
-	public void updateData()
+	public void calculateDots()
 	{
+		if (!calibdone)
+		{
+			System.out.printf("NOT CALIBRATED\n");
+			return;
+		}
+		
+	 	double timediff = time-prev_time;
+	 	
+	 	double[] angvel_dat = new double[8]; 			
 		for (int i=0; i<8; i++)
-			integrator[i] = gyros.integrator[i];
+			angvel_dat[i] = ((integrator[i]-prev_integrator[i])/timediff) - RPYdiff[i];	//must take derviative
 			
-		time = gyros.utime_pimu;
+		//average out the multiple channels for each angular direction
+		RPYdot[0] = (angvel_dat[6]+angvel_dat[7])/2;
+		RPYdot[1] = (angvel_dat[2]+angvel_dat[3])/2;
+		RPYdot[2] = (angvel_dat[0]+angvel_dat[1]+angvel_dat[4]+angvel_dat[5])/4;		
+		
+		
+		
+		for (int i=0; i<3; i++)
+		{
+			XYZdot[i] = (accel[i]-prev_accel[i]-XYZdiff[i])*(timediff/10000000); //must integrate, units???
+			System.out.printf("accel:%d, prev_accel:%d, XYZdiff:%d, timediff:%f, XYZ%d:%f\n",
+				accel[i],prev_accel[i],XYZdiff[i],timediff,i,XYZdot[i]);
+		}
+		System.out.println();
+
+	}
+	
+	public void updatePrevs()
+	{
+		prev_time = time;
+		for (int i=0; i<8; i++)
+		{
+			if (i<3)
+				prev_accel[i] = accel[i];
+						
+			prev_integrator[i] = integrator[i];	
+		}
 	}	
 
 	synchronized void updateGUI()
@@ -170,76 +235,59 @@ public class Pimu extends VisEventAdapter implements LCMSubscriber
 		meshColors.add(1,new VzMesh.Style(Color.green));
 		meshColors.add(2,new VzMesh.Style(Color.blue));
 	 	
-		//Create Bars
-	 	double timediff = time-prev_time;
-	 	double[] size		= new double[8]; 
-	 	double[] gyroXYZ 	= new double[3];	
-		ArrayList<VisObject> bars = new ArrayList<VisObject>();
-		for (int i=0; i<8; i++)
-		{
-			if (num_calibs==0)
-			{
-				System.out.printf("NUM_Calibs is zero\n");
-				num_calibs++;
-			}		
-			
-			double diff = (sum_angvel[i]/num_calibs);
-			size[i] = (integrator[i]-prev_integrator[i])/timediff;
-			size[i] = size[i] - diff;	
-		}
-		
-		
-		gyroXYZ[0] = (size[6]+size[7])/2;
-		gyroXYZ[1] = (size[2]+size[3])/2;
-		gyroXYZ[2] = (size[0]+size[1]+size[4]+size[5])/4;
-		
+		//Create Bars	
+		ArrayList<VisObject> gyrobars = new ArrayList<VisObject>();
 		for (int i=0; i<3; i++)
 		{
-			bars.add(i,new VisChain(LinAlg.translate((0.20*i),0.0,0.001*gyroXYZ[i]),
-				new VzBox(0.20,0.05,Math.abs(gyroXYZ[i]*0.002), meshColors.get(i))));		
+			gyrobars.add(i,new VisChain(LinAlg.translate((0.20*i),0.0,0.001*RPYdot[i]),
+				new VzBox(0.20,0.05,Math.abs(RPYdot[i]*0.002), meshColors.get(i))));		
 		}
-		
-		
-		
-		//System.out.println();	
+		ArrayList<VisObject> accelbars = new ArrayList<VisObject>();
+		for (int i=0; i<3; i++)
+		{
+			accelbars.add(i,new VisChain(LinAlg.translate((0.20*i),0.2,0.001*XYZdot[i]),
+				new VzBox(0.20,0.05,Math.abs(XYZdot[i]*0.002), meshColors.get(i))));		
+		}		
 		//Create Buffer and swap
 		VisWorld.Buffer vb = vw.getBuffer("chart");		
 		for (int i=0; i<3; i++)
 		{
-			vb.addBack(bars.get(i));
+			vb.addBack(gyrobars.get(i));
+			vb.addBack(accelbars.get(i));
 		}
-		vb.addBack(new VzAxes());
-		vb.swap();
-		
-		//Update prev
-		prev_time = time;
-		for (int i=0; i<8; i++)
-			prev_integrator[i] = integrator[i];		
+		vb.addBack(new VzText("BLAH"));
+		//vb.addBack(new VzAxes());
+		vb.swap();	
 	}
 	  	
 	public static void main(String[] args) throws Exception
 	{
-		Pimu pg = new Pimu();
+		Pimu pg = new Pimu(true);
+		pg.calibrate();
 	
 		while(true)
 		{
 			Thread.sleep(1000);
 		}
-			
-
-	} 
+	}
 	
-	public void printAngles()
+	public double[] getRPYdot() 
 	{
-		double timediff = time-prev_time;
-		System.out.printf("timediff:%f\n",timediff);
-		for (int i=0; i<8; i++)
-		{
-			System.out.printf("integratordiff%d is:%f\n",i,
-					(integrator[i]-prev_integrator[i])/timediff);	
+		if (!calibdone)
+		{	
+			return(new double[]{0,0,0});
 		}
-		System.out.printf("\n");	
-	} 	 	
+		return (RPYdot);
+	}
+	public double[] getXYZdot() 
+	{
+		if (!calibdone)
+		{
+			return(new double[]{0,0,0});
+		}
+		return (RPYdot);
+	}
+	public double getTimeDiff(){return (time-prev_time);}	
 }	
 		
 		
