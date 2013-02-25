@@ -29,9 +29,13 @@ public class Pimu extends VisEventAdapter implements LCMSubscriber
 	  
     //CalibrateGyro cg = new CalibrateGyro();
 	
-	public static int[] prev_integrator = new int[8];
-	public static int[] sum_angvel = new int[8];	
+	public static int[] prev_integrator = new int[8];	
 	public static int[] integrator = new int[8];
+	public static int[] prev_accel = new int[3];	
+	public static int[] accel = new int[3];	
+	
+	public static int[] sum_angvel = new int[8];
+		
 	public static double prev_time,time;
 	public static int num_calibs;
 
@@ -110,8 +114,8 @@ public class Pimu extends VisEventAdapter implements LCMSubscriber
 				{
 					updateData();
 					System.out.printf("NOT CALIBRATED\n");
-					for (int i=0; i<8; i++)
-						sum_angvel[i] = 0;
+					//for (int i=0; i<8; i++)
+						//sum_angvel[i] = 0;
 					updateGUI();						
 				}
 				else if (calibdone && !calibrating)
@@ -161,41 +165,50 @@ public class Pimu extends VisEventAdapter implements LCMSubscriber
     	
     	//Intialize an Array of colors for bars
     	ArrayList<VzMesh.Style> meshColors = new ArrayList<VzMesh.Style>();
-		for (int i=0; i<8; i++)
-		{
-			if (i%2 == 1)
-				meshColors.add(i,new VzMesh.Style(Color.gray));
-			else
-				meshColors.add(i,new VzMesh.Style(Color.blue));
-		}    
-    	
+		
+		meshColors.add(0,new VzMesh.Style(Color.red));
+		meshColors.add(1,new VzMesh.Style(Color.green));
+		meshColors.add(2,new VzMesh.Style(Color.blue));
+     	
 		//Create Bars
      	double timediff = time-prev_time;
-     	double[] sub = new double[8]; 	
+     	double[] size		= new double[8]; 
+     	double[] gyroXYZ 	= new double[3];	
     	ArrayList<VisObject> bars = new ArrayList<VisObject>();
     	for (int i=0; i<8; i++)
     	{
-    		double diff = (integrator[i]-prev_integrator[i])/timediff;
     		if (num_calibs==0)
     		{
     			System.out.printf("NUM_Calibs is zero\n");
     			num_calibs++;
-    		}
-    		sub[i] = (sum_angvel[i]/num_calibs);
-    		//System.out.printf("It:%d,Sum:%d,NumCalib:%d,Sub:%f\n",i,sum_angvel[i],num_calibs,sub[i]);
-
-    		diff = diff - sub[i];
-
-    		bars.add(i,	new VisChain(LinAlg.translate((0.05*i),0.0,0.001*diff),
-						new VzBox(0.05,0.05,Math.abs(diff*0.002), meshColors.get(i))));
+    		}    	
+    		
+    		double diff = (sum_angvel[i]/num_calibs);
+    		size[i] = (integrator[i]-prev_integrator[i])/timediff;
+    		size[i] = size[i] - diff;	
     	}
-    		//System.out.println();    
+    	
+    	
+    	gyroXYZ[0] = (size[6]+size[7])/2;
+    	gyroXYZ[1] = (size[2]+size[3])/2;
+    	gyroXYZ[2] = (size[0]+size[1]+size[4]+size[5])/4;
+    	
+    	for (int i=0; i<3; i++)
+    	{
+    		bars.add(i,	new VisChain(LinAlg.translate((0.20*i),0.0,0.001*gyroXYZ[i]),
+						new VzBox(0.20,0.05,Math.abs(gyroXYZ[i]*0.002), meshColors.get(i))));    	
+    	}
+    	
+    	
+    	
+    	//System.out.println();    
     	//Create Buffer and swap
-		VisWorld.Buffer vb = vw.getBuffer("chart");
-		for (int i=0; i<8; i++)
+		VisWorld.Buffer vb = vw.getBuffer("chart");		
+		for (int i=0; i<3; i++)
 		{
 			vb.addBack(bars.get(i));
 		}
+		vb.addBack(new VzAxes());
     	vb.swap();
     	
     	//Update prev
