@@ -50,7 +50,7 @@ public class PoseGenerator implements LCMSubscriber
 		this.lcm = LCM.getSingleton();
 		lcm.subscribe("MOTOR_FEEDBACK", this);
 
-		pimu = new Pimu();
+		pimu = new Pimu(false);
 		pimu.calibrate();
 		//initial uncertainty
 		sigmaA = new double[][]{{0.00001,0,0},
@@ -127,9 +127,12 @@ public class PoseGenerator implements LCMSubscriber
 		bot.xyt[1] = xyt_B[1];
 		bot.xyt[2] = xyt_B[2];
 	
-		bot.xyt_dot[0] = pimu.getXDot();
-		bot.xyt_dot[1] = pimu.getYDot();
-		bot.xyt_dot[2] = pimu.getTDot();
+		double[] XYZ = pimu.getXYZdot();
+		double[] RPY = pimu.getRPYdot();
+		
+		bot.xyt_dot[0] = XYZ[0]; 
+		bot.xyt_dot[1] = XYZ[1];
+		bot.xyt_dot[2] = RPY[2]; //2 is yaw
 
 		bot.utime = TimeUtil.utime();
 
