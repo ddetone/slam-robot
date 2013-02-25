@@ -33,8 +33,8 @@ public class PathFollower implements LCMSubscriber
 
 	double Kp_turn = 0.7;
 	double Kp = 1;
-	double Kd = 0;
-	double Kd_turn = 0;
+	double Kd_turn = 0.001;
+	double Kd = 0.001;
 
 	PathFollower()
 	{
@@ -65,11 +65,11 @@ public class PathFollower implements LCMSubscriber
 		double x_d = destXYT[0], y_d = destXYT[1];
 
 		double destAngle = Math.atan2((y_d - y_c),(x_d - x_c));
-		double errorAngle = mod2pi(destAngle, currXYT[2]);
+		double errorAngle = destAngle - currXYT[2];
 
 		//errorAngle = Math	(Math.Pi * 2);
-		//if(errorAngle > Math.PI)errorAngle -= 2 * Math.PI;
-		//else if(errorAngle < -Math.PI)errorAngle += 2 * Math.PI;
+		while(errorAngle > Math.PI)errorAngle -= 2 * Math.PI;
+		while(errorAngle < -Math.PI)errorAngle += 2 * Math.PI;
 
 		double errorDist = LinAlg.distance(new double[]{x_c,y_c}, new double[]{x_d, y_d});
 

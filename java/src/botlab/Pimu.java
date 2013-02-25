@@ -206,10 +206,10 @@ public class Pimu implements LCMSubscriber
 		for (int i=0; i<3; i++)
 		{
 			XYZdot[i] = (accel[i]-prev_accel[i]-XYZdiff[i])*(timediff/10000000); //must integrate, units???
-			System.out.printf("accel:%d, prev_accel:%d, XYZdiff:%d, timediff:%f, XYZ%d:%f\n",
-				accel[i],prev_accel[i],XYZdiff[i],timediff,i,XYZdot[i]);
+			//System.out.printf("accel:%d, prev_accel:%d, XYZdiff:%d, timediff:%f, XYZ%d:%f\n",
+				//accel[i],prev_accel[i],XYZdiff[i],timediff,i,XYZdot[i]);
 		}
-		System.out.println();
+		//System.out.println();
 
 	}
 	
