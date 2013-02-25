@@ -18,7 +18,7 @@ import botlab.lcmtypes.*;
 
 import lcm.lcm.*;
 
-public class RobotGUI implements LCMSubscriber
+public class RobotGUI extends VisEventAdapter implements LCMSubscriber 
 {
 
     JFrame jf = new JFrame("RobotGUI");
@@ -59,6 +59,17 @@ public class RobotGUI implements LCMSubscriber
 
     }
 
+
+	public boolean mouseReleased(VisCanvas vc, VisLayer vl, VisCanvas.RenderInfo rinfo, GRay3D ray, MouseEvent e)
+	{
+		xyt_t wayPoint = new xyt_t();
+		double temp[] = ray.intersectPlaneXY();
+		wayPoint.xyt = new double[]{temp[0], temp[1], temp[2]};
+		lcm.publish("6_WAYPOINT", wayPoint);
+		
+		return true;
+	}
+
 	public void messageReceived(LCM lcm, String channel, LCMDataInputStream dins)
 	{
 		try
@@ -66,8 +77,8 @@ public class RobotGUI implements LCMSubscriber
 			if(channel.equals("6_POSE"))
 			{
 				bot_status = new bot_status_t(dins);
-                drawRobot();
-                drawCovariance();
+                		drawRobot();
+                		drawCovariance();
 			}
 		}
 		catch (IOException e)
