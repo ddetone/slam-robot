@@ -55,6 +55,7 @@ public class WallDetector extends VisEventAdapter
 	float pixelThetas[] = null;
 	int indexLookup[] = null;
 
+	float hsvImage[][] = null;
 
 	int data[];
 
@@ -278,22 +279,26 @@ public class WallDetector extends VisEventAdapter
 	public ArrayList<double []> findTape(){
 
 		ArrayList<double []> maxes = new ArrayList<double []>();
+		
+		int numPostBlue = 0;
 
 		//int maxBlue[] = new int[width];
 		BLUE_STATE state[] = new BLUE_STATE[width];
 
 		Arrays.fill(state, BLUE_STATE.PREBLUE);
 
-		for(int j = height - 1; j >= height-480; j--){
-			for(int i = 0; i < width; i += 10){
+		for(int j = height - 1; ((j >= height - 480) && (numPostBlue < width)); j--){
+			for(int i = 0; ((i < width) && (numPostBlue < width)); i += 10){
 				if(state[i] != BLUE_STATE.POSTBLUE){
-					if(blueScore(data[j * width + i]) > blueThresh){
+					if(blueScore(i, j) > blueThresh){
 					//if((data[j * width + i] & 0x000000ff) > blueThresh){
 						//maxBlue[i] = j;
 						state[i] = BLUE_STATE.POSTBLUE;
+						numPostBlue += 1;
 						maxes.add(new double[]{(double)i, height-(double)j});
 					}else if(state[i] == BLUE_STATE.INBLUE){
 						state[i] = BLUE_STATE.POSTBLUE;
+						numPostBlue += 1;
 						maxes.add(new double[]{(double)i, height-(double)j});
 					}
 				}
@@ -305,12 +310,23 @@ public class WallDetector extends VisEventAdapter
 		
 	}
 
-	public double blueScore(int aRGB){
+	public void convertToHSV(){
+		for(int j = height - 1; j >= height - 480; j--){
+			for(int i = 0; i < width; i++){
+				//System.out.println((height - j) * width + i);
+				int aRGB = data[j * width + i];
+				Color.RGBtoHSB(((aRGB & 0x00FF0000) >> 16), ((aRGB & 0x0000FF00) >> 8), (aRGB & 0x000000FF), hsvImage[(height - (j + 1)) * width + i]);
+				float temp = hsvImage[(height - (j + 1)) * width + i][0];
+				hsvImage[(height - (j + 1)) * width + i][0] = (temp - (int)temp) * 360;
+			}
+		}
+	}
+
+
+	public double blueScore(int i, int j){
 		
-		float hsv[] = new float[3];
-		Color.RGBtoHSB(((aRGB & 0x00FF0000) >> 16), ((aRGB & 0x0000FF00) >> 8), (aRGB & 0x000000FF), hsv);
-		hsv[0] = (hsv[0] - (int)hsv[0]) * 360;
-		int distFromBlue = Math.max(BLUE, (int)hsv[0]) - Math.min(BLUE, (int)hsv[0]);
+		//System.out.println((height - (j + 1)) * width + i);
+		int distFromBlue = Math.max(BLUE, (int)hsvImage[(height - (j + 1)) * width + i][0]) - Math.min(BLUE, (int)hsvImage[(height - (j + 1)) * width + i][0]);
 		return(double)(BLUE - distFromBlue);
 		
 	}
@@ -351,6 +367,7 @@ public class WallDetector extends VisEventAdapter
 		// Initialize visualization environment now that we know the image dimensions
 		width = fmt.width;
 		height = fmt.height;
+		hsvImage = new float[width * 480][3];
 		pixelDists = new float[height * width];
 		pixelThetas = new float[height * width];
 		indexLookup = new int[height * width];
@@ -372,6 +389,7 @@ public class WallDetector extends VisEventAdapter
 			data = ((DataBufferInt) (im.getRaster().getDataBuffer())).getData();
 			
 			calibrate();
+			convertToHSV();
 
 			ArrayList<double []> topBluePixels = findTape();
 			Collections.sort(topBluePixels,new PointComparator());
