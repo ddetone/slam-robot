@@ -9,13 +9,16 @@ if [ -z $1 ]; then
 fi
 
 cd $BOTLAB_HOME/java
-ant clean; ant
 
-ssh $1 mkdir -p $2botlab
+if [ "$2" = "ant" ]; then
+	ant clean; ant
+fi
 
-scp -pr $BOTLAB_HOME/config $1:$2botlab/
-scp -pr $BOTLAB_HOME/java/botlab.jar $1:$2botlab/
-scp -pr $BOTLAB_HOME/lcmtypes $1:$2botlab/
-scp -pr $BOTLAB_HOME/scripts $1:$2botlab/
-ssh $1 mkdir -p $2botlab/data
+ssh $1 'mkdir -p $3botlab; mkdir -p $3botlab/data'
+
+#scp -pr $BOTLAB_HOME/config $1:$2botlab/
+#scp -pr $BOTLAB_HOME/java/botlab.jar $1:$2botlab/
+#scp -pr $BOTLAB_HOME/lcmtypes $1:$2botlab/
+#scp -pr $BOTLAB_HOME/scripts/runproc_panda.sh $1:$2botlab/
+scp -pr $BOTLAB_HOME/scripts/runproc_panda.sh $BOTLAB_HOME/config $BOTLAB_HOME/java/botlab.jar $BOTLAB_HOME/lcmtypes $1:$3botlab/
 
