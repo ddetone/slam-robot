@@ -1,0 +1,7 @@
+struct parameter_t
+{
+	int64_t utime;
+
+	string name; 		//name of the parameter
+	double value;           //amount to set it to
+}

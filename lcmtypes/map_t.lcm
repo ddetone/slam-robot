@@ -1,0 +1,11 @@
+struct map_t
+{
+	int64_t utime;
+
+	int32_t size;
+	int32_t max;
+	double scale;
+
+	int32_t cost[size][size];
+	int32_t knowledge[size][size];
+}
