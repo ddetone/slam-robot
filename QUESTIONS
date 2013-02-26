@@ -9,3 +9,12 @@ How can we use environment variables on remote for an ssh command?
 Log camera and odometry info simultaneously
 
 Do we need to time out for path follower when PoseGenerator dies
+
+
+
+
+THINGS TO IMPLEMENT
+//Ibrahim
+
+-PD controller for path follower?
+-Camera calibration in both x and y.(intrinsics/extrinsics) I have had it figured out. Just need to implement.

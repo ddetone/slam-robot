@@ -10,7 +10,9 @@ import april.jcam.*;
 import april.util.*;
 import april.jmat.*;
 import april.vis.*;
+import lcm.lcm.*;
 
+import botlab.lcmtypes.*;
 
 public class WallDetector extends VisEventAdapter
 {
@@ -50,7 +52,7 @@ public class WallDetector extends VisEventAdapter
 
 	int width = 0;
 	int height = 0;
-	
+
 	float pixelDists[] = null;
 	float pixelThetas[] = null;
 	int indexLookup[] = null;
@@ -69,10 +71,14 @@ public class WallDetector extends VisEventAdapter
 	// homography matrix
 	Matrix H = null;
 
+    LCM lcm;
+
 
 	public WallDetector(ImageSource _is)
 	{
 		is = _is;
+
+        lcm = LCM.getSingleton();
 
 		// Determine which slider values we want
 		pg.addDoubleSlider("calib", "Calibrate Constant", -5000, -1, DEFAULT_CALIBRATE_VAL);
@@ -85,8 +91,8 @@ public class WallDetector extends VisEventAdapter
 		pg.addCheckBoxes("dispBluePixels", "Show Pixels", DEFAULT_DISP_BLUE_PIXELS);
 		pg.addCheckBoxes("dispLines", "Show Lines", DEFAULT_DISP_LINES);
 		pg.addCheckBoxes("dispCorners", "Show Corners", DEFAULT_DISP_CORNERS);
-		
-		
+
+
 		pg.addListener(new ParameterListener() {
 			public void parameterChanged(ParameterGUI pg, String name)
 			{
@@ -100,11 +106,11 @@ public class WallDetector extends VisEventAdapter
 					alf.threshold = threshold;
 				}
 				if(name == "num_steps"){
-					numSteps = pg.gi("num_steps"); 
+					numSteps = pg.gi("num_steps");
 					alf.numSteps = numSteps;
 				}
 				if(name == "point_spread"){
-					pointSpreadMax = pg.gi("point_spread"); 
+					pointSpreadMax = pg.gi("point_spread");
 					alf.pointSpreadMax = pointSpreadMax;
 				}
 				if(name == "cornerAngleThresh"){
@@ -125,8 +131,8 @@ public class WallDetector extends VisEventAdapter
 				}
 			}
 		});
-		
-		
+
+
 		jim.setFit(true);
 		vl.addEventHandler(this);
 		vl.cameraManager.uiLookAt(new double[]{640.0, 480.0, 1000.0}, new double[]{640.0,480.0,0.0}, new double[]{0.0,1.0,0.0}, true);
@@ -143,10 +149,10 @@ public class WallDetector extends VisEventAdapter
 
 
 	public void computeHomography(int numCorrespondences, ArrayList<double[]> realWorld, ArrayList<double[]> pixels){
-		
+
 		// Compute H
 		Matrix j = new Matrix(3 * numCorrespondences, 9);
-	
+
 		for(int i = 0; i < numCorrespondences; i++){
 			j.set(0 + 3 * i, 0, J_Cross( realWorld.get(i)[0], realWorld.get(i)[1], pixels.get(i)[0], pixels.get(i)[1]));
 		}
@@ -159,24 +165,24 @@ public class WallDetector extends VisEventAdapter
 			{htemp[0][0], htemp[1][0], htemp[2][0]},
 			{htemp[3][0], htemp[4][0], htemp[5][0]},
 			{htemp[6][0], htemp[7][0], htemp[8][0]}});
-		
+
 	}
 
 
 	public static double[][] J_Cross(double x, double y, double cx, double cy){
-		
+
 		double cw = 1;
-		
+
 		double[][] jacobian = new double[][]{
 			{     0,     0,   0, -cw*x, -cw*y, -cw,  cy*x,  cy*y,  cy},
 			{  cw*x,  cw*y,  cw,     0,     0,   0, -cx*x, -cx*y, -cx},
 			{ -cy*x, -cy*y, -cy,  cx*x,  cx*y,  cx,     0,     0,   0}};
 
 		return jacobian;
-		
+
 	}
 
-   
+
 	public static float dist2d(float x1, float x2, float y1, float y2)
 	{
 		double X = x2-x1;
@@ -185,61 +191,61 @@ public class WallDetector extends VisEventAdapter
 	}
 
 	public int convertPix(int index)
-	{	
+	{
 		int val;
-		
+
 		//calculate x & y pos
 		int x = index%width;
 		int y = (index - x)/width;
-		
+
 		//x = 750;
 		//y = 550;
-		
+
 		double B = 1.0 / calibrateVal;
 		//double B = 1.0 / pg.gd("calib");
 		double r = (double)pixelDists[y * width + x];
-		
+
 		double th_out = (double)pixelThetas[y * width + x];
-		//double B = pg.gi("calib");	
-		
-		
-		//need to shift x&y so that middle pixel is (0,0) 
+		//double B = pg.gi("calib");
+
+
+		//need to shift x&y so that middle pixel is (0,0)
 		//x = x - width / 2;
 		//y = y - height / 2;
-		
+
 		//System.out.printf("x:%d, y:%d, TH:%f, B:%f\n",x,y,th_out,B);
 		//System.out.printf("before r:%f\n",r);
 		r = r + B*r*r;
 		//System.out.printf("after r:%f\n",r);
-		
-		
+
+
 		int nx = (int)((r * Math.cos(th_out)) + (width / 2));
 		int ny = (int)((r * Math.sin(th_out)) + (height / 2));
-				
+
 		//System.out.printf("nx:%f, ny:%f\n\n",nx,ny);
-		
-		
+
+
 		//nx = nx + (int)(width/2);
 		//ny = ny + (int)(height/2);
-		
+
 		//System.out.printf("nx:%f, ny:%f\n\n",nx,ny);
 
 		if (nx < 0 || nx >= width || ny < 0 || ny >= height) val = -1;
 		else val = ny * width + nx;
-		
+
 		return val;
-	
+
 	}
-	
-	
+
+
 	public void calibrate()
 	{
-	
+
 		int[] temp = new int[data.length];
 		//Arrays.fill(temp, 0);
 
 		int index;
-		
+
 		for (int i = 0; i < height; i++)
 		{
 			for (int j = 0; j < width; j++)
@@ -251,11 +257,11 @@ public class WallDetector extends VisEventAdapter
 					if(temp[index] == 0) temp[index] = data[index];
 					data[i * width + j] = temp[index];
 				}
-			}	
+			}
 		}
-		
-		return;  	
-	
+
+		return;
+
 	}
 
 	public void calculatePixelsState(){
@@ -279,7 +285,7 @@ public class WallDetector extends VisEventAdapter
 	public ArrayList<double []> findTape(){
 
 		ArrayList<double []> maxes = new ArrayList<double []>();
-		
+
 		int numPostBlue = 0;
 
 		//int maxBlue[] = new int[width];
@@ -307,7 +313,7 @@ public class WallDetector extends VisEventAdapter
 
 		maxes.add(new double[]{0,height - 0});
 		return maxes;
-		
+
 	}
 
 	public void convertToHSV(){
@@ -324,13 +330,13 @@ public class WallDetector extends VisEventAdapter
 
 
 	public double blueScore(int i, int j){
-		
+
 		//System.out.println((height - (j + 1)) * width + i);
 		int distFromBlue = Math.max(BLUE, (int)hsvImage[(height - (j + 1)) * width + i][0]) - Math.min(BLUE, (int)hsvImage[(height - (j + 1)) * width + i][0]);
 		return(double)(BLUE - distFromBlue);
-		
+
 	}
-	
+
 	public void run()
 	{
 /*
@@ -354,13 +360,13 @@ public class WallDetector extends VisEventAdapter
 		pixels.add(new double[]{1,447});
 		pixels.add(new double[]{1,454});
 		pixels.add(new double[]{1,459});
-		
+
 		computeHomography(9,pixels,realWorld);
 		Matrix newPoint = Matrix.columnMatrix(new double[]{0,407,1});
 		//H.print();
 		//H.times(newPoint).print();
 		//System.exit(1);
-*/		
+*/
 		is.start();
 		ImageSourceFormat fmt = is.getCurrentFormat();
 
@@ -385,9 +391,9 @@ public class WallDetector extends VisEventAdapter
 
 			// Grab the image, and convert it to gray scale immediately
 			BufferedImage im = ImageConvert.convertToImage(fmt.format, fmt.width, fmt.height, buf);
-			
+
 			data = ((DataBufferInt) (im.getRaster().getDataBuffer())).getData();
-			
+
 			calibrate();
 			convertToHSV();
 
@@ -406,11 +412,36 @@ public class WallDetector extends VisEventAdapter
 			if(dispLongLine){
 				double dist = (-413.1089/(alf.getLongestSeg()[1]-503.80119)-0.30247)*0.3048;
 				vb.addBack(new VisPixCoords(VisPixCoords.ORIGIN.BOTTOM_LEFT,
-						new VzText(VzText.ANCHOR.BOTTOM_LEFT, 
+						new VzText(VzText.ANCHOR.BOTTOM_LEFT,
 						"Longest Segment Mean:" + alf.getLongestSeg()[0] + ", " + alf.getLongestSeg()[1] + "\n" + "Distance to Target:" + dist)));
 			}
 			vb.swap();
-		   
+
+
+
+            //map_features_t map_features = new map_features_t();
+            //map_features.utime = TimeUtil.utime();
+
+            //ArrayList<ArrayList<double[]>> lineSegs = alf.getLineSegs();
+
+            //This code publishes all the line segments but this is not what we need
+            /*map_features.nlineSegs = lineSegs.size();
+            for(int i = 0; i < lineSegs.size() ; i++)
+            {
+                double[] startPoint = lineSegs.get(i).get(0);
+                double[] endPoint   = lineSegs.get(i).get(1);
+
+                map_features.lineSegs[i][0] = startPoint[0];
+                map_features.lineSegs[i][1] = startPoint[1];
+                map_features.lineSegs[i][2] = endPoint[0];
+                map_features.lineSegs[i][3] = endPoint[1];
+            }*/
+
+            //map_features.nlineSegs = 1;
+            //map_features.lineSegs[1][0] = alf.getLongestSeg
+
+            //lcm.publish("6_MAP_FEATURES", map_features);
+
 		}
 	}
 
