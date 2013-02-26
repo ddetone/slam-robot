@@ -57,16 +57,18 @@ public class AgglomerativeLineFitter
 		return longestSeg;
 	}
 
-	public void plotLineSegs(VisWorld.Buffer vb){
+	public void plotLineSegs(VisWorld.Buffer vb, VisChain vc){
 		for(int i = 0; i < lineSegs.size(); i++){
-			vb.addBack(new VisChain(LinAlg.translate(0,0,5),new VzLines(new VisVertexData(lineSegs.get(i)), 
-					VzLines.LINES, new VzLines.Style(Color.red, 4))));
+			vc.add(new VzLines(new VisVertexData(lineSegs.get(i)), 
+					VzLines.LINES, new VzLines.Style(Color.red, 4)));
+			vb.addBack(vc);
 		}
 	}
 
-	public void plotCorners(VisWorld.Buffer vb){
-		vb.addBack(new VisChain(LinAlg.translate(0,0,5),new VzPoints(new VisVertexData(corners),
-					new VzPoints.Style(Color.yellow, 5))));
+	public void plotCorners(VisWorld.Buffer vb, VisChain vc){
+		vc.add(new VzPoints(new VisVertexData(corners),
+					new VzPoints.Style(Color.yellow, 5)));
+		vb.addBack(vc);
 	}
 	
 	public void findSegs(){
