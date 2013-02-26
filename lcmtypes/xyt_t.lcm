@@ -1,0 +1,4 @@
+struct xyt_t
+{
+	double xyt[3];
+}
