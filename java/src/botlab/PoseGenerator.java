@@ -52,6 +52,7 @@ public class PoseGenerator implements LCMSubscriber
 
 		pimu = new Pimu(false);
 		pimu.calibrate();
+
 		//initial uncertainty
 		sigmaA = new double[][]{{0.00001,0,0},
 					{0,0.00001,0},
@@ -139,10 +140,10 @@ public class PoseGenerator implements LCMSubscriber
 		bot.cov = sigmaB;
 
 		lcm.publish("6_POSE",bot);
-		try{
-			Thread.sleep(33);
-		}catch(InterruptedException e)
-		{}
+		//try{
+		//	Thread.sleep(33);
+		//}catch(InterruptedException e)
+		//{}
 
 
 	}
