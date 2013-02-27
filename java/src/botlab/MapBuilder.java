@@ -87,54 +87,74 @@ public class MapBuilder implements LCMSubscriber
 
 				bot_status = new_bot_status;
 			}
-			if(channel.equals("6_WALL"))
+			if(channel.equals("6_FEATURES"))
 			{
-				//TODO: get points
-				double p1[] = new double[2];
-				double p2[] = new double[2];
+				map_features_t features = new map_features_t(dins);
 
-				//add points to map
-				double dist = LinAlg.distance(p1,p2);
-				int nsteps = (int) (dist/map.scale)+1;
-				for(int i = 0; i <= nsteps; ++i){ //for each pixel between p1 and p2
-					double wall_point[] = new double[2];
-					wall_point[0] = p1[0]*(double)i/nsteps + p2[0]*(1.0-(double)i/nsteps);
-					wall_point[1] = p1[1]*(double)i/nsteps + p2[1]*(1.0-(double)i/nsteps);
+				for(int f = 0; f < features.nlineSegs; ++f){
+					double p1[] = new double[2];
+					double p2[] = new double[2];
+					double l1[] = {features.lineSegs[f][0],features.lineSegs[f][1],0};
+					double l2[] = {features.lineSegs[f][2],features.lineSegs[f][3],0};
 
-					//raycast to points
-					double rdist = LinAlg.distance(bot_status.xyt,wall_point,2);
-					int rsteps = (int) (rdist/map.scale)+1;
-					int ray_pixel[] = new int[2];
-					for(int r = 0; r < rsteps; ++r){
-						ray_pixel[0] = (int) ((wall_point[0]*(double)i/nsteps + bot_status.xyt[0]*(1.0-(double)i/nsteps))*map.scale);
-						ray_pixel[1] = (int) ((wall_point[1]*(double)i/nsteps + bot_status.xyt[1]*(1.0-(double)i/nsteps))*map.scale);
-						map.cost[ray_pixel[0]][ray_pixel[1]] = (int) Math.min(map.cost[ray_pixel[0]][ray_pixel[1]],0);
-					}
-					
-					for(int k = 0; k < map.size; ++k){ //calculate costs
-						for(int j = 0; j < map.size; ++j){
+					p1 = LinAlg.xytMultiply(bot_status.xyt, l1);
+					p2 = LinAlg.xytMultiply(bot_status.xyt, l2);
+					/*
+					p1[0] = bot_status.xyt[0] + features.lineSegs[f][0];
+					p1[1] = bot_status.xyt[1] + features.lineSegs[f][1];
 
-							/* use if marginalizing
-							if(k == wall_point[0] * map.scale && j == wall_point[1]*map.scale)	
-								map.cost[k][j] = 255; //highest cost
-							else
-							{
-								int kj[] = {k, j};
-								int wp[] = {wall_point[0] *map.scale, wall_point[1]*map.scale};
-								map.cost[k][j] = 255/(LinAlg.distance(kj,wp)*inverse_cost_decay); //inverse distance decay
+					p2[0] = bot_status.xyt[0] + features.lineSegs[f][2];
+					p2[1] = bot_status.xyt[1] + features.lineSegs[f][3];
+					*/
+
+					//add points to map
+					double dist = LinAlg.distance(p1,p2);
+					int nsteps = (int) (dist/map.scale)+1;
+					for(int i = 0; i <= nsteps; ++i){ //for each pixel between p1 and p2
+						double wall_point[] = new double[2];
+						wall_point[0] = p1[0]*(double)i/nsteps + p2[0]*(1.0-(double)i/nsteps);
+						wall_point[1] = p1[1]*(double)i/nsteps + p2[1]*(1.0-(double)i/nsteps);
+
+						//raycast to points
+						double rdist = LinAlg.distance(bot_status.xyt,wall_point,2);
+						int rsteps = (int) (rdist/map.scale)+1;
+						int ray_pixel[] = new int[2];
+						for(int r = 0; r < rsteps; ++r){
+							ray_pixel[0] = (int) ((wall_point[0]*(double)i/nsteps + bot_status.xyt[0]*(1.0-(double)i/nsteps))*map.scale);
+							ray_pixel[1] = (int) ((wall_point[1]*(double)i/nsteps + bot_status.xyt[1]*(1.0-(double)i/nsteps))*map.scale);
+							map.cost[ray_pixel[0]][ray_pixel[1]] = (int) Math.min(map.cost[ray_pixel[0]][ray_pixel[1]],0);
+							map.knowledge[ray_pixel[0]][ray_pixel[1]] = 1;
+						}
+						
+						for(int k = 0; k < map.size; ++k){ //calculate costs
+							for(int j = 0; j < map.size; ++j){
+
+								//use if marginalizing
+								if(k == wall_point[0] * map.scale && j == wall_point[1]*map.scale)	
+									map.cost[k][j] = 255; //highest cost
+								else
+								{
+									int kj[] = {k, j};
+									int wp[] = {(int) (wall_point[0]/map.scale), (int)(wall_point[1]/map.scale)};
+									map.cost[k][j] = (int) (255/(LinAlg.distance(kj,wp)*inverse_cost_decay)); //inverse distance decay
+								}
+								map.max = 255;
+								
+
+								//use if covariance-ing
+								/*
+								double x_minus_mu[][] = {{j/map.scale - wall_point[0]},{k/map.scale - wall_point[1]}};
+								double cov[][] = {{bot_status.cov[0][0],bot_status.cov[0][1]},{bot_status.cov[1][0],bot_status.cov[1][1]}};
+
+								//Calculate cost
+								//cost = 1 / decay * (x-u)*E^-1*(x-u)^T
+								double[][] chi_squared = LinAlg.multiplyMany(x_minus_mu, LinAlg.inverse(cov),LinAlg.transpose(x_minus_mu));
+								int cost = (int) (1.0/(inverse_cost_decay *chi_squared[0][0]));
+								map.cost[j][k] = Math.max(map.cost[j][k], cost);
+								
+								map.max = Math.max(map.max, cost);
+								*/
 							}
-							*/
-
-							//use if covariance-ing
-							double x_minus_mu[][] = {{j/map.scale - wall_point[0]},{k/map.scale - wall_point[1]}};
-							double cov[][] = {{bot_status.cov[0][0],bot_status.cov[0][1]},{bot_status.cov[1][0],bot_status.cov[1][1]}};
-
-							//Calculate cost
-							//cost = 1 / decay * (x-u)*E^-1*(x-u)^T
-							double[][] chi_squared = LinAlg.multiplyMany(x_minus_mu, LinAlg.inverse(cov),LinAlg.transpose(x_minus_mu));
-							int cost = (int) (1.0/(inverse_cost_decay *chi_squared[0][0]));
-							map.cost[j][k] = Math.max(map.cost[j][k], cost);
-							map.max = Math.max(map.max, cost);
 						}
 					}
 				}
