@@ -33,6 +33,7 @@ public class MapBuilder implements LCMSubscriber
 
 
 	LCM lcm;
+	botlab.PoseTracker tracker;
 	bot_status_t bot_status;
 	map_t map;
 	double dist_traveled;
@@ -45,7 +46,9 @@ public class MapBuilder implements LCMSubscriber
         map = new map_t();
         bot_status = null;
 
-        //lcm.subscribe("6_POSE",this);
+	tracker = botlab.PoseTracker.getSingleton();
+
+        lcm.subscribe("6_POSE",this);
         lcm.subscribe("6_PARAM",this);
         lcm.subscribe("6_FEATURES",this);
         map.scale = 0.06;
@@ -80,7 +83,7 @@ public class MapBuilder implements LCMSubscriber
 					inverse_cost_decay = param.value;
 				}
 			}
-			if(channel.equals("6_POSE"))
+			/*if(channel.equals("6_POSE"))
 			{
 				bot_status_t new_bot_status = new bot_status_t(dins);
 				new_bot_status.xyt[0] += (map.size/2)*map.scale;
@@ -89,17 +92,19 @@ public class MapBuilder implements LCMSubscriber
 				//marginalize(new_bot_status);
 
 				bot_status = new_bot_status;
-			}
-			if(channel.equals("6_FEATURES"))
+			}*/
+			else if(channel.equals("6_FEATURES"))
 			{
-				this.clear();
-				//if(bot_status == null)
-				//	return;
-				
 				map_features_t features = new map_features_t(dins);
-				bot_status = features.bot;
-				bot_status.xyt[0] += (map.size/2)*map.scale;
-				bot_status.xyt[1] += (map.size/2)*map.scale;
+				bot_status = tracker.get(features.utime);
+				
+				if(bot_status == null)
+					return;
+				this.clear();
+				
+				//bot_status = features.bot;
+				//bot_status.xyt[0] += (map.size/2)*map.scale;
+				//bot_status.xyt[1] += (map.size/2)*map.scale;
 
 
 				for(int f = 0; f < features.nlineSegs; ++f){

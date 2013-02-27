@@ -17,7 +17,7 @@ import botlab.lcmtypes.*;
 import lcm.lcm.*;
 
 
-public class ImageProcessing extends VisEventAdapter implements LCMSubscriber
+public class ImageProcessing extends VisEventAdapter
 {
 
 	static final double DEFAULT_CALIBRATE_VAL = -2550;
@@ -37,8 +37,6 @@ public class ImageProcessing extends VisEventAdapter implements LCMSubscriber
 	static final boolean DEFAULT_DISP_CORNERS = false;
 	static final boolean DEFAULT_DISP_TRIANGLES = false;
 	static final boolean DEFAULT_TRIANGLE_COST_MAP = false;
-
-	boolean done = true;
 
 	double calibrateVal = DEFAULT_CALIBRATE_VAL;
 	double threshold = DEFAULT_THRESH_VAL;
@@ -60,6 +58,8 @@ public class ImageProcessing extends VisEventAdapter implements LCMSubscriber
 
 	public enum BLUE_STATE {PREBLUE, INBLUE, POSTBLUE};
 	final int BLUE=230, GREEN=60, YELLOW=60;
+
+	long timeOfImage = 0;
 
 	LCM lcm;
 
@@ -106,7 +106,7 @@ public class ImageProcessing extends VisEventAdapter implements LCMSubscriber
 		is = _is;
 
 		lcm = LCM.getSingleton();
-		lcm.subscribe("6_POSE", this);
+		//lcm.subscribe("6_POSE", this);
 		
 		dispGUI = _dispGUI;
 
@@ -209,7 +209,7 @@ public class ImageProcessing extends VisEventAdapter implements LCMSubscriber
 		}
 	}
 
-
+/*
 	public void messageReceived(LCM lcm, String channel, LCMDataInputStream dins)
 	{
 		try
@@ -218,14 +218,13 @@ public class ImageProcessing extends VisEventAdapter implements LCMSubscriber
 			{
 				if(done){
 					lastPose = new bot_status_t(dins);
-					done = false;
 				}
 			}
 		}catch(IOException e){
 			e.printStackTrace();
 		}
 	}
-
+*/
 
 	public boolean mouseMoved(VisCanvas vc, VisLayer vl, VisCanvas.RenderInfo rinfo, GRay3D ray, MouseEvent e)
 	{
@@ -402,26 +401,31 @@ public class ImageProcessing extends VisEventAdapter implements LCMSubscriber
 		double f = 672.07;
 		double cx = 620.82;
 		double cy = 456.58;
-		double h = 0.21;
+		double h = 0.68898;
 		features.nlineSegs = lineSegs.size();
 		features.lineSegs = new double[features.nlineSegs][4];
 		for(int i = 0; i < features.nlineSegs; i++){
-			features.lineSegs[i][0] = (lineSegs.get(i).get(0)[0] - cx) / (lineSegs.get(i).get(0)[1] - cy) * h;
-			features.lineSegs[i][1] = f * h / (lineSegs.get(i).get(0)[1] - cy);
-			features.lineSegs[i][2] = (lineSegs.get(i).get(1)[0] - cx) / (lineSegs.get(i).get(1)[1] - cy) * h;
-			features.lineSegs[i][3] = f * h / (lineSegs.get(i).get(1)[1] - cy);
+			ArrayList<double[]> line = lineSegs.get(i);
+			double[] lineStart = line.get(0);
+			double[] lineEnd = line.get(1);
+			features.lineSegs[i][0] = (lineStart[0] - cx) / (lineStart[1] - cy) * h * 0.3048;
+			features.lineSegs[i][1] = f * h / (lineStart[1] - cy) * 0.3048;
+			features.lineSegs[i][2] = (lineEnd[0] - cx) / (lineEnd[1] - cy) * h * 0.3048;
+			features.lineSegs[i][3] = f * h / (lineEnd[1] - cy) * 0.3048;
 		}
 
 		
 		features.ntriangles = triangles.numTriangles;
 		features.triangles = new double[features.ntriangles][2];
 		for(int i = 0; i < features.ntriangles; i++){
-			features.triangles[i][0] = triangles.getMean(i)[0];
-			features.triangles[i][1] = triangles.getMean(i)[1];
+			double[] mean = triangles.getMean(i);
+			features.triangles[i][0] = (mean[0] - cx) / (mean[1] - cy) * h * 0.3048;
+			features.triangles[i][1] = f * h / (mean[1] - cy) * 0.3048;
 		}
-		features.bot=lastPose;
+		if(lastPose == null)lastPose = new bot_status_t();
+		//features.bot=lastPose;
+		features.utime = timeOfImage;
 		lcm.publish("6_FEATURES", features);
-		done = true;
 	}
 
 
@@ -726,6 +730,7 @@ public class ImageProcessing extends VisEventAdapter implements LCMSubscriber
 			if (buf == null)
 				continue;
 
+			timeOfImage = TimeUtil.utime();
 			// Grab the image, and convert it to gray scale immediately
 			BufferedImage im = ImageConvert.convertToImage(fmt.format, fmt.width, fmt.height, buf);
 			

@@ -45,7 +45,7 @@ public class Pimu implements LCMSubscriber
 	public static double prev_time,time;
 	public static int num_calibs;
 
-	LCM lcm = LCM.getSingleton();
+	LCM lcm;
 	pimu_t gyros;
 	boolean calibrating;
 	boolean calibdone;
@@ -88,7 +88,6 @@ public class Pimu implements LCMSubscriber
 				prev_accel[i] = 0;
 				sum_accel[i] = 0;
 				XYZdot[i] = 0;
-				RPYdot[i] = 0;
 			}
 			prev_integrator[i] = 0;
 			sum_angvel[i] = 0;
@@ -96,6 +95,7 @@ public class Pimu implements LCMSubscriber
 		}
 
 		//Create singleton and subscribe to LCM	
+		lcm = LCM.getSingleton();
 		lcm.subscribe("6_PIMU", this);
 		
 	}
@@ -277,7 +277,7 @@ public class Pimu implements LCMSubscriber
 		{	
 			return(new double[]{0,0,0});
 		}
-		return (RPYdot);
+		return (new double[]{RPYdot[0], RPYdot[1], RPYdot[2]});
 	}
 	public double[] getXYZdot() 
 	{
@@ -285,7 +285,7 @@ public class Pimu implements LCMSubscriber
 		{
 			return(new double[]{0,0,0});
 		}
-		return (RPYdot);
+		return (new double[]{XYZdot[0], XYZdot[1], XYZdot[2]});
 	}
 	public double getTimeDiff(){return (time-prev_time);}	
 }	

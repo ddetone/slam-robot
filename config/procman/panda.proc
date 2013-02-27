@@ -17,7 +17,7 @@ proc# : process {
 }
 
 proc# : process {
-    cmd = "$ARL_HOME/bin/pimud -u -p 6";
+    cmd = "$ARL_HOME/bin/pimud -u -c 6_PIMU";
     name = "Pimu Driver";
 }
 
@@ -29,6 +29,11 @@ proc# : process {
 proc# : process {
     cmd = "java botlab.MapBuilder";
     name = "Map Builder";
+}
+
+proc# : process {
+    cmd = "java botlab.ImageProcessing dc1394://b09d0100aea34b";
+    name = "Image Recognition";
 }
 
 //proc# : process {
