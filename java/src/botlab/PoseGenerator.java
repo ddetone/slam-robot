@@ -63,7 +63,7 @@ public class PoseGenerator implements LCMSubscriber
 	{
 		try
 		{
-			if(channel.equals("MOTOR_FEEDBACK"))
+			if(channel.equals("6_MOTOR_FEEDBACK"))
 			{
 				motors = new motor_feedback_t(dins);
 				generatePose();

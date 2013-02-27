@@ -131,7 +131,7 @@ public class PathFollower implements LCMSubscriber
 		motor.left = (float)left;
 		motor.right = (float)right;
 
-		lcm.publish("DIFF_DRIVE", motor);
+		lcm.publish("6_DIFF_DRIVE", motor);
 	}
 
 	//goToPoint(double x, double y, double theta)

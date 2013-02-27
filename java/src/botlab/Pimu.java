@@ -110,7 +110,7 @@ public class Pimu implements LCMSubscriber
 	
 		try
 		{
-			if(channel.equals("PIMU"))
+			if(channel.equals("6_PIMU"))
 			{
 				gyros = new pimu_t(dins);
 				
