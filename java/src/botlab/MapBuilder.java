@@ -46,9 +46,12 @@ public class MapBuilder implements LCMSubscriber
         bot_status = null;
 
         lcm.subscribe("6_POSE",this);
+        lcm.subscribe("6_PARAM",this);
+        lcm.subscribe("6_FEATURES",this);
         map.scale = 0.06;
         map.size = (int) (10.0/map.scale);
         map.cost = new int[(int) map.size][(int) map.size];
+        map.knowledge = new int[(int) map.size][(int) map.size];
         dist_traveled = 0.0;
     }
 
@@ -80,13 +83,8 @@ public class MapBuilder implements LCMSubscriber
 			if(channel.equals("6_POSE"))
 			{
 				bot_status_t new_bot_status = new bot_status_t(dins);
-				new_bot_status.xyt[0] += (map.size/2)/map.scale;
-				new_bot_status.xyt[1] += (map.size/2)/map.scale;
-				System.out.println("utime:" + bot_status.utime);
-				System.out.println("X:" + bot_status.xyt[0]);
-				System.out.println("Y:" + bot_status.xyt[1]);
-				System.out.println("T:" + bot_status.xyt[2]);
-				System.out.println();
+				new_bot_status.xyt[0] += (map.size/2)*map.scale;
+				new_bot_status.xyt[1] += (map.size/2)*map.scale;
 
 				//marginalize(new_bot_status);
 
@@ -96,9 +94,11 @@ public class MapBuilder implements LCMSubscriber
 			{
 				if(bot_status == null)
 					return;
+				
 				map_features_t features = new map_features_t(dins);
 
 				for(int f = 0; f < features.nlineSegs; ++f){
+					System.out.println(f);
 					double p1[] = new double[2];
 					double p2[] = new double[2];
 					double l1[] = {features.lineSegs[f][0],features.lineSegs[f][1],0};
@@ -115,8 +115,9 @@ public class MapBuilder implements LCMSubscriber
 					*/
 
 					//add points to map
-					double dist = LinAlg.distance(p1,p2);
+					double dist = LinAlg.distance(p1,p2,2);
 					int nsteps = (int) (dist/map.scale)+1;
+
 					for(int i = 0; i <= nsteps; ++i){ //for each pixel between p1 and p2
 						double wall_point[] = new double[2];
 						wall_point[0] = p1[0]*(double)i/nsteps + p2[0]*(1.0-(double)i/nsteps);
@@ -130,20 +131,22 @@ public class MapBuilder implements LCMSubscriber
 							ray_pixel[0] = (int) ((wall_point[0]*(double)i/nsteps + bot_status.xyt[0]*(1.0-(double)i/nsteps))*map.scale);
 							ray_pixel[1] = (int) ((wall_point[1]*(double)i/nsteps + bot_status.xyt[1]*(1.0-(double)i/nsteps))*map.scale);
 							map.cost[ray_pixel[0]][ray_pixel[1]] = (int) Math.min(map.cost[ray_pixel[0]][ray_pixel[1]],0);
-							map.knowledge[ray_pixel[0]][ray_pixel[1]] = 1;
+							//map.knowledge[ray_pixel[0]][ray_pixel[1]] = 1;
 						}
 						
+
+						System.out.println((wall_point[0]/map.scale)+ ", " +(int)(wall_point[1]/map.scale));
 						for(int k = 0; k < map.size; ++k){ //calculate costs
 							for(int j = 0; j < map.size; ++j){
 
 								//use if marginalizing
-								if(k == wall_point[0] * map.scale && j == wall_point[1]*map.scale)	
+								if(k == (int) (wall_point[0] / map.scale) && j == (int) (wall_point[1]/map.scale))	
 									map.cost[k][j] = 255; //highest cost
 								else
 								{
 									int kj[] = {k, j};
 									int wp[] = {(int) (wall_point[0]/map.scale), (int)(wall_point[1]/map.scale)};
-									map.cost[k][j] = (int) (255/(LinAlg.distance(kj,wp)*inverse_cost_decay)); //inverse distance decay
+									//map.cost[k][j] = Math.max(map.cost[k][j], Math.min(255, (int) (255.0/(LinAlg.distance(kj,wp)*inverse_cost_decay)))); //inverse distance decay
 								}
 								map.max = 255;
 								
@@ -165,6 +168,8 @@ public class MapBuilder implements LCMSubscriber
 						}
 					}
 				}
+
+				
 
 				lcm.publish("6_MAP",map);
 			}

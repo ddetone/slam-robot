@@ -54,7 +54,7 @@ public class MapGUI implements LCMSubscriber
 		});
 
         this.lcm =  LCM.getSingleton();
-        lcm.subscribe("6_POSE",this);
+        lcm.subscribe("6_MAP",this);
 
         jf.setLayout(new BorderLayout());
         jf.add(vc, BorderLayout.CENTER);
@@ -73,7 +73,7 @@ public class MapGUI implements LCMSubscriber
                                   new double[] {0.07774, 0.36127,  0.92922 }, true);
 
         VisWorld.Buffer vb = vw.getBuffer("Ground");
-        vb.addBack(new VisChain(LinAlg.translate(0,0,-0.025),new VzBox(30,30,0.05,new VzMesh.Style(Color.darkGray))));
+        
         vb.swap();
     }
 
@@ -98,7 +98,7 @@ public class MapGUI implements LCMSubscriber
     	VisWorld.Buffer vb = vw.getBuffer("Robot");
         for(int i = 0; i < map.size; ++i){
         	for(int j = 0; j < map.size; ++j){
-        		VzBox mapBox = new VzBox(map.scale,map.scale,(map.cost[i][j]/map.max)*map.scale, new VzMesh.Style(Color.red));
+        		VzBox mapBox = new VzBox(map.scale,map.scale,(map.cost[i][j]/map.max)*map.scale*5, new VzMesh.Style(Color.red));
         		VisObject vo_mapBox = new VisChain(LinAlg.translate(i*map.scale,j*map.scale,0.0),mapBox);
         		vb.addBack(vo_mapBox);
         	}
