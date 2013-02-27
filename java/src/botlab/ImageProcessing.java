@@ -13,6 +13,9 @@ import april.jmat.*;
 import april.vis.*;
 import april.jmat.geom.*;
 
+import botlab.lcmtypes.*;
+import lcm.lcm.*;
+
 
 public class ImageProcessing extends VisEventAdapter 
 {
@@ -56,6 +59,8 @@ public class ImageProcessing extends VisEventAdapter
 	public enum BLUE_STATE {PREBLUE, INBLUE, POSTBLUE};
 	final int BLUE=230, GREEN=60, YELLOW=60;
 
+	LCM lcm;
+
 	ImageSource is;
 
 	JFrame jf = new JFrame("Image Processing");
@@ -67,6 +72,8 @@ public class ImageProcessing extends VisEventAdapter
 	int height = 0;
 	
 	final int searchHeight = 500;
+	//WRONG NUMBER BELOW
+	final double TRIANGLE_HEIGHT = 0.3;
 
 	float pixelDists[] = null;
 	float pixelThetas[] = null;
@@ -74,6 +81,7 @@ public class ImageProcessing extends VisEventAdapter
 
 	float hsvImage[][] = null;
 	float checkHSV[] = new float[3];;
+	int mouse[] = new int[2];
 
 	int data[];
 
@@ -91,6 +99,8 @@ public class ImageProcessing extends VisEventAdapter
 	public ImageProcessing(ImageSource _is)
 	{
 		is = _is;
+
+		lcm = LCM.getSingleton();
 
 		// Determine which slider values we want
 		pg.addDoubleSlider("calib", "Calibrate Constant", -5000, -1, DEFAULT_CALIBRATE_VAL);
@@ -193,6 +203,7 @@ public class ImageProcessing extends VisEventAdapter
 		double[] _pixel = ray.intersectPlaneXY();
 		int[] pixel = new int[]{(int)_pixel[0], (int)_pixel[1]};
 		pixel[1] = height - pixel[1];
+		mouse = pixel;
 		if((pixel[1] >= height - searchHeight) && (pixel[1] > 0) && (pixel[1] < height) && (pixel[0] > 0) && (pixel[0] < width)) checkHSV = hsvImage[(pixel[1] - height + searchHeight) * width + pixel[0]];
 		else checkHSV = new float[]{pixel[1],0F,0F};
 		return false;
@@ -354,17 +365,46 @@ public class ImageProcessing extends VisEventAdapter
 		}
 	}
 
+	public void publish(Triangles triangles, ArrayList<ArrayList<double[]> > lineSegs){
+		map_features_t features = new map_features_t();
+		
+		features.nlineSegs = lineSegs.size();
+		features.lineSegs = new double[features.nlineSegs][4];
+		for(int i = 0; i < features.nlineSegs; i++){
+			features.lineSegs[i][0] = pixelToDistanceX(lineSegs.get(i).get(0)[0], 0);
+			features.lineSegs[i][1] = lineSegs.get(i).get(0)[1];
+			features.lineSegs[i][2] = pixelToDistanceX(lineSegs.get(i).get(1)[0], 0);
+			features.lineSegs[i][3] = lineSegs.get(i).get(1)[1];
+		}
+
+		
+		features.ntriangles = triangles.numTriangles;
+		features.triangles = new double[features.ntriangles][2];
+		for(int i = 0; i < features.ntriangles; i++){
+			features.triangles[i][0] = pixelToDistanceX(triangles.getMean(i)[0], TRIANGLE_HEIGHT);
+			features.triangles[i][1] = triangles.getMean(i)[1];
+		}
+		lcm.publish("6_FEATURES", features);
+	}
+
 
 	public class Triangles{
 		ArrayList<double[]> means;
 		ArrayList<int[]> boundingBoxes;
+		
+		int numTriangles = 0;
 
 		Triangles(){
 			boundingBoxes = new ArrayList<int[]>();;
 			means = new ArrayList<double[]>();
 		}
 
+		public double[] getMean(int i){
+			return means.get(i);
+		}
+
 		public void addTriangle(double[] _mean, int[] _bounds){
+			numTriangles++;
 			double tempMean[] = new double[2];
 			int tempBoundingBox[] = new int[4];
 			System.arraycopy( _mean, 0, tempMean, 0, _mean.length );
@@ -467,7 +507,7 @@ public class ImageProcessing extends VisEventAdapter
 					
 				triangles.addTriangle(cluster.getMean(), 
 						cluster.boundingBox());
-				drawBox(cluster.boundingBox(), 0xffff0000);
+				if(dispTriangles)drawBox(cluster.boundingBox(), 0xffff0000);
 					
 				
 			}
@@ -674,20 +714,22 @@ public class ImageProcessing extends VisEventAdapter
 			vb.addBack(new VzImage(im, VzImage.FLIP));
 			vb.addBack(chain);
 			if(dispLongLine){
-				double dist = pixelToDistance(alf.getLongestSeg()[1]);
+				double dist = pixelToDistanceX(alf.getLongestSeg()[1], 0);
 				vb.addBack(new VisPixCoords(VisPixCoords.ORIGIN.BOTTOM_LEFT,
 						new VzText(VzText.ANCHOR.BOTTOM_LEFT, 
 						"Longest Segment Mean:" + alf.getLongestSeg()[0] + ", " + alf.getLongestSeg()[1] + "\n" + "Distance to Target:" + dist)));
 			}
 			vb.addBack(new VisPixCoords(VisPixCoords.ORIGIN.BOTTOM_LEFT,
-					new VzText(VzText.ANCHOR.BOTTOM_LEFT, "hue: " + checkHSV[0] + "\nsaturation: " + checkHSV[1] + "\nvalue: " + checkHSV[2])));
+					new VzText(VzText.ANCHOR.BOTTOM_LEFT, "hue: " + checkHSV[0] + "\nsaturation: " + checkHSV[1] + "\nvalue: " + checkHSV[2] + "\nmouse:" + mouse[0] + ", " + mouse[1])));
+			
+			publish(triangles, alf.getLineSegs());
 					
 			vb.swap();
 		   
 		}
 	}
 
-	public static double pixelToDistance(double pixelY){
+	public static double pixelToDistanceX(double pixelY, double BLAH){
 		return (-413.1089 / (pixelY - 503.80119) - 0.30247) * 0.3048;
 	}
 	

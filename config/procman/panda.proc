@@ -17,12 +17,12 @@ proc# : process {
 }
 
 proc# : process {
-    cmd = "$ARL_HOME/bin/motordriver";
+    cmd = "$ARL_HOME/bin/motordriver -p 6";
     name = "Motor Driver";
 }
 
 proc# : process {
-    cmd = "$ARL_HOME/bin/pimud -u";
+    cmd = "$ARL_HOME/bin/pimud -u -p 6";
     name = "Pimu Driver";
 }
 

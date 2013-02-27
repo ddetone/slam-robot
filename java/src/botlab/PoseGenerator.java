@@ -48,7 +48,7 @@ public class PoseGenerator implements LCMSubscriber
 	PoseGenerator()
 	{
 		this.lcm = LCM.getSingleton();
-		lcm.subscribe("MOTOR_FEEDBACK", this);
+		lcm.subscribe("6_MOTOR_FEEDBACK", this);
 
 		pimu = new Pimu(false);
 		pimu.calibrate();

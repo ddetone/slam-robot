@@ -96,7 +96,7 @@ public class Pimu implements LCMSubscriber
 		}
 
 		//Create singleton and subscribe to LCM	
-		lcm.subscribe("PIMU", this);
+		lcm.subscribe("6_PIMU", this);
 		
 	}
 	
