@@ -44,6 +44,8 @@ public class PathPlanner implements LCMSubscriber
 			if(channel.equals("6_POSE"))
 			{
 				status = new bot_status_t(dins);
+				status.xyt[0] += (map.size/2)/map.scale;
+				status.xyt[0] += (map.size/2)/map.scale;
 			}
 			if(channel.equals("6_GOAL"))
 			{

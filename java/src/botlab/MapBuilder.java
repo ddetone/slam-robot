@@ -42,9 +42,12 @@ public class MapBuilder implements LCMSubscriber
     MapBuilder()
     {
         this.lcm =  LCM.getSingleton();
+        map = new map_t();
+        bot_status = null;
+
         lcm.subscribe("6_POSE",this);
         map.scale = 0.06;
-        map.size = (int) (5.0/map.scale);
+        map.size = (int) (10.0/map.scale);
         map.cost = new int[(int) map.size][(int) map.size];
         dist_traveled = 0.0;
     }
@@ -77,6 +80,8 @@ public class MapBuilder implements LCMSubscriber
 			if(channel.equals("6_POSE"))
 			{
 				bot_status_t new_bot_status = new bot_status_t(dins);
+				new_bot_status.xyt[0] += (map.size/2)/map.scale;
+				new_bot_status.xyt[1] += (map.size/2)/map.scale;
 				System.out.println("utime:" + bot_status.utime);
 				System.out.println("X:" + bot_status.xyt[0]);
 				System.out.println("Y:" + bot_status.xyt[1]);
@@ -89,6 +94,8 @@ public class MapBuilder implements LCMSubscriber
 			}
 			if(channel.equals("6_FEATURES"))
 			{
+				if(bot_status == null)
+					return;
 				map_features_t features = new map_features_t(dins);
 
 				for(int f = 0; f < features.nlineSegs; ++f){
@@ -186,13 +193,17 @@ public class MapBuilder implements LCMSubscriber
 		}
 	}
 
-	public static void main(String[] args) throws Exception
+	public static void main(String[] args)
 	{
 		MapBuilder mb = new MapBuilder();
 
         while(true)
         {
-            Thread.sleep(1000);
+        	try{
+            	Thread.sleep(1000);
+            }catch(InterruptedException e){
+
+            }
         }
 
 
