@@ -41,6 +41,7 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 		this.lcm =  LCM.getSingleton();
 		lcm.subscribe("6_POSE",this);
 		lcm.subscribe("6_BATTERY",this);
+		lcm.subscribe("6_MAP",this);
 
 		jf.setLayout(new BorderLayout());
 		jf.add(vc, BorderLayout.CENTER);
@@ -89,6 +90,24 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 		}else return false;
 	}
 
+
+	public void drawMap(map_t map)
+	{
+		VisWorld.Buffer vb = vw.getBuffer("Map");
+		for(int i = 0; i < map.size; ++i){
+			for(int j = 0; j < map.size; ++j){
+				if(map.cost[i][j] > 10){
+					VzBox mapBox = new VzBox(map.scale,map.scale,(map.cost[i][j]/map.max)*map.scale*5, new VzMesh.Style(Color.red));
+					VisObject vo_mapBox = new VisChain(LinAlg.translate(i*map.scale-map.size/2*map.scale,j*map.scale-map.size/2*map.scale,0.0),mapBox);
+					vb.addBack(vo_mapBox);
+				}
+			}
+		}
+
+		vb.swap();
+	}
+
+
 	public void messageReceived(LCM lcm, String channel, LCMDataInputStream dins)
 	{
 		try
@@ -106,6 +125,11 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 				
 				if(battery.voltage < 11)vb.addBack(new VisPixCoords(VisPixCoords.ORIGIN.CENTER, new VzText(VzText.ANCHOR.CENTER, "LOW BATTERY VOLTAGE:" + battery.voltage )));
 				
+			}
+			if(channel.equals("6_MAP"))
+			{
+				map_t map = new map_t(dins);
+				drawMap(map);
 			}
 		}
 		catch (IOException e)

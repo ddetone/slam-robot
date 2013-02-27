@@ -45,7 +45,7 @@ public class MapBuilder implements LCMSubscriber
         map = new map_t();
         bot_status = null;
 
-        lcm.subscribe("6_POSE",this);
+        //lcm.subscribe("6_POSE",this);
         lcm.subscribe("6_PARAM",this);
         lcm.subscribe("6_FEATURES",this);
         map.scale = 0.06;
@@ -92,17 +92,22 @@ public class MapBuilder implements LCMSubscriber
 			}
 			if(channel.equals("6_FEATURES"))
 			{
-				if(bot_status == null)
-					return;
+				this.clear();
+				//if(bot_status == null)
+				//	return;
 				
 				map_features_t features = new map_features_t(dins);
+				bot_status = features.bot;
+				bot_status.xyt[0] += (map.size/2)*map.scale;
+				bot_status.xyt[1] += (map.size/2)*map.scale;
+
 
 				for(int f = 0; f < features.nlineSegs; ++f){
-					System.out.println(f);
+					//System.out.println(f);
 					double p1[] = new double[2];
 					double p2[] = new double[2];
-					double l1[] = {features.lineSegs[f][0],features.lineSegs[f][1],0};
-					double l2[] = {features.lineSegs[f][2],features.lineSegs[f][3],0};
+					double l1[] = {features.lineSegs[f][1],-features.lineSegs[f][0],0};
+					double l2[] = {features.lineSegs[f][3],-features.lineSegs[f][2],0};
 
 					p1 = LinAlg.xytMultiply(bot_status.xyt, l1);
 					p2 = LinAlg.xytMultiply(bot_status.xyt, l2);
@@ -135,7 +140,7 @@ public class MapBuilder implements LCMSubscriber
 						}
 						
 
-						System.out.println((wall_point[0]/map.scale)+ ", " +(int)(wall_point[1]/map.scale));
+						//System.out.println((wall_point[0]/map.scale)+ ", " +(int)(wall_point[1]/map.scale));
 						for(int k = 0; k < map.size; ++k){ //calculate costs
 							for(int j = 0; j < map.size; ++j){
 

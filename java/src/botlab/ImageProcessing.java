@@ -17,7 +17,7 @@ import botlab.lcmtypes.*;
 import lcm.lcm.*;
 
 
-public class ImageProcessing extends VisEventAdapter 
+public class ImageProcessing extends VisEventAdapter implements LCMSubscriber
 {
 
 	static final double DEFAULT_CALIBRATE_VAL = -2550;
@@ -37,6 +37,8 @@ public class ImageProcessing extends VisEventAdapter
 	static final boolean DEFAULT_DISP_CORNERS = false;
 	static final boolean DEFAULT_DISP_TRIANGLES = false;
 	static final boolean DEFAULT_TRIANGLE_COST_MAP = false;
+
+	boolean done = true;
 
 	double calibrateVal = DEFAULT_CALIBRATE_VAL;
 	double threshold = DEFAULT_THRESH_VAL;
@@ -63,10 +65,10 @@ public class ImageProcessing extends VisEventAdapter
 
 	ImageSource is;
 
-	JFrame jf = new JFrame("Image Processing");
-	JImage jim = new JImage();
+	JFrame jf; 
+	JImage jim;
 
-	ParameterGUI pg = new ParameterGUI();
+	ParameterGUI pg;
 
 	int width = 0;
 	int height = 0;
@@ -85,9 +87,11 @@ public class ImageProcessing extends VisEventAdapter
 
 	int data[];
 
-        static VisWorld vw = new VisWorld();
-        static VisLayer vl  = new VisLayer(vw);
-        static VisCanvas vc = new VisCanvas(vl);
+	bot_status_t lastPose;
+
+        static VisWorld vw;
+        static VisLayer vl;
+        static VisCanvas vc;
 	static VisWorld.Buffer vb;
 
 	static AgglomerativeLineFitter alf = null;
@@ -95,107 +99,132 @@ public class ImageProcessing extends VisEventAdapter
 	// homography matrix
 	Matrix H = null;
 
+	boolean dispGUI;
 
-	public ImageProcessing(ImageSource _is)
+	public ImageProcessing(ImageSource _is, boolean _dispGUI)
 	{
 		is = _is;
 
 		lcm = LCM.getSingleton();
-
-		// Determine which slider values we want
-		pg.addDoubleSlider("calib", "Calibrate Constant", -5000, -1, DEFAULT_CALIBRATE_VAL);
-		pg.addDoubleSlider("greenThresh", "Green Hue Mean", 0, 360, DEFAULT_GREEN_THRESH);
-		pg.addDoubleSlider("satThresh", "Saturation Mean", 0, 1, DEFAULT_SAT_THRESH);
-		pg.addDoubleSlider("valThresh", "Value Mean", 0, 1, DEFAULT_VALUE_THRESH);
-		pg.addDoubleSlider("halfBoxThresh", "Half Box Thresh", 0, 500, DEFAULT_HALF_BOX_THRESH);
-
-		pg.addDoubleSlider("blueThresh", "Blue Thresh", 0, 360, DEFAULT_BLUE_THRESH);
-		pg.addDoubleSlider("thresh", "Line Error Threshold", 0, 200,DEFAULT_THRESH_VAL);
-		pg.addIntSlider("num_steps", "Line Fit Num Steps", 0,200,DEFAULT_NUM_STEPS);
-		pg.addIntSlider("point_spread", "Line Point Spread Max", 0,100,DEFAULT_POINT_SPREAD);
-		pg.addDoubleSlider("cornerAngleThresh", "Line Intersection (Corner) Angle Threshold", 0,1,DEFAULT_CORNER_ANG_THRESH);
-
-		pg.addCheckBoxes("dispLongLine", "Show Longest Line Mean", DEFAULT_DISP_LONG_LINE);
-		pg.addCheckBoxes("dispBluePixels", "Show Pixels", DEFAULT_DISP_BLUE_PIXELS);
-		pg.addCheckBoxes("dispLines", "Show Lines", DEFAULT_DISP_LINES);
-		pg.addCheckBoxes("dispCorners", "Show Corners", DEFAULT_DISP_CORNERS);
-		pg.addCheckBoxes("dispTriangles", "Show Triangles", DEFAULT_DISP_TRIANGLES);
-		pg.addCheckBoxes("dispTriMap", "Show Triangle Cost Map", DEFAULT_TRIANGLE_COST_MAP);
+		lcm.subscribe("6_POSE", this);
 		
-		
-		pg.addListener(new ParameterListener() {
-			public void parameterChanged(ParameterGUI pg, String name)
-			{
-				if(name == "valThresh"){
-					valueThresh = pg.gd("valThresh");
-				}
-				if(name == "satThresh"){
-					saturationThresh = pg.gd("satThresh");
-				}
-				if(name == "calib"){
-					calibrateVal = pg.gd("calib");
-					calculateLookupTable();
-				}
-				else if(name == "blueThresh")blueThresh = pg.gd("blueThresh");
-				else if(name == "thresh"){
-					threshold = pg.gd("thresh");
-					alf.threshold = threshold;
-				}
-				else if(name == "num_steps"){
-					numSteps = pg.gi("num_steps"); 
-					alf.numSteps = numSteps;
-				}
-				else if(name == "point_spread"){
-					pointSpreadMax = pg.gi("point_spread"); 
-					alf.pointSpreadMax = pointSpreadMax;
-				}
-				else if(name == "cornerAngleThresh"){
-					cornerAngleThresh = pg.gd("cornerAngleThresh");
-					alf.cornerAngleThresh = cornerAngleThresh;
-				}
-				else if(name == "dispLongLine"){
-					dispLongLine = pg.gb("dispLongLine");
-				}
-				else if(name == "dispBluePixels"){
-					dispBluePixels = pg.gb("dispBluePixels");
-				}
-				else if(name == "dispLines"){
-					dispLines = pg.gb("dispLines");
-				}
-				else if(name == "dispCorners"){
-					dispCorners = pg.gb("dispCorners");
-				}
-				else if(name == "dispTriangles"){
-					dispTriangles = pg.gb("dispTriangles");
-				}
-				else if(name == "greenThresh"){
-					greenThresh = pg.gd("greenThresh");
-				}
-				else if(name == "halfBoxThresh"){
-					halfBoxThresh = pg.gd("halfBoxThresh");
-				}
-				else if(name == "dispTriMap"){
-					dispTriMap = pg.gb("dispTriMap");
-				}
-			}
-		});
-		
-		
-		jim.setFit(true);
-		vl.addEventHandler(this);
-		vl.cameraManager.uiLookAt(new double[]{640.0, 480.0, 1000.0}, new double[]{640.0,480.0,0.0}, new double[]{0.0,1.0,0.0}, true);
+		dispGUI = _dispGUI;
 
-		// Setup window layout
-		jf.setLayout(new BorderLayout());
-		jf.add(vc, BorderLayout.CENTER);
-		vb = vw.getBuffer("ImageProcessing");
-		jf.add(pg, BorderLayout.SOUTH);
-		jf.setSize(1024, 768);
-		jf.setVisible(true);
-		jf.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		if(dispGUI){
+			vw = new VisWorld();
+			vl  = new VisLayer(vw);
+			vc = new VisCanvas(vl);
+			pg  = new ParameterGUI();
+			// Determine which slider values we want
+			pg.addDoubleSlider("calib", "Calibrate Constant", -5000, -1, DEFAULT_CALIBRATE_VAL);
+			pg.addDoubleSlider("greenThresh", "Green Hue Mean", 0, 360, DEFAULT_GREEN_THRESH);
+			pg.addDoubleSlider("satThresh", "Saturation Mean", 0, 1, DEFAULT_SAT_THRESH);
+			pg.addDoubleSlider("valThresh", "Value Mean", 0, 1, DEFAULT_VALUE_THRESH);
+			pg.addDoubleSlider("halfBoxThresh", "Half Box Thresh", 0, 500, DEFAULT_HALF_BOX_THRESH);
+
+			pg.addDoubleSlider("blueThresh", "Blue Thresh", 0, 360, DEFAULT_BLUE_THRESH);
+			pg.addDoubleSlider("thresh", "Line Error Threshold", 0, 200,DEFAULT_THRESH_VAL);
+			pg.addIntSlider("num_steps", "Line Fit Num Steps", 0,200,DEFAULT_NUM_STEPS);
+			pg.addIntSlider("point_spread", "Line Point Spread Max", 0,100,DEFAULT_POINT_SPREAD);
+			pg.addDoubleSlider("cornerAngleThresh", "Line Intersection (Corner) Angle Threshold", 0,1,DEFAULT_CORNER_ANG_THRESH);
+
+			pg.addCheckBoxes("dispLongLine", "Show Longest Line Mean", DEFAULT_DISP_LONG_LINE);
+			pg.addCheckBoxes("dispBluePixels", "Show Pixels", DEFAULT_DISP_BLUE_PIXELS);
+			pg.addCheckBoxes("dispLines", "Show Lines", DEFAULT_DISP_LINES);
+			pg.addCheckBoxes("dispCorners", "Show Corners", DEFAULT_DISP_CORNERS);
+			pg.addCheckBoxes("dispTriangles", "Show Triangles", DEFAULT_DISP_TRIANGLES);
+			pg.addCheckBoxes("dispTriMap", "Show Triangle Cost Map", DEFAULT_TRIANGLE_COST_MAP);
+			
+			
+			pg.addListener(new ParameterListener() {
+				public void parameterChanged(ParameterGUI pg, String name)
+				{
+					if(name == "valThresh"){
+						valueThresh = pg.gd("valThresh");
+					}
+					if(name == "satThresh"){
+						saturationThresh = pg.gd("satThresh");
+					}
+					if(name == "calib"){
+						calibrateVal = pg.gd("calib");
+						calculateLookupTable();
+					}
+					else if(name == "blueThresh")blueThresh = pg.gd("blueThresh");
+					else if(name == "thresh"){
+						threshold = pg.gd("thresh");
+						alf.threshold = threshold;
+					}
+					else if(name == "num_steps"){
+						numSteps = pg.gi("num_steps"); 
+						alf.numSteps = numSteps;
+					}
+					else if(name == "point_spread"){
+						pointSpreadMax = pg.gi("point_spread"); 
+						alf.pointSpreadMax = pointSpreadMax;
+					}
+					else if(name == "cornerAngleThresh"){
+						cornerAngleThresh = pg.gd("cornerAngleThresh");
+						alf.cornerAngleThresh = cornerAngleThresh;
+					}
+					else if(name == "dispLongLine"){
+						dispLongLine = pg.gb("dispLongLine");
+					}
+					else if(name == "dispBluePixels"){
+						dispBluePixels = pg.gb("dispBluePixels");
+					}
+					else if(name == "dispLines"){
+						dispLines = pg.gb("dispLines");
+					}
+					else if(name == "dispCorners"){
+						dispCorners = pg.gb("dispCorners");
+					}
+					else if(name == "dispTriangles"){
+						dispTriangles = pg.gb("dispTriangles");
+					}
+					else if(name == "greenThresh"){
+						greenThresh = pg.gd("greenThresh");
+					}
+					else if(name == "halfBoxThresh"){
+						halfBoxThresh = pg.gd("halfBoxThresh");
+					}
+					else if(name == "dispTriMap"){
+						dispTriMap = pg.gb("dispTriMap");
+					}
+			}});
+			
+			jf = new JFrame("Image Processing");
+			jim = new JImage();
+			jim.setFit(true);
+			vl.addEventHandler(this);
+			vl.cameraManager.uiLookAt(new double[]{640.0, 480.0, 1000.0}, new double[]{640.0,480.0,0.0}, new double[]{0.0,1.0,0.0}, true);
+
+			// Setup window layout
+			jf.setLayout(new BorderLayout());
+			jf.add(vc, BorderLayout.CENTER);
+			vb = vw.getBuffer("ImageProcessing");
+			jf.add(pg, BorderLayout.SOUTH);
+			jf.setSize(1024, 768);
+			//jf.setVisible(true);
+			jf.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		}
 	}
 
 
+	public void messageReceived(LCM lcm, String channel, LCMDataInputStream dins)
+	{
+		try
+		{
+			if(channel.equals("6_POSE"))
+			{
+				if(done){
+					lastPose = new bot_status_t(dins);
+					done = false;
+				}
+			}
+		}catch(IOException e){
+			e.printStackTrace();
+		}
+	}
 
 
 	public boolean mouseMoved(VisCanvas vc, VisLayer vl, VisCanvas.RenderInfo rinfo, GRay3D ray, MouseEvent e)
@@ -364,27 +393,35 @@ public class ImageProcessing extends VisEventAdapter
 			}
 		}
 	}
-
+	
+		
+	
+	
 	public void publish(Triangles triangles, ArrayList<ArrayList<double[]> > lineSegs){
 		map_features_t features = new map_features_t();
-		
+		double f = 672.07;
+		double cx = 620.82;
+		double cy = 456.58;
+		double h = 0.21;
 		features.nlineSegs = lineSegs.size();
 		features.lineSegs = new double[features.nlineSegs][4];
 		for(int i = 0; i < features.nlineSegs; i++){
-			features.lineSegs[i][0] = pixelToDistanceX(lineSegs.get(i).get(0)[0], 0);
-			features.lineSegs[i][1] = lineSegs.get(i).get(0)[1];
-			features.lineSegs[i][2] = pixelToDistanceX(lineSegs.get(i).get(1)[0], 0);
-			features.lineSegs[i][3] = lineSegs.get(i).get(1)[1];
+			features.lineSegs[i][0] = (lineSegs.get(i).get(0)[0] - cx) / (lineSegs.get(i).get(0)[1] - cy) * h;
+			features.lineSegs[i][1] = f * h / (lineSegs.get(i).get(0)[1] - cy);
+			features.lineSegs[i][2] = (lineSegs.get(i).get(1)[0] - cx) / (lineSegs.get(i).get(1)[1] - cy) * h;
+			features.lineSegs[i][3] = f * h / (lineSegs.get(i).get(1)[1] - cy);
 		}
 
 		
 		features.ntriangles = triangles.numTriangles;
 		features.triangles = new double[features.ntriangles][2];
 		for(int i = 0; i < features.ntriangles; i++){
-			features.triangles[i][0] = pixelToDistanceX(triangles.getMean(i)[0], TRIANGLE_HEIGHT);
+			features.triangles[i][0] = triangles.getMean(i)[0];
 			features.triangles[i][1] = triangles.getMean(i)[1];
 		}
+		features.bot=lastPose;
 		lcm.publish("6_FEATURES", features);
+		done = true;
 	}
 
 
@@ -502,7 +539,7 @@ public class ImageProcessing extends VisEventAdapter
 			//	 && (eigens[1] > minSizeThreshold) && (eigens[0] < maxSizeThreshold)
 			//	&& (points.size() > 60)){
 			if((Math.abs(cluster.areaBox() / 2.0 - cluster.points.size()) < halfBoxThresh) && 
-				(cluster.points.size() > 50) && (cluster.aspectRatio() > .6)){
+				(cluster.points.size() > 60) && (cluster.aspectRatio() > .6)){
 			//if(cluster.points.size() > 50){
 					
 				triangles.addTriangle(cluster.getMean(), 
@@ -707,24 +744,26 @@ public class ImageProcessing extends VisEventAdapter
 
 			VisChain chain = new VisChain(LinAlg.rotateX(Math.PI),LinAlg.translate(0,-height,-5));
 
-			if(dispTriangles) chain.add(new VzPoints(new VisVertexData(triangles.means),new VzPoints.Style(Color.blue, 5)));
-			if(dispBluePixels) chain.add(new VzPoints(new VisVertexData(topBluePixels),new VzPoints.Style(Color.green, 5)));
-			if(dispLines) alf.plotLineSegs(vb, chain);
-			if(dispCorners) alf.plotCorners(vb, chain);
-			vb.addBack(new VzImage(im, VzImage.FLIP));
-			vb.addBack(chain);
-			if(dispLongLine){
+			if(dispGUI && (dispTriangles)) chain.add(new VzPoints(new VisVertexData(triangles.means),new VzPoints.Style(Color.blue, 5)));
+			if(dispGUI && (dispBluePixels)) chain.add(new VzPoints(new VisVertexData(topBluePixels),new VzPoints.Style(Color.green, 5)));
+			if(dispGUI && (dispLines)) alf.plotLineSegs(vb, chain);
+			if(dispGUI && (dispCorners)) alf.plotCorners(vb, chain);
+			if(dispGUI)vb.addBack(new VzImage(im, VzImage.FLIP));
+			if(dispGUI)vb.addBack(chain);
+			if(dispGUI && (dispLongLine)){
 				double dist = pixelToDistanceX(alf.getLongestSeg()[1], 0);
 				vb.addBack(new VisPixCoords(VisPixCoords.ORIGIN.BOTTOM_LEFT,
 						new VzText(VzText.ANCHOR.BOTTOM_LEFT, 
 						"Longest Segment Mean:" + alf.getLongestSeg()[0] + ", " + alf.getLongestSeg()[1] + "\n" + "Distance to Target:" + dist)));
 			}
-			vb.addBack(new VisPixCoords(VisPixCoords.ORIGIN.BOTTOM_LEFT,
+			if(dispGUI){
+				vb.addBack(new VisPixCoords(VisPixCoords.ORIGIN.BOTTOM_LEFT,
 					new VzText(VzText.ANCHOR.BOTTOM_LEFT, "hue: " + checkHSV[0] + "\nsaturation: " + checkHSV[1] + "\nvalue: " + checkHSV[2] + "\nmouse:" + mouse[0] + ", " + mouse[1])));
+				vb.swap();
+			}
 			
 			publish(triangles, alf.getLineSegs());
 					
-			vb.swap();
 		   
 		}
 	}
@@ -762,7 +801,7 @@ public class ImageProcessing extends VisEventAdapter
 		}
 
 		ImageSource is = ImageSource.make(url);
-		new ImageProcessing(is).run();
+		new ImageProcessing(is, false).run();
 	}
 
 

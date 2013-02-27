@@ -12,4 +12,6 @@ struct map_features_t
     //center of triangle
     double triangles[ntriangles][2];
 
+    bot_status_t bot;
+
 }
