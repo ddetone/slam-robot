@@ -10,6 +10,6 @@ struct map_features_t
 
     int32_t ntriangles;//number of triangle features
     //center of triangle
-    double triangles[ntriangles][2];
+    double triangles[ntriangles][3];
 
 }
