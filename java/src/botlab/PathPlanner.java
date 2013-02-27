@@ -91,6 +91,8 @@ public class PathPlanner implements LCMSubscriber
 			for(MapNode neighbor : current.neighbors())
 			{
 				int tentative_g_score = current.cost() + map.max/(map.size*map.size) + map.cost[neighbor.x][neighbor.y];
+				if(tentative_g_score > 0.8 * map.max)
+					continue;
 				boolean in_closed_set = false;
 				for(MapNode compare : closed_set) {
 					if(compare.x == neighbor.x && compare.y == neighbor.y){
