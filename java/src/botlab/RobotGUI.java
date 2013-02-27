@@ -31,6 +31,7 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 
 	LCM lcm;
 	bot_status_t bot_status;
+	battery_t battery;
 
 	final boolean DEFAULT_SEND_WAYPOINT = false;
 	boolean sendWayPoint = DEFAULT_SEND_WAYPOINT;
@@ -39,6 +40,7 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 	{
 		this.lcm =  LCM.getSingleton();
 		lcm.subscribe("6_POSE",this);
+		lcm.subscribe("6_BATTERY",this);
 
 		jf.setLayout(new BorderLayout());
 		jf.add(vc, BorderLayout.CENTER);
@@ -97,6 +99,14 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 						drawRobot();
 						drawCovariance();
 			}
+			if(channel.equals("6_BATTERY"))
+			{
+				VisWorld.Buffer vb = vw.getBuffer("Battery");
+				battery = new battery_t(dins);
+				
+				if(battery.voltage < 10)vb.addBack(new VisPixCoords(VisPixCoords.ORIGIN.BOTTOM_LEFT, new VzText(VzText.ANCHOR.CENTER, "LOW BATTERY VOLTAGE:" + battery.voltage )));
+				
+			}
 		}
 		catch (IOException e)
 		{
@@ -128,8 +138,8 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 		VisChain pandaBot = new VisChain();
 
 		pandaBot.add(vo_base,vo_cameraBase,vo_wheels,vo_castor);
-
 		VisWorld.Buffer vb = vw.getBuffer("Robot");
+
 		vb.addBack(new VzAxes());
 		//vb.addBack(new VisChain(LinAlg.translate(xyt[0],xyt[1],0), LinAlg.rotateZ(xyt[2]-Math.PI/2),new VzTriangle(0.25,0.4,0.4,new VzMesh.Style(Color.GREEN))));
 		vb.addBack(new VisChain(LinAlg.translate(xyt[0],xyt[1],0), LinAlg.rotateZ(xyt[2]-Math.PI/2),pandaBot));

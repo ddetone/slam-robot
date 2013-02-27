@@ -6,20 +6,12 @@ import java.util.*;
 public class UnionFind
 {
 
-	public int height;		//height of image
-	public int width;		//width of image
 	public int N;			//number of pixels
-	public boolean[][] map;
 	public int[] parent;
 	public int[] rank;
 
-	public UnionFind(int h, int w, boolean[][] m)	//constructor
+	public UnionFind(int N)	//constructor
 	{
-		height = h;
-		width = w;
-		N = h*w;
-		map = m;
-		
 		parent = new int[N];	//initialize parent array
 		rank = new int[N];		//initialize rank array
 		for (int i=0; i<N; i++) 
@@ -29,17 +21,17 @@ public class UnionFind
 		}
 	}
 	
-	public int Find(int x)
+	public int getRepresentative(int x)
 	{
 		if (parent[x] != x)
-			parent[x] = Find(parent[x]);
+			parent[x] = getRepresentative(parent[x]);
 		return parent[x];
 	}
 	
-	public void Union(int x, int y)
+	public void connectNodes(int x, int y)
 	{
-		int xRoot = Find(x);
-		int yRoot = Find(y);
+		int xRoot = getRepresentative(x);
+		int yRoot = getRepresentative(y);
 		if (xRoot == yRoot)
 			return;
 			
@@ -54,7 +46,7 @@ public class UnionFind
 		}
 	}
 
-	public int[] FindSets()
+	public int[] FindSets(boolean[][] map, int height, int width)
 	{
 		
 		
@@ -65,9 +57,9 @@ public class UnionFind
 				if (map[y][x])
 				{
 					if (x<(width-1) && map[y][x+1]) //check right
-						Union(width*y+x,width*y+(x+1));
+						connectNodes(width*y+x,width*y+(x+1));
 					if (y<(height-1) && map[y+1][x]) //check below
-						Union(width*y+x,width*(y+1)+x);
+						connectNodes(width*y+x,width*(y+1)+x);
 				}
 			}
 		}

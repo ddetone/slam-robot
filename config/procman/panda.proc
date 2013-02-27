@@ -7,16 +7,6 @@
  }
 
 proc# : process {
-    cmd = "$ARL_HOME/bin/motordriver";
-    name = "Motor Driver";
-}
-
-proc# : process {
-    cmd = "$ARL_HOME/bin/pimud -u";
-    name = "Pimu Driver";
-}
-
-proc# : process {
     cmd = "java botlab.PoseGenerator";
     name = "Pose Generator";
 }
@@ -24,6 +14,16 @@ proc# : process {
 proc# : process {
     cmd = "java botlab.PathFollower";
     name = "Path Follower";
+}
+
+proc# : process {
+    cmd = "$ARL_HOME/bin/motordriver -p 6";
+    name = "Motor Driver";
+}
+
+proc# : process {
+    cmd = "$ARL_HOME/bin/pimud -u -p 6";
+    name = "Pimu Driver";
 }
 
 //proc# : process {

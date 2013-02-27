@@ -48,10 +48,11 @@ public class PoseGenerator implements LCMSubscriber
 	PoseGenerator()
 	{
 		this.lcm = LCM.getSingleton();
-		lcm.subscribe("MOTOR_FEEDBACK", this);
+		lcm.subscribe("6_MOTOR_FEEDBACK", this);
 
 		pimu = new Pimu(false);
 		pimu.calibrate();
+
 		//initial uncertainty
 		sigmaA = new double[][]{{0.00001,0,0},
 					{0,0.00001,0},
@@ -139,10 +140,10 @@ public class PoseGenerator implements LCMSubscriber
 		bot.cov = sigmaB;
 
 		lcm.publish("6_POSE",bot);
-		try{
-			Thread.sleep(33);
-		}catch(InterruptedException e)
-		{}
+		//try{
+		//	Thread.sleep(33);
+		//}catch(InterruptedException e)
+		//{}
 
 
 	}
