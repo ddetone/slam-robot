@@ -48,7 +48,7 @@ public class MapBuilder implements LCMSubscriber
 
 	tracker = botlab.PoseTracker.getSingleton();
 
-        lcm.subscribe("6_POSE",this);
+        //lcm.subscribe("6_POSE",this);
         lcm.subscribe("6_PARAM",this);
         lcm.subscribe("6_FEATURES",this);
         map.scale = 0.06;

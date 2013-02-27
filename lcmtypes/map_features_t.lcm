@@ -4,7 +4,7 @@ struct map_features_t
     
     
     int32_t nlineSegs; //number of line segments
-    //easch line segment has two end points hence 4 coordinates
+    //each line segment has two end points hence 4 coordinates
     //the convention to use is x1,y1,x2,y2
     double lineSegs[nlineSegs][4];
 

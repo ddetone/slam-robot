@@ -10,6 +10,8 @@ Log camera and odometry info simultaneously
 
 Do we need to time out for path follower when PoseGenerator dies
 
+FOR ANDREW:
+Make sure the map building code will work with a winding theta. Ie a theta on the range [-inf, inf]
 
 
 
