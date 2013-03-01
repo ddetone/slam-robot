@@ -9,7 +9,7 @@ import botlab.PoseTracker;
 
 import botlab.lcmtypes.*;
 
-public class MapMaker implements LCMSubscriber
+public class MapSLAM implements LCMSubscriber
 {
 
 
