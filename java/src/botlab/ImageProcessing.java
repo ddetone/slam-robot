@@ -730,6 +730,7 @@ public class ImageProcessing extends VisEventAdapter
 			if (buf == null)
 				continue;
 
+			// store the time that we got the image so we can later match it to a pose
 			timeOfImage = TimeUtil.utime();
 			// Grab the image, and convert it to gray scale immediately
 			BufferedImage im = ImageConvert.convertToImage(fmt.format, fmt.width, fmt.height, buf);

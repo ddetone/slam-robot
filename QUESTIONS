@@ -1,14 +1,8 @@
-why does Panda Listener exit? do we need a while(true)?
-
-LineDetect calibration could use lookup table for Sin and Cos
-
-Do we need utime to be synchronized between local and remote?
-
-How can we use environment variables on remote for an ssh command?
-
 Log camera and odometry info simultaneously
 
-Do we need to time out for path follower when PoseGenerator dies
+Should the covariance for the first pose in slam be 0?
+
+When reobserving a feature, do we need to make a new node for that feature or is it okay if we just add another edge?
 
 FOR ANDREW:
 Make sure the map building code will work with a winding theta. Ie a theta on the range [-inf, inf]
