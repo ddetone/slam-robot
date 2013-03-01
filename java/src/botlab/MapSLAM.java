@@ -15,6 +15,19 @@ import botlab.lcmtypes.*;
 public class MapSLAM implements LCMSubscriber
 {
 
+	
+	LCM lcm;
+	Graph g;
+	botlab.PoseTracker pt;
+	GraphNodes poseNodes;
+	GraphNodes featureNodes;
+	bot_status_t lastBot = new bot_status_t();
+
+	double newFeatureDist = 0.3;
+	double oldFeatureDist = 0.1;
+	int num_solver_iterations = 200;
+	int decimate = 1;	// number of poses to throw out. In other words, every <decimate> poses, 1 pose will be added to the graph
+	int numPoseMessages = 0;
 
 	private class GraphNodes{
 		ArrayList<Integer> graphNodeIndices;
@@ -50,17 +63,6 @@ public class MapSLAM implements LCMSubscriber
 		}
 		
 	}
-	
-	LCM lcm;
-	Graph g;
-	botlab.PoseTracker pt;
-	GraphNodes poseNodes;
-	GraphNodes featureNodes;
-	bot_status_t lastBot = new bot_status_t();
-
-	double newFeatureDist = 0.3;
-	double oldFeatureDist = 0.1;
-	int num_solver_iterations = 200;
 
 	MapSLAM(){
 		g = new Graph();
@@ -86,58 +88,61 @@ public class MapSLAM implements LCMSubscriber
 		try
 		{
 			if(channel.equals("6_POSE")){
-				bot_status_t bot = new bot_status_t(dins);
-				
-				
-				poseNodes.addNode(g.nodes.size(), bot.utime);
-				int numPoses = poseNodes.getNumNodes();
-				
-				// If this is the first pose we are receiving add the node to the graph
-				// and add a POS edge to the graph to constrain the SLAM solution to the real world
-				if(numPoses == 1){
-					// create new node and add it to the graph
-					GXYTNode gna = new GXYTNode();
-					gna.state = new double[]{bot.xyt[0], bot.xyt[1], bot.xyt[2]};
-					gna.init = LinAlg.copy(gna.state);
-					g.nodes.add(gna);
+				if(numPoseMessages % decimate == 0){
+					bot_status_t bot = new bot_status_t(dins);
 					
-					// pin whole map down to starting point if on first pose
-					// Not sure if the below is correct and it shouldn't
-					// affect the graph with relation to itself so I am
-					// leaving it out until after testing the rest of
-					// the code
-					//*
-					GXYTPosEdge ge = new GXYTPosEdge();
-					ge.nodes = new int[]{0};
-					// should the covariance be 0? or close to 0?
-					ge.z = new double[]{bot.xyt[0], bot.xyt[1], bot.xyt[2]};
-					ge.P = LinAlg.diag(new double[]{0.0001,0.0001,0.0001});
 					
-					//*/
+					poseNodes.addNode(g.nodes.size(), bot.utime);
+					int numPoses = poseNodes.getNumNodes();
 					
-					return;
-				}
-				
-				// create edge between last two poses characterized by covariance P
-				GXYTEdge ge = new GXYTEdge();
-				ge.nodes = new int[]{poseNodes.getNodeGraphIndex(numPoses - 2), poseNodes.getNodeGraphIndex(numPoses - 1)};
-				ge.z = LinAlg.xytInvMul31(lastBot.xyt, bot.xyt);
-				// is this the local x movement? Because that's what we want noise based off of
-				ge.P = LinAlg.diag(new double[]{(ge.z[0] * 0.1)  * (ge.z[0] * 0.1),
-								(ge.z[0] * 0.01) * (ge.z[0] * 0.01),
-								(ge.z[2] * 0.1)  * (ge.z[2] * 0.1)});
-				g.edges.add(ge);
+					// If this is the first pose we are receiving add the node to the graph
+					// and add a POS edge to the graph to constrain the SLAM solution to the real world
+					if(numPoses == 1){
+						// create new node and add it to the graph
+						GXYTNode gna = new GXYTNode();
+						gna.state = new double[]{bot.xyt[0], bot.xyt[1], bot.xyt[2]};
+						gna.init = LinAlg.copy(gna.state);
+						g.nodes.add(gna);
+						
+						// pin whole map down to starting point if on first pose
+						// Not sure if the below is correct and it shouldn't
+						// affect the graph with relation to itself so I am
+						// leaving it out until after testing the rest of
+						// the code
+						//*
+						GXYTPosEdge ge = new GXYTPosEdge();
+						ge.nodes = new int[]{0};
+						// should the covariance be 0? or close to 0?
+						ge.z = new double[]{bot.xyt[0], bot.xyt[1], bot.xyt[2]};
+						ge.P = LinAlg.diag(new double[]{0.0001,0.0001,0.0001});
+						
+						//*/
+						
+						return;
+					}
+					
+					// create edge between last two poses characterized by covariance P
+					GXYTEdge ge = new GXYTEdge();
+					ge.nodes = new int[]{poseNodes.getNodeGraphIndex(numPoses - 2), poseNodes.getNodeGraphIndex(numPoses - 1)};
+					ge.z = LinAlg.xytInvMul31(lastBot.xyt, bot.xyt);
+					// is this the local x movement? Because that's what we want noise based off of
+					ge.P = LinAlg.diag(new double[]{(ge.z[0] * 0.1)  * (ge.z[0] * 0.1),
+									(ge.z[0] * 0.01) * (ge.z[0] * 0.01),
+									(ge.z[2] * 0.1)  * (ge.z[2] * 0.1)});
+					g.edges.add(ge);
 
-				GXYTNode gn = new GXYTNode();
-				gn.state = LinAlg.xytMultiply(g.nodes.get(g.nodes.size() - 1).state, ge.z);
-				gn.init = LinAlg.copy(gn.state);
-				g.nodes.add(gn);
-				
-				
-				lastBot = bot;
-				assert(g.nodes.size() == featureNodes.getNumNodes() + poseNodes.getNumNodes());
-				assert(poseNodes.getNumNodes() == numPoses);
-				System.out.println("added pose " + numPoses + " to slam graph");
+					GXYTNode gn = new GXYTNode();
+					gn.state = LinAlg.xytMultiply(g.nodes.get(g.nodes.size() - 1).state, ge.z);
+					gn.init = LinAlg.copy(gn.state);
+					g.nodes.add(gn);
+					
+					
+					lastBot = bot;
+					assert(g.nodes.size() == featureNodes.getNumNodes() + poseNodes.getNumNodes());
+					assert(poseNodes.getNumNodes() == numPoses);
+					System.out.println("added pose " + numPoses + " to slam graph");
+				}
+				numPoseMessages++;
 			}
 			else if(channel.equals("6_FEATURES"))
 			{
