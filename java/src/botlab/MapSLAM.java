@@ -303,10 +303,10 @@ public class MapSLAM implements LCMSubscriber
 						// the feature was observed
 						GXYTEdge ge = new GXYTEdge();
 						ge.nodes = new int[]{poseNode, g.nodes.size() - 1};
-						// ******* CONFIRM THIS IF THE CORRECT Z ******
-						ge.z = LinAlg.copy(new double[]{features.triangles.[i][0],
-										features.triangles[i][1]
-										0});
+						// ******* CONFIRM THIS IS THE CORRECT Z ******
+						ge.z = new double[]{features.triangles.[i][0],
+								features.triangles[i][1]
+								0};
 						// Hopefully the model below works. Theta very uncertain because
 						// we might not view the feature from straight on every time we see it.
 						dist = Math.sqrt(ge.z[0] * ge.z[0] + ge.z[1] * ge.z[1]);
@@ -328,7 +328,10 @@ public class MapSLAM implements LCMSubscriber
 						// difference. The wrong way to do it would look like this:
 						// ge.z = LinAlg.xytInvMul31(bot.xyt, g.nodes.get(closestFeatureNode).state);
 						// Again just made that up. Hope it's right.
-						ge.z = LinAlg.xytInvMul31(bot.xyt, featureState);
+						// ******* CONFIRM THIS IS THE CORRECT Z ******
+						ge.z = new double[]{features.triangles.[i][0],
+								features.triangles[i][1]
+								0};
 						// Model the reobservation uncertainty proportional to the square of the
 						// distance from which the feature was observed.
 						dist = Math.sqrt(ge.z[0] * ge.z[0] + ge.z[1] * ge.z[1]);
