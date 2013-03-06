@@ -84,7 +84,7 @@ public class MapBuilder implements LCMSubscriber
 					inverse_cost_decay = param.value;
 				}
 			}
-			/*if(channel.equals("6_POSE"))
+			/*elseif(channel.equals("6_POSE"))
 			{
 				bot_status_t new_bot_status = new bot_status_t(dins);
 				new_bot_status.xyt[0] += (map.size/2)*map.scale;
@@ -112,8 +112,8 @@ public class MapBuilder implements LCMSubscriber
 					//System.out.println(f);
 					double p1[] = new double[2];
 					double p2[] = new double[2];
-					double l1[] = {features.lineSegs[f][1],-features.lineSegs[f][0],0};
-					double l2[] = {features.lineSegs[f][3],-features.lineSegs[f][2],0};
+					double l1[] = {features.lineSegs[f][0],features.lineSegs[f][1],0};
+					double l2[] = {features.lineSegs[f][2],features.lineSegs[f][3],0};
 
 					p1 = LinAlg.xytMultiply(bot_status.xyt, l1);
 					p2 = LinAlg.xytMultiply(bot_status.xyt, l2);

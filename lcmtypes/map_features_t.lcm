@@ -13,5 +13,4 @@ struct map_features_t
     double triangles[ntriangles][2];
 
     bot_status_t bot;
-
 }
