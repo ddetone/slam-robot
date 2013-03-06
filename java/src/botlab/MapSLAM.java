@@ -193,8 +193,8 @@ public class MapSLAM implements LCMSubscriber
 					double distErr = 0.1;
 					double rot = Math.abs(MathUtil.mod2pi(ge.z[2]));
 					double rotErr = 0.1;
-					ge.P = LinAlg.diag(new double[]{LinAlg.sq(dist*distErr+0.001),
-									LinAlg.sq(dist*distErr+0.001),
+					ge.P = LinAlg.diag(new double[]{LinAlg.sq(dist*distErr+0.01),
+									LinAlg.sq(dist*distErr+0.01),
 									LinAlg.sq(rot*rotErr)+Math.toRadians(1)});
 					g.edges.add(ge);
 
@@ -234,6 +234,7 @@ public class MapSLAM implements LCMSubscriber
 					System.out.println("Discarding feature message. No corresponding slam node found.");
 					return;
 				}
+				double[] botSlamPose = LinAlg.copy(g.nodes.get(poseNode).state);
 
 				for(int i = 0; i < features.ntriangles; i++){
 					// The feature state is represented as (-z, x, theta_bot) to account
@@ -244,11 +245,18 @@ public class MapSLAM implements LCMSubscriber
 					//double[] featureState = new double[]{-features.triangles[i][1],
 					//					features.triangles[i][0],
 					//					bot.xyt[2]};
-					// The prior has been changed in the image processing code. No need
+					// This has been changed in the image processing code. No need
 					// to account for coordinate frame transformation here.
-					double[] featureState = new double[]{features.triangles[i][0],
-										features.triangles[i][1],
-										bot.xyt[2]};
+					// make the state of this node equal to the state of the last pose after
+					// slam + the current feature observation. Notice the difference between this
+					// line and 
+					//double[] featureState = new double[]{features.triangles[i][0],
+					//					features.triangles[i][1],
+					//					bot.xyt[2]};
+					double[] featureState = LinAlg.xytMultiply(botSlamPose,
+									new double[]{	features.triangels[i][0],
+											features.triangles[i][1],
+											0});
 					
 					double dist, minDist = Double.MAX_VALUE;
 					int closestFeatureNode = -1;
@@ -256,21 +264,27 @@ public class MapSLAM implements LCMSubscriber
 						int closeFeatureIndex = featureNodes.getNodeGraphIndex(j);
 						// so the following line is definitely wrong. I think my
 						// fundamental understanding of mahalanobis distance was wrong.
-						// The right way to do it is to find the edge between featureState
-						// and closeFeatureState (via a shortest path algorithm traversing
-						// the edges of the graph, g) that minimizes uncertainty. This can
-						// probably be done with A* composing edges of other edges as it
-						// went. e3 = e1.compose(e2) creates a single edge, e3, that embodies
-						// the uncertainties of both edges. After you find that edge, the
-						// mahalanobis distance of that edge answers the following question:
-						// "What is the probability that the nodes that edge ge connects are
-						// within x meters of each other?" Magic asked that question using 5
-						// meters as their 'x'. You then want to find the max mahalanobis 
-						// distance since you want to find the edge with the highest
-						// probability that its nodes are within x meters. Not sure if that
-						// explanation is correct. Have to check with Olson.
-						// The following effectively calculates the euclidean distance. In fact,
-						// it just does calculate the euclidean distance.
+						// For every feature you've seen so far, find the edge between
+						// the feature you just observed and a prior feature with the
+						// lowest uncertainty. The edge will be defined as a composition
+						// of edges that connect the two features. To find the
+						// composition with the lowest uncertainty, use a shortest path
+						// algorithm over the edges of the graph, g. Maybe using A* and a
+						// composition of edges as the cost heuristic. e3 = e1.compose(e2)
+						// creates a single edge, e3, that embodies the uncertainties of
+						// both edges e1, and e2. 
+						// After you find that edge, calculating the mahalanobis distance
+						// of that edge answers the following question: "What is the
+						// probability that the nodes that the edge connects are within x
+						// meters of each other?" Magic asked that question using 5 meters
+						// as their 'x'. You then want to find the max mahalanobis distance
+						// since you want to find the edge with the highest probability
+						// that its nodes are within x meters. Not sure if that explanation
+						// is correct.
+						// In the mean time, the following effectively calculates the
+						// euclidean distance. In fact, it just does calculate the euclidean
+						// distance.
+						
 						dist = mahalanobisDistance(featureState, g.nodes.get(closeFeatureIndex).state, LinAlg.diag(new double[]{1,1,1}));
 						if(dist < minDist){
 							dist = minDist;
@@ -285,17 +299,20 @@ public class MapSLAM implements LCMSubscriber
 						gna.init = LinAlg.copy(gna.state);
 						featureNodes.addNode(g.nodes.size(), features.utime);
 						g.nodes.add(gna);
-						// add an edge between the feature and the pose from which
+						// Add an edge between the feature and the pose from which
 						// the feature was observed
 						GXYTEdge ge = new GXYTEdge();
 						ge.nodes = new int[]{poseNode, g.nodes.size() - 1};
-						ge.z = LinAlg.xytInvMul31(bot.xyt, featureState);
+						// ******* CONFIRM THIS IF THE CORRECT Z ******
+						ge.z = LinAlg.copy(new double[]{features.triangles.[i][0],
+										features.triangles[i][1]
+										0});
 						// Hopefully the model below works. Theta very uncertain because
 						// we might not view the feature from straight on every time we see it.
 						dist = Math.sqrt(ge.z[0] * ge.z[0] + ge.z[1] * ge.z[1]);
 						double distErr = 0.1;
-						ge.P = LinAlg.diag(new double[]{LinAlg.sq(dist*distErr+0.001),
-										LinAlg.sq(dist*distErr+0.001),
+						ge.P = LinAlg.diag(new double[]{LinAlg.sq(dist*distErr+0.01),
+										LinAlg.sq(dist*distErr+0.01),
 										LinAlg.sq(Math.toRadians(180))});
 						g.edges.add(ge);
 					}
@@ -316,8 +333,8 @@ public class MapSLAM implements LCMSubscriber
 						// distance from which the feature was observed.
 						dist = Math.sqrt(ge.z[0] * ge.z[0] + ge.z[1] * ge.z[1]);
 						double distErr = 0.1;
-						ge.P = LinAlg.diag(new double[]{LinAlg.sq(dist*distErr+0.001),
-										LinAlg.sq(dist*distErr+0.001),
+						ge.P = LinAlg.diag(new double[]{LinAlg.sq(dist*distErr+0.01),
+										LinAlg.sq(dist*distErr+0.01),
 										LinAlg.sq(Math.toRadians(180))});
 						g.edges.add(ge);
 						
