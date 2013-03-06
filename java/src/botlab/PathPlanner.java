@@ -90,9 +90,10 @@ public class PathPlanner implements LCMSubscriber
 			
 			for(MapNode neighbor : current.neighbors())
 			{
-				int tentative_g_score = current.cost() + map.max/(map.size*map.size) + map.cost[neighbor.x][neighbor.y];
-				if(tentative_g_score > 0.8 * map.max)
+				if(map.cost[neighbor.x][neighbor.y] > 0.6 * map.max)
 					continue;
+				int tentative_g_score = current.cost() + map.max/(map.size*map.size) + map.cost[neighbor.x][neighbor.y];
+
 				boolean in_closed_set = false;
 				for(MapNode compare : closed_set) {
 					if(compare.x == neighbor.x && compare.y == neighbor.y){
@@ -130,10 +131,23 @@ public class PathPlanner implements LCMSubscriber
 				minNeighbor = neighbor;
 			}
 		}
+		MapNode secMinNeighbor = null;
+		for(MapNode neighbor : minNeighbor.neighbors()){
+			if(secMinNeighbor == null || neighbor.cost() < secMinNeighbor.cost()){
+				secMinNeighbor = neighbor;
+			}
+		}
 		xyt_t ret = new xyt_t();
 		ret.xyt[0] = minNeighbor.x * travel_cost_map.scale;
 		ret.xyt[1] = minNeighbor.y * travel_cost_map.scale;
-		ret.xyt[2] = 0;
+		if(secMinNeighbor.x < minNeighbor.x - .01)
+			ret.xyt[2] = Math.PI;
+		else if(secMinNeighbor.x > minNeighbor.x + .01)
+			ret.xyt[2] = 0.0;
+		else if(secMinNeighbor.y < minNeighbor.y - .01)
+			ret.xyt[2] = 3.0* Math.PI / 2.0;
+		else 
+			ret.xyt[2] = Math.PI/2.0;
 		return ret;
 	}
 
@@ -145,7 +159,6 @@ public class PathPlanner implements LCMSubscriber
         {
             Thread.sleep(1000);
         }
-
 
 	}
 

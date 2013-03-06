@@ -24,7 +24,7 @@ public class MapBuilder implements LCMSubscriber
 	static final double DEFAULT_DECAY_DIST = 0.1;
 	static final double DEFAULT_DECAY_RATE = 1.0;
 	static final double DEFAULT_INV_KNOWLEDGE_DIST = 2.0;
-	static final double DEFAULT_INV_COST_DECAY = 1.0;
+	static final double DEFAULT_INV_COST_DECAY = 20.0;
 
 	double decay_dist = DEFAULT_DECAY_DIST;
 	double decay_rate = DEFAULT_DECAY_RATE;
@@ -46,20 +46,21 @@ public class MapBuilder implements LCMSubscriber
         map = new map_t();
         bot_status = null;
 
-	tracker = botlab.PoseTracker.getSingleton();
+		tracker = botlab.PoseTracker.getSingleton();
 
         //lcm.subscribe("6_POSE",this);
         lcm.subscribe("6_PARAM",this);
         lcm.subscribe("6_FEATURES",this);
         map.scale = 0.06;
+        map.max = 255;
         map.size = (int) (10.0/map.scale);
-        map.cost = new int[(int) map.size][(int) map.size];
-        map.knowledge = new int[(int) map.size][(int) map.size];
+        map.cost = new byte[(int) map.size][(int) map.size];
+        map.knowledge = new byte[(int) map.size][(int) map.size];
         dist_traveled = 0.0;
     }
 
     public void clear() {
-    	map.cost = new int[(int) map.size][(int) map.size];
+    	map.cost = new byte[(int) map.size][(int) map.size];
     	map.max = 0;
     }
 
@@ -100,11 +101,11 @@ public class MapBuilder implements LCMSubscriber
 				
 				if(bot_status == null)
 					return;
-				this.clear();
+				//this.clear();
 				
 				//bot_status = features.bot;
-				//bot_status.xyt[0] += (map.size/2)*map.scale;
-				//bot_status.xyt[1] += (map.size/2)*map.scale;
+				bot_status.xyt[0] += (map.size/2)*map.scale;
+				bot_status.xyt[1] += (map.size/2)*map.scale;
 
 
 				for(int f = 0; f < features.nlineSegs; ++f){
@@ -124,6 +125,27 @@ public class MapBuilder implements LCMSubscriber
 					p2[1] = bot_status.xyt[1] + features.lineSegs[f][3];
 					*/
 
+					//remove things in line of sight (replaces ray casting)
+					int xmin = (int) (Math.min(p1[0],Math.min(p2[0],bot_status.xyt[0])) / map.scale);
+					int xmax = (int) (Math.max(p1[0],Math.max(p2[0],bot_status.xyt[0])) / map.scale);
+					int ymin = (int) (Math.min(p1[1],Math.min(p2[1],bot_status.xyt[1])) / map.scale);
+					int ymax = (int) (Math.max(p1[1],Math.max(p2[1],bot_status.xyt[1])) / map.scale);
+					double det = ((p2[1]-bot_status.xyt[1])*(p1[0]-bot_status.xyt[0])+ (bot_status.xyt[0]-p2[0])*(p1[1]-bot_status.xyt[1]));
+					for(int i = xmin; i < xmax; ++i){
+						for(int j = ymin; j < ymax; ++j){
+							double lambda1 = ((p2[1]-bot_status.xyt[1])*(i - bot_status.xyt[0])  + (bot_status.xyt[0]-p2[0])*(j - bot_status.xyt[1]))/det;
+							if(lambda1 < 0.0 || lambda1 > 1.0)
+								continue;
+							double lambda2 = ((bot_status.xyt[1]-p1[1])*(i - bot_status.xyt[0])  + (p1[0]-bot_status.xyt[0])*(j - bot_status.xyt[1]))/det;
+							if(lambda2 < 0.0 || lambda2 > 1.0)
+								continue;
+							double lambda3 = 1 - lambda1 - lambda2;
+							if(lambda3 < 0.0 || lambda3 > 1.0)
+								continue;
+							map.cost[i][j] = (byte) 0;
+						}
+					}
+
 					//add points to map
 					double dist = LinAlg.distance(p1,p2,2);
 					int nsteps = (int) (dist/map.scale)+1;
@@ -134,19 +156,36 @@ public class MapBuilder implements LCMSubscriber
 						wall_point[1] = p1[1]*(double)i/nsteps + p2[1]*(1.0-(double)i/nsteps);
 
 						//raycast to points
+						/*
 						double rdist = LinAlg.distance(bot_status.xyt,wall_point,2);
 						int rsteps = (int) (rdist/map.scale)+1;
-						int ray_pixel[] = new int[2];
-						for(int r = 0; r < rsteps; ++r){
-							ray_pixel[0] = (int) ((wall_point[0]*(double)i/nsteps + bot_status.xyt[0]*(1.0-(double)i/nsteps))*map.scale);
-							ray_pixel[1] = (int) ((wall_point[1]*(double)i/nsteps + bot_status.xyt[1]*(1.0-(double)i/nsteps))*map.scale);
-							map.cost[ray_pixel[0]][ray_pixel[1]] = (int) Math.min(map.cost[ray_pixel[0]][ray_pixel[1]],0);
-							//map.knowledge[ray_pixel[0]][ray_pixel[1]] = 1;
-						}
 						
+						for(int r = 0; r < rsteps; ++r){
+							int rx = (int) ((wall_point[0]*(double)i/nsteps + bot_status.xyt[0]*(1.0-(double)i/nsteps))/map.scale);
+							int ry = (int) ((wall_point[1]*(double)i/nsteps + bot_status.xyt[1]*(1.0-(double)i/nsteps))/map.scale);
+							if(rx > 0 && ry > 0 && rx < map.size && ry < map.size) {
+								map.cost[rx][ry] = 0;
+								//map.knowledge[rx][ry] = 1;
+							}
+						}
+						*/
+						
+						int x = (int) (wall_point[0] / map.scale);
+						int y = (int) (wall_point[1] / map.scale);
+						if(x > 0 && y > 0 && x < map.size && y < map.size)
+							map.cost[x][y] = (byte) 255; //highest cost
+						for(int j = x - 3; j < x + 3; ++j){
+							for(int k = y - 3; k < y + 3; ++k){
+								if(j == x && k == y)
+									continue;
+								double w[] = {x,y};
+								double d[] = {j,k};
+								map.cost[j][k] = (byte) Math.max(255.0 - (inverse_cost_decay * LinAlg.distance(w,d)), map.cost[j][k]);
+							}
+						}
 
 						//System.out.println((wall_point[0]/map.scale)+ ", " +(int)(wall_point[1]/map.scale));
-						for(int k = 0; k < map.size; ++k){ //calculate costs
+						/*for(int k = 0; k < map.size; ++k){ //calculate costs
 							for(int j = 0; j < map.size; ++j){
 
 								//use if marginalizing
@@ -174,8 +213,10 @@ public class MapBuilder implements LCMSubscriber
 								
 								map.max = Math.max(map.max, cost);
 								*/
+								/*
 							}
 						}
+						*/
 					}
 				}
 
@@ -201,9 +242,9 @@ public class MapBuilder implements LCMSubscriber
 
 		for(int i = 0; i < map.size; ++i){
 			for(int j = 0; j < map.size; ++j){
-				map.cost[i][j] = Math.max((int) map.cost[i][j] - decay, 0);
+				map.cost[i][j] = (byte) Math.max((int) map.cost[i][j] - decay, 0);
 				double xy[] = {i*map.scale, j*map.scale};
-				map.knowledge[i][j] = (int) Math.max(map.knowledge[i][j], 255.0/(LinAlg.distance(new_bot_status.xyt, xy, 2)*inverse_knowledge_dist));
+				//map.knowledge[i][j] = (int) Math.max(map.knowledge[i][j], 255.0/(LinAlg.distance(new_bot_status.xyt, xy, 2)*inverse_knowledge_dist));
 			}
 		}
 	}

@@ -97,7 +97,7 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 		for(int i = 0; i < map.size; ++i){
 			for(int j = 0; j < map.size; ++j){
 				if(map.cost[i][j] > 10){
-					VzBox mapBox = new VzBox(map.scale,map.scale,(map.cost[i][j]/map.max)*map.scale*5, new VzMesh.Style(Color.red));
+					VzBox mapBox = new VzBox(map.scale,map.scale,(map.cost[i][j]/map.max)*map.scale*5, new VzMesh.Style(new Color(0,0,(map.cost[i][j]/map.max)*255)));
 					VisObject vo_mapBox = new VisChain(LinAlg.translate(i*map.scale-map.size/2*map.scale,j*map.scale-map.size/2*map.scale,0.0),mapBox);
 					vb.addBack(vo_mapBox);
 				}
