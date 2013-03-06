@@ -87,13 +87,52 @@ public class MapSLAM implements LCMSubscriber
 		lcm.subscribe("6_POSE",this);
 	}
 
-	//public static double mahalanobisDistance(double u[], double x[], double[][]W){
-	public static double mahalanobisDistance(double u[], double x[]){
+	public static double mahalanobisDistance(double u[], double x[], double[][]W){
 		double dx[] = LinAlg.subtract(x,u);
-		//return Math.sqrt(LinAlg.dotProduct(dx, LinAlg.multiply(W, dx));
-		return Math.sqrt(LinAlg.dotProduct(dx, dx));
+		Matrix w = new Matrix(W);
+		return Math.sqrt(LinAlg.dotProduct(dx, w.times(dx)));
+	}
+
+
+	/** Assume that ge is a prediction of the relative position of two
+	 * poses. What is the probability that the two poses are no more
+	 * than 'range' apart? **/
+	double mahalanobisDistance(GXYTEdge ge, double range)
+	{
+		// which nodes *might* be in the neighborhood?
+		// Compute the mahalanobis distance that the nodes are
+		// within 5 meters of each other.
+
+		// how far away is the other node according to the dijkstra edge?
+		double dist = Math.sqrt(ge.z[0]*ge.z[0] + ge.z[1]*ge.z[1]);
+
+		// when we subtract our sensor range, what fraction of the distance do we have left?
+		double dist_ratio;
+
+		if (dist < range)
+			dist_ratio = 0;
+		else
+			dist_ratio = (dist - range) / dist;
+
+		// compute the positional error, accounting for our sensor range.
+		double err[] = new double[] { ge.z[0] * dist_ratio, ge.z[1] * dist_ratio };
+
+		// compute mahalanobis distance of err.
+		double W[][] = ge.getW();
+
+		// non invertible. Usually means that we're querying the
+		// distance of node 'a' with respect to the same node 'a'.
+		if (W == null) {
+			if (dist < range)
+				return 0;
+			else
+				return Double.MAX_VALUE;
+		}
+
+		return Math.sqrt(err[0]*err[0]*W[0][0] + 2 * err[0]*err[1]*W[0][1] + err[1]*err[1]*W[1][1]);
 	}
 	
+
 
 	public void messageReceived(LCM lcm, String channel, LCMDataInputStream dins)
 	{
@@ -215,7 +254,22 @@ public class MapSLAM implements LCMSubscriber
 					int closestFeatureNode = -1;
 					for(int j = 0; j < featureNodes.getNumNodes(); j++){
 						int closeFeatureIndex = featureNodes.getNodeGraphIndex(j);
-						dist = mahalanobisDistance(featureState, g.nodes.get(closeFeatureIndex).state);
+						// so the following line is definitely wrong. I think my
+						// fundamental understanding of mahalanobis distance was wrong.
+						// The right way to do it is to find the edge between featureState
+						// and closeFeatureState (via a shortest path algorithm traversing
+						// the edges of the graph, g) that minimizes uncertainty. This can
+						// probably be done with A*. After you find that edge, the
+						// mahalanobis distance of that edge answers the following question:
+						// "What is the probability that the nodes that edge ge connects are
+						// within x meters of each other?" Magic asked that question using 5
+						// meters as their 'x'. You then want to find the max mahalanobis 
+						// distance since you want to find the edge with the highest
+						// probability that its nodes are within x meters. Not sure if that
+						// explanation is correct. Have to check with Olson.
+						// The following effectively calculates the euclidean distance. In fact,
+						// it just does calculate the euclidean distance.
+						dist = mahalanobisDistance(featureState, g.nodes.get(closeFeatureIndex).state, LinAlg.diag(new double[]{1,1,1}));
 						if(dist < minDist){
 							dist = minDist;
 							closestFeatureNode = closeFeatureIndex;
@@ -236,7 +290,11 @@ public class MapSLAM implements LCMSubscriber
 						ge.z = LinAlg.xytInvMul31(bot.xyt, featureState);
 						// Hopefully the model below works. Theta very uncertain because
 						// we might not view the feature from straight on every time we see it.
-						ge.P = LinAlg.diag(new double[]{ge.z[0] * ge.z[0], ge.z[1] * ge.z[1], 100});
+						dist = Math.sqrt(ge.z[0] * ge.z[0] + ge.z[1] * ge.z[1]);
+						double distErr = 0.1;
+						ge.P = LinAlg.diag(new double[]{LinAlg.sq(dist*distErr+0.001),
+										LinAlg.sq(dist*distErr+0.001),
+										LinAlg.sq(Math.toRadians(180))});
 						g.edges.add(ge);
 					}
 					else if (minDist < oldFeatureDist){
@@ -249,18 +307,20 @@ public class MapSLAM implements LCMSubscriber
 						// the new pose to the feature you saw from that pose. NOT from the
 						// new pose to the state of the old feature. Careful of the subtle
 						// difference. The wrong way to do it would look like this:
-						// ge.z = LinAlg.xytInvMul31(bot.xyt, g.nodes.get(closestFeatureNode).xyt);
+						// ge.z = LinAlg.xytInvMul31(bot.xyt, g.nodes.get(closestFeatureNode).state);
+						// Again just made that up. Hope it's right.
 						ge.z = LinAlg.xytInvMul31(bot.xyt, featureState);
 						// Model the reobservation uncertainty proportional to the square of the
 						// distance from which the feature was observed.
-						ge.P = LinAlg.diag(new double[]{ge.z[0] * ge.z[0], ge.z[1] * ge.z[1], 100});
+						dist = Math.sqrt(ge.z[0] * ge.z[0] + ge.z[1] * ge.z[1]);
+						double distErr = 0.1;
+						ge.P = LinAlg.diag(new double[]{LinAlg.sq(dist*distErr+0.001),
+										LinAlg.sq(dist*distErr+0.001),
+										LinAlg.sq(Math.toRadians(180))});
 						g.edges.add(ge);
 						
-						CholeskySolver solver = new CholeskySolver(g);
-						solver.verbose = false;
-						for(int j = 0; j < num_solver_iterations; j++)
-							solver.iterate();
-						
+
+						solve();
 						//packageAndPublish();
 					}
 
@@ -272,6 +332,28 @@ public class MapSLAM implements LCMSubscriber
 			e.printStackTrace();
 		}
 	}
+
+	public void solve(){
+		CholeskySolver solver = new CholeskySolver(g);
+		solver.verbose = false;
+		int numIterations = 0;
+		double chi2Before = g.getErrorStats().chi2normalized;
+
+		for(int j = 0; j < num_solver_iterations; j++){
+			solver.iterate();
+			numIterations++;
+			double chi2After = g.getErrorStats().chi2normalized;
+			System.out.println("Iteration " + numIterations +
+					" reduced chi2 by " + (chi2Before - chi2After));
+			// if the further iteration is futile
+			if (chi2After >= 0.8*chi2Before || chi2After < 0.00001)
+				break;
+			chi2Before = chi2After;
+		}
+		
+		System.out.println("Done fixing slam graph after " + numIterations + " iterations.");
+	}
+
 
 	public static void main(String args[]) throws Exception{
 		new MapSLAM();
