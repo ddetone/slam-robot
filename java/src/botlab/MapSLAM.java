@@ -259,7 +259,9 @@ public class MapSLAM implements LCMSubscriber
 						// The right way to do it is to find the edge between featureState
 						// and closeFeatureState (via a shortest path algorithm traversing
 						// the edges of the graph, g) that minimizes uncertainty. This can
-						// probably be done with A*. After you find that edge, the
+						// probably be done with A* composing edges of other edges as it
+						// went. e3 = e1.compose(e2) creates a single edge, e3, that embodies
+						// the uncertainties of both edges. After you find that edge, the
 						// mahalanobis distance of that edge answers the following question:
 						// "What is the probability that the nodes that edge ge connects are
 						// within x meters of each other?" Magic asked that question using 5
