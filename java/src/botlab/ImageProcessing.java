@@ -73,7 +73,7 @@ public class ImageProcessing extends VisEventAdapter
 	int width = 0;
 	int height = 0;
 	
-	final int searchHeight = 500;
+	final int searchHeight = 200;
 	//WRONG NUMBER BELOW
 	final double TRIANGLE_HEIGHT = 0.3;
 
