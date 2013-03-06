@@ -107,6 +107,7 @@ public class MapSLAM implements LCMSubscriber
 					poseNodes.addNode(g.nodes.size(), bot.utime);
 					int currPoseIndex = poseNodes.getLastNodeIndex(); //equivalent to g.nodes.size()
 					
+					System.out.println("added pose " + poseNodes.getNumNodes() + " to slam graph");
 					// If this is the first pose we are receiving add the node to the graph
 					// and add a POS edge to the graph to constrain the SLAM solution to the real world
 					// POS edges are like gps edges. They constrain the map to the real world. We only
@@ -169,7 +170,6 @@ public class MapSLAM implements LCMSubscriber
 					
 					lastBot = bot;
 					assert(g.nodes.size() == featureNodes.getNumNodes() + poseNodes.getNumNodes());
-					System.out.println("added pose " + poseNodes.getNumNodes() + " to slam graph");
 				}
 				numPoseMessages++;
 			}
@@ -191,16 +191,24 @@ public class MapSLAM implements LCMSubscriber
 				// find the node index in the slam graph that corresponds with
 				// the the pose that pose tracker returns
 				int poseNode = poseNodes.findNode(bot.utime);
-				if(poseNode == -1)return;
-				
+				if(poseNode == -1){
+					System.out.println("Discarding feature message. No corresponding slam node found.");
+					return;
+				}
+
 				for(int i = 0; i < features.ntriangles; i++){
 					// The feature state is represented as (-z, x, theta_bot) to account
-					// for coordinate frame transformation and orientation.
-					// Orientation is defined as if the feature were looking where
-					// the robot was facing when it was observed. As long this 
-					// convention remains consistent, it should be fine.
-					double[] featureState = new double[]{-features.triangles[i][1],
-										features.triangles[i][0],
+					// for coordinate frame transformation and orientation between image
+					// processing and map making. Orientation is defined as if the feature
+					// were looking where the robot was facing when it was observed. As
+					// long as this convention remains consistent, it should be fine.
+					//double[] featureState = new double[]{-features.triangles[i][1],
+					//					features.triangles[i][0],
+					//					bot.xyt[2]};
+					// The prior has been changed in the image processing code. No need
+					// to account for coordinate frame transformation here.
+					double[] featureState = new double[]{features.triangles[i][0],
+										features.triangles[i][1],
 										bot.xyt[2]};
 					
 					double dist, minDist = Double.MAX_VALUE;
@@ -217,7 +225,7 @@ public class MapSLAM implements LCMSubscriber
 						// we add the new feature node to the graph and make an
 						// edge between it and the pose from which it was observed.
 						GXYTNode gna = new GXYTNode();
-						gna.state = featureState;
+						gna.state = LinAlg.copy(featureState);
 						gna.init = LinAlg.copy(gna.state);
 						featureNodes.addNode(g.nodes.size(), features.utime);
 						g.nodes.add(gna);
