@@ -73,7 +73,7 @@ public class ImageProcessing extends VisEventAdapter
 	int width = 0;
 	int height = 0;
 	
-	final int searchHeight = 200;
+	final int searchHeight = 500;
 	//WRONG NUMBER BELOW
 	final double TRIANGLE_HEIGHT = 0.3;
 
@@ -204,7 +204,7 @@ public class ImageProcessing extends VisEventAdapter
 			vb = vw.getBuffer("ImageProcessing");
 			jf.add(pg, BorderLayout.SOUTH);
 			jf.setSize(1024, 768);
-			//jf.setVisible(true);
+			jf.setVisible(true);
 			jf.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		}
 	}
