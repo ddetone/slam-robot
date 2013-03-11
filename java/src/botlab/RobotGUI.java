@@ -93,16 +93,22 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 
 	public void drawMap(map_t map)
 	{
+		System.out.println("drawMap");
+		boolean found_point = false;
 		VisWorld.Buffer vb = vw.getBuffer("Map");
 		for(int i = 0; i < map.size; ++i){
 			for(int j = 0; j < map.size; ++j){
-				if(map.cost[i][j] > 10){
-					VzBox mapBox = new VzBox(map.scale,map.scale,(map.cost[i][j]/map.max)*map.scale*5, new VzMesh.Style(Color.red));
+				if((int) (map.cost[i][j] & 0xFF) > 20){
+					VzBox mapBox = new VzBox(map.scale,map.scale,(int)(map.cost[i][j] & 0xFF)/map.max*map.scale*3, new VzMesh.Style(Color.red));
 					VisObject vo_mapBox = new VisChain(LinAlg.translate(i*map.scale-map.size/2*map.scale,j*map.scale-map.size/2*map.scale,0.0),mapBox);
+					
 					vb.addBack(vo_mapBox);
 				}
+				
 			}
 		}
+		if(found_point)
+			System.out.println("found at least one point");
 
 		vb.swap();
 	}
