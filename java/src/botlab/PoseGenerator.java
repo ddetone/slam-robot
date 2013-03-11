@@ -127,6 +127,7 @@ public class PoseGenerator implements LCMSubscriber
 		bot.xyt[0] = xyt_B[0];
 		bot.xyt[1] = xyt_B[1];
 		bot.xyt[2] = xyt_B[2];
+		bot.yaw = pimu.getDeltaYaw();
 	
 		//get PIMU data (XYZ and RPY)
 		double[] XYZ = pimu.getXYZdot();
