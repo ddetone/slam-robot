@@ -141,7 +141,7 @@ public class CameraCalibration extends CordinateDescent
 		}
 
 		//Parameters f cx cy theta
-		double[] p = new double[]{600,650,450,0};
+		double[] p = new double[]{660,620,440,0};
 		double[] dp = new double[]{1,1,1,0.01};
 		double tolerance = 0.000001;
 
