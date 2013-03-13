@@ -55,9 +55,10 @@ public class MapSLAM implements LCMSubscriber
 					return graphNodeIndices.get(i);
 				}
 			}
-			if(_utime - utimes.get(0) > 10 * 1e6){
-				return -1;
-			}else return graphNodeIndices.get(0);
+			if(utimes.get(0) - _utime < 3 * 1e6){
+				return graphNodeIndices.get(0);
+			}
+			return -1;
 		}
 
 		public int getNumNodes(){
