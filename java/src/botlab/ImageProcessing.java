@@ -104,6 +104,7 @@ public class ImageProcessing extends VisEventAdapter
 		is = _is;
 
 		lcm = LCM.getSingleton();
+		//lcm = new lcm("udpm://239.255.76.67:7667?ttl=1");
 		//lcm.subscribe("6_POSE", this);
 		
 		dispGUI = _dispGUI;
