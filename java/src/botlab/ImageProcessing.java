@@ -396,29 +396,54 @@ public class ImageProcessing extends VisEventAdapter
 	
 	public void publish(Triangles triangles, ArrayList<ArrayList<double[]> > lineSegs){
 		map_features_t features = new map_features_t();
-		double f = 672.07;
-		double cx = 620.82;
-		double cy = 456.58;
-		double h = 0.68898;
+		double f = 660.15739;
+		double cx = 621.24230;
+		double cy = 437.02439;
+		double h = 0.215;
+		double th = -0.026256;
+
+		double sth = Math.sin(th);
+		double cth = Math.cos(th);
+
 		features.nlineSegs = lineSegs.size();
 		features.lineSegs = new double[features.nlineSegs][4];
+
 		for(int i = 0; i < features.nlineSegs; i++){
 			ArrayList<double[]> line = lineSegs.get(i);
 			double[] lineStart = line.get(0);
 			double[] lineEnd = line.get(1);
-			features.lineSegs[i][0] = (lineStart[0] - cx) / (lineStart[1] - cy) * h * 0.3048;
-			features.lineSegs[i][1] = f * h / (lineStart[1] - cy) * 0.3048;
-			features.lineSegs[i][2] = (lineEnd[0] - cx) / (lineEnd[1] - cy) * h * 0.3048;
-			features.lineSegs[i][3] = f * h / (lineEnd[1] - cy) * 0.3048;
+			
+			double px = lineStart[0];
+			double py = lineStart[1];
+			
+			double x = (py*h*sth-f*h*cth-cy*h*sth)/(cy*cth-f*sth-py*cth);
+			double y = -(px*h*sth - x*(cx*cth-px*cth) - cx*h*sth)/f;
+			
+			features.lineSegs[i][0] = x;
+			features.lineSegs[i][1] = y;
+
+			px = lineEnd[0];
+			py = lineEnd[1];
+			
+			x = (py*h*sth-f*h*cth-cy*h*sth)/(cy*cth-f*sth-py*cth);
+			y = -(px*h*sth - x*(cx*cth-px*cth) - cx*h*sth)/f;
+			
+			features.lineSegs[i][2] = x;
+			features.lineSegs[i][3] = y;
+
+			//features.lineSegs[i][0] = (lineStart[0] - cx) / (lineStart[1] - cy) * h * 0.3048;
+			//features.lineSegs[i][1] = f * h / (lineStart[1] - cy) * 0.3048;
+			///features.lineSegs[i][2] = (lineEnd[0] - cx) / (lineEnd[1] - cy) * h * 0.3048;
+			//features.lineSegs[i][3] = f * h / (lineEnd[1] - cy) * 0.3048;
 			
 			// fix coordinate frame
-			double temp = features.lineSegs[i][1];
-			features.lineSegs[i][1] = -features.lineSegs[i][0];
-			features.lineSegs[i][0] = temp;
+			//double temp = features.lineSegs[i][1];
+			//features.lineSegs[i][1] = -features.lineSegs[i][0];
+			//features.lineSegs[i][0] = temp;
 
-			temp = features.lineSegs[i][3];
-			features.lineSegs[i][3] = -features.lineSegs[i][2];
-			features.lineSegs[i][2] = temp;
+			//temp = features.lineSegs[i][3];
+			//features.lineSegs[i][3] = -features.lineSegs[i][2];
+			//features.lineSegs[i][2] = temp;
 		}
 
 		
