@@ -82,6 +82,7 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 		if(sendWayPoint){
 			xyt_t wayPoint = new xyt_t();
 			double temp[] = ray.intersectPlaneXY();
+			wayPoint.utime = TimeUtil.utime();
 			wayPoint.xyt = new double[]{temp[0], temp[1], temp[2]};
 			lcm.publish("6_WAYPOINT", wayPoint);
 			
@@ -93,7 +94,7 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 
 	public void drawMap(map_t map)
 	{
-		System.out.println("drawMap");
+		//System.out.println("drawMap");
 		boolean found_point = false;
 		VisWorld.Buffer vb = vw.getBuffer("Map");
 		for(int i = 0; i < map.size; ++i){
@@ -107,8 +108,8 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 				
 			}
 		}
-		if(found_point)
-			System.out.println("found at least one point");
+		//if(found_point)
+			//System.out.println("found at least one point");
 
 		vb.swap();
 	}

@@ -20,12 +20,12 @@ import lcm.lcm.*;
 public class ImageProcessing extends VisEventAdapter
 {
 
-	static final double DEFAULT_CALIBRATE_VAL = -2550;
+	static final double DEFAULT_CALIBRATE_VAL = -2700;
 	static final double DEFAULT_THRESH_VAL = 30;
 	static final int DEFAULT_NUM_STEPS = 200;
 	static final int DEFAULT_POINT_SPREAD = 26;
 	static final double DEFAULT_CORNER_ANG_THRESH = 0.6;
-	static final double DEFAULT_BLUE_THRESH = 285;
+	static final double DEFAULT_BLUE_THRESH = 200;
 	static final double DEFAULT_HALF_BOX_THRESH = 130;
 	static final double DEFAULT_GREEN_THRESH = 355;
 	static final double DEFAULT_SAT_THRESH = 0.52;
@@ -86,8 +86,6 @@ public class ImageProcessing extends VisEventAdapter
 	int mouse[] = new int[2];
 
 	int data[];
-
-	bot_status_t lastPose;
 
         static VisWorld vw;
         static VisLayer vl;
@@ -415,12 +413,12 @@ public class ImageProcessing extends VisEventAdapter
 			
 			// fix coordinate frame
 			double temp = features.lineSegs[i][1];
-			features.lineSegs[i][1] = features.lineSegs[i][0];
-			features.lineSegs[i][0] = -temp;
+			features.lineSegs[i][1] = -features.lineSegs[i][0];
+			features.lineSegs[i][0] = temp;
 
 			temp = features.lineSegs[i][3];
-			features.lineSegs[i][3] = features.lineSegs[i][2];
-			features.lineSegs[i][2] = -temp;
+			features.lineSegs[i][3] = -features.lineSegs[i][2];
+			features.lineSegs[i][2] = temp;
 		}
 
 		
@@ -432,11 +430,9 @@ public class ImageProcessing extends VisEventAdapter
 			features.triangles[i][1] = f * h / (mean[1] - cy) * 0.3048;
 			// account for coordinate frame transformation
 			double temp = features.triangles[i][1];
-			features.triangles[i][1] = features.triangles[i][0];
-			features.triangles[i][0] = -temp;
+			features.triangles[i][1] = -features.triangles[i][0];
+			features.triangles[i][0] = temp;
 		}
-		if(lastPose == null)lastPose = new bot_status_t();
-		//features.bot=lastPose;
 		features.utime = timeOfImage;
 		lcm.publish("6_FEATURES", features);
 	}
@@ -556,7 +552,7 @@ public class ImageProcessing extends VisEventAdapter
 			//	 && (eigens[1] > minSizeThreshold) && (eigens[0] < maxSizeThreshold)
 			//	&& (points.size() > 60)){
 			if((Math.abs(cluster.areaBox() / 2.0 - cluster.points.size()) < halfBoxThresh) && 
-				(cluster.points.size() > 60) && (cluster.aspectRatio() > .6)){
+				(cluster.points.size() > 200) && (cluster.aspectRatio() > .6)){
 			//if(cluster.points.size() > 50){
 					
 				triangles.addTriangle(cluster.getMean(), 
@@ -740,6 +736,7 @@ public class ImageProcessing extends VisEventAdapter
 		while(true) {
 			// read a frame
 			byte buf[] = is.getFrame().data;
+			buf = is.getFrame().data;
 			if (buf == null)
 				continue;
 
@@ -820,7 +817,7 @@ public class ImageProcessing extends VisEventAdapter
 		}
 
 		ImageSource is = ImageSource.make(url);
-		new ImageProcessing(is, false).run();
+		new ImageProcessing(is, true).run();
 	}
 
 

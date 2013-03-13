@@ -1,0 +1,6 @@
+struct slam_vector
+{
+	int64_t utime;
+	int32_t numPoses;
+	xyt_t xyt[numPoses];
+}

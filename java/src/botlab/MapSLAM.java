@@ -28,6 +28,7 @@ public class MapSLAM implements LCMSubscriber
 	int num_solver_iterations = 200;
 	int decimate = 1;	// number of poses to throw out. In other words, every <decimate> poses, 1 pose will be added to the graph
 	int numPoseMessages = 0;
+	int numFeatureMessages = 0;
 
 	private class GraphNodes{
 		ArrayList<Integer> graphNodeIndices;
@@ -48,8 +49,9 @@ public class MapSLAM implements LCMSubscriber
 		// Don't have internet to check
 		public int findNode(long _utime){
 			int size = utimes.size();
-			for(int i = 0; i < size; i++){
-				if(utimes.get(i) == _utime)return graphNodeIndices.get(i);
+			if((long)utimes.get(size - 1) <= _utime)return graphNodeIndices.get(size - 1);
+			for(int i = size - 1; i > 0; i--){
+				if((long)utimes.get(i - 1) <= _utime)return graphNodeIndices.get(i);
 			}
 			return -1;
 		}
@@ -145,8 +147,8 @@ public class MapSLAM implements LCMSubscriber
 					int lastPoseIndex = poseNodes.getLastNodeIndex(); //equivalent to g.nodes.size()
 					poseNodes.addNode(g.nodes.size(), bot.utime);
 					int currPoseIndex = poseNodes.getLastNodeIndex(); //equivalent to g.nodes.size()
+					System.out.println("added pose " + poseNodes.getNumNodes() + " to slam graph as node #" + g.nodes.size());
 					
-					System.out.println("added pose " + poseNodes.getNumNodes() + " to slam graph");
 					// If this is the first pose we are receiving add the node to the graph
 					// and add a POS edge to the graph to constrain the SLAM solution to the real world
 					// POS edges are like gps edges. They constrain the map to the real world. We only
@@ -170,6 +172,7 @@ public class MapSLAM implements LCMSubscriber
  						//For this line lastPoseIndex should always be 0.
 						//****might not be zero if we JUST HAPPEN to get a features
 						// message before a single pose message****
+						if(lastPoseIndex == -1)lastPoseIndex = 0;
 						ge.nodes = new int[]{lastPoseIndex};
 						// should the covariance be 0? or close to 0?
 						ge.z = new double[]{bot.xyt[0], bot.xyt[1], bot.xyt[2]};
@@ -197,7 +200,7 @@ public class MapSLAM implements LCMSubscriber
 									LinAlg.sq(dist*distErr+0.01),
 									LinAlg.sq(rot*rotErr)+Math.toRadians(1)});
 					g.edges.add(ge);
-
+					
 					GXYTNode gn = new GXYTNode();
 					// make the state of this node equal to the state of the last node after
 					// slam + the current POSE observation. Notice the difference between this
@@ -236,6 +239,7 @@ public class MapSLAM implements LCMSubscriber
 				}
 				double[] botSlamPose = LinAlg.copy(g.nodes.get(poseNode).state);
 
+				boolean needToSolve = false;
 				for(int i = 0; i < features.ntriangles; i++){
 					// The feature state is represented as (-z, x, theta_bot) to account
 					// for coordinate frame transformation and orientation between image
@@ -287,10 +291,12 @@ public class MapSLAM implements LCMSubscriber
 						
 						dist = mahalanobisDistance(featureState, g.nodes.get(closeFeatureIndex).state, LinAlg.diag(new double[]{1,1,1}));
 						if(dist < minDist){
-							dist = minDist;
+							minDist = dist;
 							closestFeatureNode = closeFeatureIndex;
 						}
 					}
+					System.out.println("The distance between the current feature and the closest" + 
+								" already observed feature, slam node #" + closestFeatureNode + " is " + minDist);
 					if(minDist > newFeatureDist){
 						// we add the new feature node to the graph and make an
 						// edge between it and the pose from which it was observed.
@@ -298,6 +304,7 @@ public class MapSLAM implements LCMSubscriber
 						gna.state = LinAlg.copy(featureState);
 						gna.init = LinAlg.copy(gna.state);
 						featureNodes.addNode(g.nodes.size(), features.utime);
+						System.out.println("added feature " + featureNodes.getNumNodes() + " to slam graph as node #" + g.nodes.size());
 						g.nodes.add(gna);
 						// Add an edge between the feature and the pose from which
 						// the feature was observed
@@ -322,6 +329,7 @@ public class MapSLAM implements LCMSubscriber
 						// node to the new pose node from which you reobserved the feature
 						assert(closestFeatureNode != -1);
 						ge.nodes = new int[]{poseNode, closestFeatureNode};
+						System.out.println("added edge between pose " + poseNode + " and feature " + closestFeatureNode + " to slam graph");
 						// However you still model the observation as it was taken. From
 						// the new pose to the feature you saw from that pose. NOT from the
 						// new pose to the state of the old feature. Careful of the subtle
@@ -342,11 +350,11 @@ public class MapSLAM implements LCMSubscriber
 						g.edges.add(ge);
 						
 
-						solve();
+						needToSolve = true;
 						//packageAndPublish();
 					}
-
 				}
+				if(needToSolve) solve();
 			}
 		}
 		catch (IOException e)

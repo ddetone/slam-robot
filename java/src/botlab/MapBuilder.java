@@ -66,6 +66,18 @@ public class MapBuilder implements LCMSubscriber
     	map.max = 255;
     }
 
+	public static bot_status_t copyBotStatus(bot_status_t _bot_status){
+		if(_bot_status == null)return null;
+		bot_status_t temp = new bot_status_t();
+		temp.xyt = new double[]{_bot_status.xyt[0], _bot_status.xyt[1], _bot_status.xyt[2]};
+		temp.utime = _bot_status.utime;
+		temp.xyt_dot = new double[]{_bot_status.xyt_dot[0], _bot_status.xyt_dot[1], _bot_status.xyt_dot[2]};
+		temp.cov = new double[][]{new double[]{_bot_status.cov[0][0], _bot_status.cov[0][1], _bot_status.cov[0][2]},
+					new double[]{_bot_status.cov[1][0], _bot_status.cov[1][1], _bot_status.cov[1][2]},
+					new double[]{_bot_status.cov[2][0], _bot_status.cov[2][1], _bot_status.cov[2][2]}};
+		return temp;
+	}
+
 	public void messageReceived(LCM lcm, String channel, LCMDataInputStream dins)
 	{
 		try
@@ -86,7 +98,7 @@ public class MapBuilder implements LCMSubscriber
 					inverse_cost_decay = param.value;
 				}
 			}
-			else if(channel.equals("6_POSE"))
+			/*else if(channel.equals("6_POSE"))
 			{
 				if(from_log) {
 					bot_status_t new_bot_status = new bot_status_t(dins);
@@ -95,31 +107,39 @@ public class MapBuilder implements LCMSubscriber
 
 					bot_status = new_bot_status;
 				}
-			}
+			} */
+
 			else if(channel.equals("6_FEATURES"))
 			{
-				System.out.println("got_feature");
+				//System.out.println("got_feature");
 				map_features_t features = new map_features_t(dins);
-				if(!from_log) {
-					bot_status = tracker.get(features.utime);
-				}
+
+				// The following must be a COPY or any alterations to bot_status 
+				// may change the actual bot_status that may be returned by tracker
+				// again at a later time. This would result in multiple operations
+				// to the same pose. In other words, we would add the offset to the
+				// xyt[0] and xyt[1] of the same pose multiple times.
+				bot_status = copyBotStatus(tracker.get(features.utime));
+
 				
 				if(bot_status == null)
 					return;
-				System.out.println("got_pos");
+				//System.out.println("got_pos");
+				//LinAlg.print(bot_status.xyt);
 				//this.clear();
 				
 				//bot_status = features.bot;
-				//bot_status.xyt[0] += (map.size/2)*map.scale;
-				//bot_status.xyt[1] += (map.size/2)*map.scale;
+				LinAlg.print(bot_status.xyt);
+				bot_status.xyt[0] += (map.size/2)*map.scale;
+				bot_status.xyt[1] += (map.size/2)*map.scale;
 
 				for(int f = 0; f < features.nlineSegs; ++f){
-					System.out.println("adding_feature");
+					//System.out.println("adding_feature");
 					//System.out.println(f);
 					double p1[] = new double[2];
 					double p2[] = new double[2];
-					double l1[] = {features.lineSegs[f][1],features.lineSegs[f][0],0};
-					double l2[] = {features.lineSegs[f][3],features.lineSegs[f][2],0};
+					double l1[] = {features.lineSegs[f][0],features.lineSegs[f][1],0};
+					double l2[] = {features.lineSegs[f][2],features.lineSegs[f][3],0};
 
 					p1 = LinAlg.xytMultiply(bot_status.xyt, l1);
 					p2 = LinAlg.xytMultiply(bot_status.xyt, l2);
@@ -176,10 +196,11 @@ public class MapBuilder implements LCMSubscriber
 						
 						int x = (int) (wall_point[0] / map.scale);
 						int y = (int) (wall_point[1] / map.scale);
-						System.out.println(x + " " + y);
+
+						//System.out.println(x + " " + y);
 						if(x > 0 && y > 0 && x < map.size && y < map.size){
 							map.cost[x][y] = (byte) 255; //highest cost
-							map.knowledge[i][j] = (byte) 2;
+							map.knowledge[x][y] = (byte) 2;
 						}
 						/*
 						for(int j = x - 3; j < x + 3; ++j){
