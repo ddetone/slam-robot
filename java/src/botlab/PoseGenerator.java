@@ -31,6 +31,7 @@ public class PoseGenerator implements LCMSubscriber
 	//pose global
 	//public static double poseG[] = new double[3];
 	public static bot_status_t bot = new bot_status_t();
+	public battery_t battery = new battery_t();
 
 	//Determined emperically
 	static final double metersPerTick = 0.000194;
@@ -58,7 +59,9 @@ public class PoseGenerator implements LCMSubscriber
 					{0,0,0.00001}};
 		this.lcm = LCM.getSingleton();
 		lcm.subscribe("6_MOTOR_FEEDBACK", this);
-
+		lcm.subscribe("6_BATTERY", this);
+		
+	
 	}
 
 	public void messageReceived(LCM lcm, String channel, LCMDataInputStream dins)
@@ -76,6 +79,9 @@ public class PoseGenerator implements LCMSubscriber
 //				System.out.println("T:" + bot_status.xyt[2]);
 //				System.out.println();
 
+			}
+			else if(channel.equals("6_BATTERY")){
+				battery = new battery_t(dins);
 			}
 		}
 		catch (IOException e)
@@ -145,6 +151,8 @@ public class PoseGenerator implements LCMSubscriber
 
 		bot.utime = TimeUtil.utime();
 		bot.cov = sigmaB;
+
+		bot.voltage = battery.voltage;
 		lcm.publish("6_POSE",bot);
 		
 		/*
