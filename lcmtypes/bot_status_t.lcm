@@ -7,4 +7,6 @@ struct bot_status_t
 	double xyt_dot[3];
 	double yaw; 				// calculated from gyro
 	double cov[3][3];           // covariance matrix for x,y,z
+
+	float voltage;  			// battery voltage
 }
