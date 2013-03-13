@@ -172,6 +172,7 @@ public class MapSLAM implements LCMSubscriber
  						//For this line lastPoseIndex should always be 0.
 						//****might not be zero if we JUST HAPPEN to get a features
 						// message before a single pose message****
+						if(lastPoseIndex == -1)lastPoseIndex = 0;
 						ge.nodes = new int[]{lastPoseIndex};
 						// should the covariance be 0? or close to 0?
 						ge.z = new double[]{bot.xyt[0], bot.xyt[1], bot.xyt[2]};
@@ -350,10 +351,12 @@ public class MapSLAM implements LCMSubscriber
 						
 
 						needToSolve = true;
-						//packageAndPublish();
 					}
 				}
-				if(needToSolve) solve();
+				packageAndPublish();
+				if(needToSolve){
+					solve();
+				}
 			}
 		}
 		catch (IOException e)
@@ -381,6 +384,31 @@ public class MapSLAM implements LCMSubscriber
 		}
 		
 		System.out.println("Done fixing slam graph after " + numIterations + " iterations.");
+	}
+
+	public void packageAndPublish(){
+		
+		slam_vector_t pose_out = new slam_vector_t();
+		int numNodes = poseNodes.getNumNodes();
+
+		xyt_t[] pose_out_xyts = new xyt_t[numNodes];
+		
+		pose_out.numPoses = numNodes;
+
+		for(int i = 0; i < numNodes; i++){
+
+			pose_out_xyts[i] = new xyt_t();
+
+			pose_out_xyts[i].xyt = LinAlg.copy(g.nodes.get(poseNodes.getNodeGraphIndex(i)).state);
+
+			pose_out_xyts[i].utime = poseNodes.utimes.get(i);
+
+		}
+		
+		pose_out.xyt = pose_out_xyts;
+		
+		lcm.publish("6_SLAM_POSES", pose_out);
+		
 	}
 
 

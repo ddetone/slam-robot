@@ -23,7 +23,7 @@ public class PathPlanner implements LCMSubscriber
 
 	LCM lcm;
 	map_t map = null;
-	map_t travel_cost_map = null;
+	int travel_cost_map[][];
 	bot_status_t status = null;
 	xyt_t goal = null;
 
@@ -49,11 +49,13 @@ public class PathPlanner implements LCMSubscriber
 			}
 			if(channel.equals("6_GOAL"))
 			{
-				status = new bot_status_t(dins);
+				goal = new xyt_t(dins);
 			}
 
 			if(map != null && status != null && goal != null){
-				xyt_t waypoint = nextWaypoint(aStar());
+				
+				aStar();
+				xyt_t waypoint = nextWaypoint();
 				lcm.publish("6_WAYPOINT",waypoint);
 			}
 		}
@@ -63,17 +65,15 @@ public class PathPlanner implements LCMSubscriber
 		}
 	}
 
-	public map_t aStar()
+	public void aStar()
 	{
 		ArrayList<MapNode> closed_set = new ArrayList<MapNode>();
 		PriorityQueue<MapNode> open_set = new PriorityQueue<MapNode>();
-		travel_cost_map = new map_t();
-		travel_cost_map.size = map.size;
-		travel_cost_map.scale = map.scale;
-		travel_cost_map.cost = new int[map.size][map.size];
+		travel_cost_map = new int[map.size][map.size];
+
 		for(int i = 0; i < map.size; ++i){
 			for(int j = 0; j < map.size; ++j){
-				travel_cost_map.cost[i][j] = Integer.MAX_VALUE;
+				travel_cost_map[i][j] = Integer.MAX_VALUE;
 			}
 		}
 		
@@ -83,16 +83,16 @@ public class PathPlanner implements LCMSubscriber
 		{
 			MapNode current = open_set.poll();
 			closed_set.add(current);
-			if(current.x == status.xyt[0]/travel_cost_map.scale && current.y == status.xyt[1]/travel_cost_map.scale){
-				return travel_cost_map;
+			if(current.x == status.xyt[0]/map.scale && current.y == status.xyt[1]/map.scale){
+				return;
 			}
 			
 			
 			for(MapNode neighbor : current.neighbors())
 			{
-				if(map.cost[neighbor.x][neighbor.y] > 0.6 * map.max)
+				if((map.cost[neighbor.x][neighbor.y] & 0xFF) > 0.6 * map.max)
 					continue;
-				int tentative_g_score = current.cost() + map.max/(map.size*map.size) + map.cost[neighbor.x][neighbor.y];
+				int tentative_g_score = current.cost() + map.max/(map.size*map.size) + map.cost[neighbor.x][neighbor.y] & 0xFF;
 
 				boolean in_closed_set = false;
 				for(MapNode compare : closed_set) {
@@ -113,18 +113,18 @@ public class PathPlanner implements LCMSubscriber
 					}
 				}
 				if(!in_open_set || tentative_g_score < neighbor.cost()){
-					travel_cost_map.cost[neighbor.x][neighbor.y] = tentative_g_score;
+					travel_cost_map[neighbor.x][neighbor.y] = tentative_g_score;
 					if(!in_open_set)
 						open_set.add(neighbor);
 				}
 			}
 		}
-		return null;
+		return;
 	}
 
-	public xyt_t nextWaypoint(map_t travel_cost_map)
+	public xyt_t nextWaypoint()
 	{
-		MapNode start = new MapNode((int) (status.xyt[0]/travel_cost_map.scale),(int)(status.xyt[1]/travel_cost_map.scale),this);
+		MapNode start = new MapNode((int) (status.xyt[0]/map.scale),(int)(status.xyt[1]/map.scale),this);
 		MapNode minNeighbor = null;
 		for(MapNode neighbor : start.neighbors()){
 			if(minNeighbor == null || neighbor.cost() < minNeighbor.cost()){
@@ -138,8 +138,8 @@ public class PathPlanner implements LCMSubscriber
 			}
 		}
 		xyt_t ret = new xyt_t();
-		ret.xyt[0] = minNeighbor.x * travel_cost_map.scale;
-		ret.xyt[1] = minNeighbor.y * travel_cost_map.scale;
+		ret.xyt[0] = minNeighbor.x * map.scale;
+		ret.xyt[1] = minNeighbor.y * map.scale;
 		if(secMinNeighbor.x < minNeighbor.x - .01)
 			ret.xyt[2] = Math.PI;
 		else if(secMinNeighbor.x > minNeighbor.x + .01)

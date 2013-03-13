@@ -41,13 +41,13 @@ public class MapNode implements Comparable
 	public int heuristic()
 	{
 		double xy[] = {x,y};
-		double goalxy[] = {pp.goal.xyt[0]/pp.travel_cost_map.scale,pp.goal.xyt[1]/pp.travel_cost_map.scale};
+		double goalxy[] = {pp.goal.xyt[0]/pp.map.scale,pp.goal.xyt[1]/pp.map.scale};
 		return (int) LinAlg.distance(xy, goalxy,2);
 	}
 
 	public int cost()
 	{
-		return pp.travel_cost_map.cost[x][y];
+		return pp.travel_cost_map[x][y];
 	}
 
 	public ArrayList<MapNode> neighbors()
@@ -67,12 +67,12 @@ public class MapNode implements Comparable
 				ret.add(new MapNode(x, y - 1, pp));
 			}
 			if(i == 2){
-				if(x ==pp.travel_cost_map.size)
+				if(x ==pp.map.size)
 					continue;
 				ret.add(new MapNode(x + 1, y, pp));
 			}
 			if(i == 3){
-				if(y ==pp.travel_cost_map.size)
+				if(y ==pp.map.size)
 					continue;
 				ret.add(new MapNode(x, y+1, pp));
 			}
