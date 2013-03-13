@@ -37,10 +37,11 @@ public class MapBuilder implements LCMSubscriber
 	bot_status_t bot_status;
 	map_t map;
 	double dist_traveled;
+	boolean from_log;
 
 
 
-    MapBuilder()
+    MapBuilder(boolean data_from_log)
     {
         this.lcm =  LCM.getSingleton();
         map = new map_t();
@@ -57,6 +58,7 @@ public class MapBuilder implements LCMSubscriber
         map.cost = new byte[(int) map.size][(int) map.size];
         map.knowledge = new byte[(int) map.size][(int) map.size];
         dist_traveled = 0.0;
+        from_log = data_from_log;
     }
 
     public void clear() {
@@ -86,20 +88,21 @@ public class MapBuilder implements LCMSubscriber
 			}
 			else if(channel.equals("6_POSE"))
 			{
-				bot_status_t new_bot_status = new bot_status_t(dins);
-				new_bot_status.xyt[0] += (map.size/2)*map.scale;
-				new_bot_status.xyt[1] += (map.size/2)*map.scale;
+				if(from_log) {
+					bot_status_t new_bot_status = new bot_status_t(dins);
+					new_bot_status.xyt[0] += (map.size/2)*map.scale;
+					new_bot_status.xyt[1] += (map.size/2)*map.scale;
 
-				//marginalize(new_bot_status);
-
-				bot_status = new_bot_status;
-				System.out.println("got_pose");
+					bot_status = new_bot_status;
+				}
 			}
 			else if(channel.equals("6_FEATURES"))
 			{
 				System.out.println("got_feature");
 				map_features_t features = new map_features_t(dins);
-				//bot_status = tracker.get(features.utime);
+				if(!from_log) {
+					bot_status = tracker.get(features.utime);
+				}
 				
 				if(bot_status == null)
 					return;
@@ -120,16 +123,10 @@ public class MapBuilder implements LCMSubscriber
 
 					p1 = LinAlg.xytMultiply(bot_status.xyt, l1);
 					p2 = LinAlg.xytMultiply(bot_status.xyt, l2);
-					/*
-					p1[0] = bot_status.xyt[0] + features.lineSegs[f][0];
-					p1[1] = bot_status.xyt[1] + features.lineSegs[f][1];
-
-					p2[0] = bot_status.xyt[0] + features.lineSegs[f][2];
-					p2[1] = bot_status.xyt[1] + features.lineSegs[f][3];
-					*/
 
 
 					//remove things in line of sight (replaces ray casting)
+					//uses barycentric coords to tell if it's in triangle
 					int xmin = (int) (Math.min(p1[0],Math.min(p2[0],bot_status.xyt[0])) / map.scale);
 					int xmax = (int) (Math.max(p1[0],Math.max(p2[0],bot_status.xyt[0])) / map.scale);
 					int ymin = (int) (Math.min(p1[1],Math.min(p2[1],bot_status.xyt[1])) / map.scale);
@@ -147,6 +144,7 @@ public class MapBuilder implements LCMSubscriber
 							if(lambda3 < 0.0 || lambda3 > 1.0)
 								continue;
 							map.cost[i][j] = (byte) 0;
+							map.knowledge[i][j] = (byte) 1;
 						}
 					}
 
@@ -179,8 +177,10 @@ public class MapBuilder implements LCMSubscriber
 						int x = (int) (wall_point[0] / map.scale);
 						int y = (int) (wall_point[1] / map.scale);
 						System.out.println(x + " " + y);
-						if(x > 0 && y > 0 && x < map.size && y < map.size)
+						if(x > 0 && y > 0 && x < map.size && y < map.size){
 							map.cost[x][y] = (byte) 255; //highest cost
+							map.knowledge[i][j] = (byte) 2;
+						}
 						/*
 						for(int j = x - 3; j < x + 3; ++j){
 							for(int k = y - 3; k < y + 3; ++k){
@@ -260,7 +260,12 @@ public class MapBuilder implements LCMSubscriber
 
 	public static void main(String[] args)
 	{
-		MapBuilder mb = new MapBuilder();
+		MapBuilder mb = null;
+		if(args[1] == "-l") {
+			mb = new MapBuilder(true);
+		} else {
+			mb = new MapBuilder(false);
+		}
 
         while(true)
         {
