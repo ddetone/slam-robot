@@ -125,6 +125,7 @@ public class MapBuilder implements LCMSubscriber
 				//this.clear();
 				
 				//bot_status = features.bot;
+				LinAlg.print(bot_status.xyt);
 				bot_status.xyt[0] += (map.size/2)*map.scale;
 				bot_status.xyt[1] += (map.size/2)*map.scale;
 

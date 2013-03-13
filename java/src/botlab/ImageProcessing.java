@@ -87,8 +87,6 @@ public class ImageProcessing extends VisEventAdapter
 
 	int data[];
 
-	bot_status_t lastPose;
-
         static VisWorld vw;
         static VisLayer vl;
         static VisCanvas vc;
@@ -435,8 +433,6 @@ public class ImageProcessing extends VisEventAdapter
 			features.triangles[i][1] = -features.triangles[i][0];
 			features.triangles[i][0] = temp;
 		}
-		if(lastPose == null)lastPose = new bot_status_t();
-		//features.bot=lastPose;
 		features.utime = timeOfImage;
 		lcm.publish("6_FEATURES", features);
 	}
@@ -740,6 +736,7 @@ public class ImageProcessing extends VisEventAdapter
 		while(true) {
 			// read a frame
 			byte buf[] = is.getFrame().data;
+			buf = is.getFrame().data;
 			if (buf == null)
 				continue;
 
