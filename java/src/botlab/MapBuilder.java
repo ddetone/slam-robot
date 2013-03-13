@@ -38,6 +38,7 @@ public class MapBuilder implements LCMSubscriber
 	map_t map;
 	double dist_traveled;
 	boolean from_log;
+	LinkedList<map_features_t> all_features;
 
 
 
@@ -46,9 +47,11 @@ public class MapBuilder implements LCMSubscriber
         this.lcm =  LCM.getSingleton();
         map = new map_t();
         bot_status = null;
+        all_features = new LinkedList<map_features_t>();
 
 		tracker = botlab.PoseTracker.getSingleton();
 
+		bot_status = new bot_status_t();
         lcm.subscribe("6_POSE",this);
         lcm.subscribe("6_PARAM",this);
         lcm.subscribe("6_FEATURES",this);
@@ -112,141 +115,149 @@ public class MapBuilder implements LCMSubscriber
 			else if(channel.equals("6_FEATURES"))
 			{
 				//System.out.println("got_feature");
-				map_features_t features = new map_features_t(dins);
-
-				// The following must be a COPY or any alterations to bot_status 
-				// may change the actual bot_status that may be returned by tracker
-				// again at a later time. This would result in multiple operations
-				// to the same pose. In other words, we would add the offset to the
-				// xyt[0] and xyt[1] of the same pose multiple times.
-				bot_status = copyBotStatus(tracker.get(features.utime));
-
+				all_features.add(new map_features_t(dins));
 				
-				if(bot_status == null)
-					return;
-				//System.out.println("got_pos");
-				//LinAlg.print(bot_status.xyt);
-				//this.clear();
-				
-				//bot_status = features.bot;
-				LinAlg.print(bot_status.xyt);
-				bot_status.xyt[0] += (map.size/2)*map.scale;
-				bot_status.xyt[1] += (map.size/2)*map.scale;
+			}
+			else if(channel.equals("6_SLAM_POSES"))
+			{
+				this.clear();
+				slam_vector_t slam_vec = new slam_vector_t(dins);
 
-				for(int f = 0; f < features.nlineSegs; ++f){
-					//System.out.println("adding_feature");
-					//System.out.println(f);
-					double p1[] = new double[2];
-					double p2[] = new double[2];
-					double l1[] = {features.lineSegs[f][0],features.lineSegs[f][1],0};
-					double l2[] = {features.lineSegs[f][2],features.lineSegs[f][3],0};
-
-					p1 = LinAlg.xytMultiply(bot_status.xyt, l1);
-					p2 = LinAlg.xytMultiply(bot_status.xyt, l2);
-
-
-					//remove things in line of sight (replaces ray casting)
-					//uses barycentric coords to tell if it's in triangle
-					int xmin = (int) (Math.min(p1[0],Math.min(p2[0],bot_status.xyt[0])) / map.scale);
-					int xmax = (int) (Math.max(p1[0],Math.max(p2[0],bot_status.xyt[0])) / map.scale);
-					int ymin = (int) (Math.min(p1[1],Math.min(p2[1],bot_status.xyt[1])) / map.scale);
-					int ymax = (int) (Math.max(p1[1],Math.max(p2[1],bot_status.xyt[1])) / map.scale);
-					double det = ((p2[1]-bot_status.xyt[1])*(p1[0]-bot_status.xyt[0])+ (bot_status.xyt[0]-p2[0])*(p1[1]-bot_status.xyt[1]));
-					for(int i = xmin; i < xmax; ++i){
-						for(int j = ymin; j < ymax; ++j){
-							double lambda1 = ((p2[1]-bot_status.xyt[1])*(i*map.scale - bot_status.xyt[0])  + (bot_status.xyt[0]-p2[0])*(j*map.scale - bot_status.xyt[1]))/det;
-							if(lambda1 < 0.0 || lambda1 > 1.0)
-								continue;
-							double lambda2 = ((bot_status.xyt[1]-p1[1])*(i*map.scale - bot_status.xyt[0])  + (p1[0]-bot_status.xyt[0])*(j*map.scale - bot_status.xyt[1]))/det;
-							if(lambda2 < 0.0 || lambda2 > 1.0)
-								continue;
-							double lambda3 = 1 - lambda1 - lambda2;
-							if(lambda3 < 0.0 || lambda3 > 1.0)
-								continue;
-							map.cost[i][j] = (byte) 0;
-							map.knowledge[i][j] = (byte) 1;
+				for(map_features_t features : all_features)
+				{
+					bot_status.xyt = null;
+					for(int i = 0; i < slam_vec.numPoses; ++i){
+						if(slam_vec.xyt[i].utime > features.utime){
+							bot_status.xyt = slam_vec.xyt[(int) Math.max(i - 1,0)].xyt;
 						}
 					}
+					
+					if(bot_status.xyt == null)
+						return;
+					//System.out.println("got_pos");
+					//LinAlg.print(bot_status.xyt);
+					//this.clear();
+					
+					//bot_status = features.bot;
+					LinAlg.print(bot_status.xyt);
+					bot_status.xyt[0] += (map.size/2)*map.scale;
+					bot_status.xyt[1] += (map.size/2)*map.scale;
+
+					for(int f = 0; f < features.nlineSegs; ++f){
+						//System.out.println("adding_feature");
+						//System.out.println(f);
+						double p1[] = new double[2];
+						double p2[] = new double[2];
+						double l1[] = {features.lineSegs[f][0],features.lineSegs[f][1],0};
+						double l2[] = {features.lineSegs[f][2],features.lineSegs[f][3],0};
+
+						p1 = LinAlg.xytMultiply(bot_status.xyt, l1);
+						p2 = LinAlg.xytMultiply(bot_status.xyt, l2);
 
 
-					//add points to map
-					double dist = LinAlg.distance(p1,p2,2);
-					int nsteps = (int) (dist/map.scale)+1;
-
-					for(int i = 0; i <= nsteps; ++i){ //for each pixel between p1 and p2
-						
-						double wall_point[] = new double[2];
-						wall_point[0] = p1[0]*(double)i/nsteps + p2[0]*(1.0-(double)i/nsteps);
-						wall_point[1] = p1[1]*(double)i/nsteps + p2[1]*(1.0-(double)i/nsteps);
-
-						//raycast to points
-						/*
-						double rdist = LinAlg.distance(bot_status.xyt,wall_point,2);
-						int rsteps = (int) (rdist/map.scale)+1;
-						
-						for(int r = 0; r < rsteps; ++r){
-							int rx = (int) ((wall_point[0]*(double)i/nsteps + bot_status.xyt[0]*(1.0-(double)i/nsteps))/map.scale);
-							int ry = (int) ((wall_point[1]*(double)i/nsteps + bot_status.xyt[1]*(1.0-(double)i/nsteps))/map.scale);
-							if(rx > 0 && ry > 0 && rx < map.size && ry < map.size) {
-								map.cost[rx][ry] = 0;
-								//map.knowledge[rx][ry] = 1;
-							}
-						}
-						*/
-						
-						int x = (int) (wall_point[0] / map.scale);
-						int y = (int) (wall_point[1] / map.scale);
-
-						//System.out.println(x + " " + y);
-						if(x > 0 && y > 0 && x < map.size && y < map.size){
-							map.cost[x][y] = (byte) 255; //highest cost
-							map.knowledge[x][y] = (byte) 2;
-						}
-						/*
-						for(int j = x - 3; j < x + 3; ++j){
-							for(int k = y - 3; k < y + 3; ++k){
-								if(j == x && k == y || k < 0 || k >= map.size || j < 0 || j >= map.size)
+						//remove things in line of sight (replaces ray casting)
+						//uses barycentric coords to tell if it's in triangle
+						int xmin = (int) (Math.min(p1[0],Math.min(p2[0],bot_status.xyt[0])) / map.scale);
+						int xmax = (int) (Math.max(p1[0],Math.max(p2[0],bot_status.xyt[0])) / map.scale);
+						int ymin = (int) (Math.min(p1[1],Math.min(p2[1],bot_status.xyt[1])) / map.scale);
+						int ymax = (int) (Math.max(p1[1],Math.max(p2[1],bot_status.xyt[1])) / map.scale);
+						double det = ((p2[1]-bot_status.xyt[1])*(p1[0]-bot_status.xyt[0])+ (bot_status.xyt[0]-p2[0])*(p1[1]-bot_status.xyt[1]));
+						for(int i = xmin; i < xmax; ++i){
+							for(int j = ymin; j < ymax; ++j){
+								double lambda1 = ((p2[1]-bot_status.xyt[1])*(i*map.scale - bot_status.xyt[0])  + (bot_status.xyt[0]-p2[0])*(j*map.scale - bot_status.xyt[1]))/det;
+								if(lambda1 < 0.0 || lambda1 > 1.0)
 									continue;
-								double w[] = {x,y};
-								double d[] = {j,k};
-								map.cost[j][k] = (byte) Math.max(255.0 - (inverse_cost_decay * LinAlg.distance(w,d)), map.cost[j][k]);
+								double lambda2 = ((bot_status.xyt[1]-p1[1])*(i*map.scale - bot_status.xyt[0])  + (p1[0]-bot_status.xyt[0])*(j*map.scale - bot_status.xyt[1]))/det;
+								if(lambda2 < 0.0 || lambda2 > 1.0)
+									continue;
+								double lambda3 = 1 - lambda1 - lambda2;
+								if(lambda3 < 0.0 || lambda3 > 1.0)
+									continue;
+								map.cost[i][j] = (byte) 0;
+								map.knowledge[i][j] = (byte) 1;
 							}
 						}
-						*/
 
-						//System.out.println((wall_point[0]/map.scale)+ ", " +(int)(wall_point[1]/map.scale));
-						/*for(int k = 0; k < map.size; ++k){ //calculate costs
-							for(int j = 0; j < map.size; ++j){
 
-								//use if marginalizing
-								if(k == (int) (wall_point[0] / map.scale) && j == (int) (wall_point[1]/map.scale))	
-									map.cost[k][j] = 255; //highest cost
-								else
-								{
-									int kj[] = {k, j};
-									int wp[] = {(int) (wall_point[0]/map.scale), (int)(wall_point[1]/map.scale)};
-									//map.cost[k][j] = Math.max(map.cost[k][j], Math.min(255, (int) (255.0/(LinAlg.distance(kj,wp)*inverse_cost_decay)))); //inverse distance decay
+						//add points to map
+						double dist = LinAlg.distance(p1,p2,2);
+						int nsteps = (int) (dist/map.scale)+1;
+
+						for(int i = 0; i <= nsteps; ++i){ //for each pixel between p1 and p2
+							
+							double wall_point[] = new double[2];
+							wall_point[0] = p1[0]*(double)i/nsteps + p2[0]*(1.0-(double)i/nsteps);
+							wall_point[1] = p1[1]*(double)i/nsteps + p2[1]*(1.0-(double)i/nsteps);
+
+							//raycast to points
+							/*
+							double rdist = LinAlg.distance(bot_status.xyt,wall_point,2);
+							int rsteps = (int) (rdist/map.scale)+1;
+							
+							for(int r = 0; r < rsteps; ++r){
+								int rx = (int) ((wall_point[0]*(double)i/nsteps + bot_status.xyt[0]*(1.0-(double)i/nsteps))/map.scale);
+								int ry = (int) ((wall_point[1]*(double)i/nsteps + bot_status.xyt[1]*(1.0-(double)i/nsteps))/map.scale);
+								if(rx > 0 && ry > 0 && rx < map.size && ry < map.size) {
+									map.cost[rx][ry] = 0;
+									//map.knowledge[rx][ry] = 1;
 								}
-								map.max = 255;
-								
-
-								//use if covariance-ing
-								/*
-								double x_minus_mu[][] = {{j/map.scale - wall_point[0]},{k/map.scale - wall_point[1]}};
-								double cov[][] = {{bot_status.cov[0][0],bot_status.cov[0][1]},{bot_status.cov[1][0],bot_status.cov[1][1]}};
-
-								//Calculate cost
-								//cost = 1 / decay * (x-u)*E^-1*(x-u)^T
-								double[][] chi_squared = LinAlg.multiplyMany(x_minus_mu, LinAlg.inverse(cov),LinAlg.transpose(x_minus_mu));
-								int cost = (int) (1.0/(inverse_cost_decay *chi_squared[0][0]));
-								map.cost[j][k] = Math.max(map.cost[j][k], cost);
-								
-								map.max = Math.max(map.max, cost);
-								*/
-								/*
 							}
+							*/
+							
+							int x = (int) (wall_point[0] / map.scale);
+							int y = (int) (wall_point[1] / map.scale);
+
+							//System.out.println(x + " " + y);
+							if(x > 0 && y > 0 && x < map.size && y < map.size){
+								map.cost[x][y] = (byte) 255; //highest cost
+								map.knowledge[x][y] = (byte) 2;
+							}
+							/*
+							for(int j = x - 3; j < x + 3; ++j){
+								for(int k = y - 3; k < y + 3; ++k){
+									if(j == x && k == y || k < 0 || k >= map.size || j < 0 || j >= map.size)
+										continue;
+									double w[] = {x,y};
+									double d[] = {j,k};
+									map.cost[j][k] = (byte) Math.max(255.0 - (inverse_cost_decay * LinAlg.distance(w,d)), map.cost[j][k]);
+								}
+							}
+							*/
+
+							//System.out.println((wall_point[0]/map.scale)+ ", " +(int)(wall_point[1]/map.scale));
+							/*for(int k = 0; k < map.size; ++k){ //calculate costs
+								for(int j = 0; j < map.size; ++j){
+
+									//use if marginalizing
+									if(k == (int) (wall_point[0] / map.scale) && j == (int) (wall_point[1]/map.scale))	
+										map.cost[k][j] = 255; //highest cost
+									else
+									{
+										int kj[] = {k, j};
+										int wp[] = {(int) (wall_point[0]/map.scale), (int)(wall_point[1]/map.scale)};
+										//map.cost[k][j] = Math.max(map.cost[k][j], Math.min(255, (int) (255.0/(LinAlg.distance(kj,wp)*inverse_cost_decay)))); //inverse distance decay
+									}
+									map.max = 255;
+									
+
+									//use if covariance-ing
+									/*
+									double x_minus_mu[][] = {{j/map.scale - wall_point[0]},{k/map.scale - wall_point[1]}};
+									double cov[][] = {{bot_status.cov[0][0],bot_status.cov[0][1]},{bot_status.cov[1][0],bot_status.cov[1][1]}};
+
+									//Calculate cost
+									//cost = 1 / decay * (x-u)*E^-1*(x-u)^T
+									double[][] chi_squared = LinAlg.multiplyMany(x_minus_mu, LinAlg.inverse(cov),LinAlg.transpose(x_minus_mu));
+									int cost = (int) (1.0/(inverse_cost_decay *chi_squared[0][0]));
+									map.cost[j][k] = Math.max(map.cost[j][k], cost);
+									
+									map.max = Math.max(map.max, cost);
+									*/
+									/*
+								}
+							}
+							*/
 						}
-						*/
 					}
 				}
 
