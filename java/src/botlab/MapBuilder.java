@@ -51,7 +51,7 @@ public class MapBuilder implements LCMSubscriber
 		tracker = botlab.PoseTracker.getSingleton();
 
 		bot_status = new bot_status_t();
-        lcm.subscribe("6_POSE",this);
+        //lcm.subscribe("6_POSE",this);
         lcm.subscribe("6_PARAM",this);
         lcm.subscribe("6_FEATURES",this);
         lcm.subscribe("6_SLAM_POSES",this);
@@ -269,7 +269,12 @@ public class MapBuilder implements LCMSubscriber
 					}
 				}
 
-				
+				map.numTriangles = slam_vec.numTriangles;
+				map.triangles = new double[map.numTriangles][2];
+				for(int i = 0; i < map.numTriangles; i++){
+					map.triangles[i][0] = slam_vec.triangles[i][0];
+					map.triangles[i][1] = slam_vec.triangles[i][1];
+				}
 
 				lcm.publish("6_MAP",map);
 			}

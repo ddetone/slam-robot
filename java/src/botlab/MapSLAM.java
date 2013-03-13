@@ -292,9 +292,9 @@ public class MapSLAM implements LCMSubscriber
 						// is correct.
 						// In the mean time, the following effectively calculates the
 						// euclidean distance. In fact, it just does calculate the euclidean
-						// distance.
+						// distance practically ignoring theta for now.
 						
-						dist = mahalanobisDistance(featureState, g.nodes.get(closeFeatureIndex).state, LinAlg.diag(new double[]{1,1,1}));
+						dist = mahalanobisDistance(featureState, g.nodes.get(closeFeatureIndex).state, LinAlg.diag(new double[]{1,1,0.01}));
 						if(dist < minDist){
 							minDist = dist;
 							closestFeatureNode = closeFeatureIndex;
@@ -404,13 +404,24 @@ public class MapSLAM implements LCMSubscriber
 
 			pose_out_xyts[i] = new xyt_t();
 
-			pose_out_xyts[i].xyt = LinAlg.copy(g.nodes.get(poseNodes.getNodeGraphIndex(i)).state);
+			pose_out_xyts[i].xyt = g.nodes.get(poseNodes.getNodeGraphIndex(i)).state;
 
 			pose_out_xyts[i].utime = poseNodes.utimes.get(i);
 
 		}
 		
 		pose_out.xyt = pose_out_xyts;
+
+		int numFeatures = featureNodes.getNumNodes();
+		
+		pose_out.numTriangles = numFeatures;
+		pose_out.triangles = new double[numFeatures][2];
+		
+		for(int i = 0; i < numFeatures; i++){
+			double f_xy[] = g.nodes.get(featureNodes.getNodeGraphIndex(i)).state;
+			pose_out.triangles[i][0] = f_xy[0];
+			pose_out.triangles[i][1] = f_xy[1];
+		}
 		
 		lcm.publish("6_SLAM_POSES", pose_out);
 		
