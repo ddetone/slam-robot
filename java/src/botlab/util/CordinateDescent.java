@@ -1,6 +1,6 @@
 package botlab.util;
 
-public class CordinateDescent()
+public abstract class CordinateDescent
 {
 	int n;
 	double[] p;
@@ -28,7 +28,7 @@ public class CordinateDescent()
 
 	}
 
-	public double error(double[] parameters);
+	public abstract double error(double[] parameters);
 
 	public double[] getBestParams()
 	{
@@ -43,7 +43,7 @@ public class CordinateDescent()
 
 				if(err < bestErr)
 				{
-					bestErr = error;
+					bestErr = err;
 					dp[i] *= 1.1;
 				}
 				else
@@ -52,17 +52,18 @@ public class CordinateDescent()
 					err = error(p);
 					if(err < bestErr)
 					{
-						bestErr = error;
-						dp *= 1.1;						
+						bestErr = err;
+						dp[i] *= 1.1;						
 					}
 					else
 					{
-						param[i] += dp[i];
+						p[i] += dp[i];
 						dp[i] *= 0.9;
 					}
 				}
 			}
 		}
+        return(p);
 	}
 
 	private double sum(double[] dp)
