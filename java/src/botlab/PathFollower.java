@@ -126,7 +126,7 @@ public class PathFollower implements LCMSubscriber
 				stop();
 				return;
 			}
-			setMotorCommand(0.0F,0.5);
+			setMotorCommand(0.0F,0.5F);
 		}
 
 	}
@@ -187,6 +187,8 @@ public class PathFollower implements LCMSubscriber
 	public static void main(String[] args) throws Exception
 	{
 		PathFollower pl = new PathFollower();
+		
+		pl.rotateBot(10);
 
 		//System.out.println(Math.atan2(12.0,0.0));
 		while(true)
