@@ -402,6 +402,8 @@ public class ImageProcessing extends VisEventAdapter
 		double h = 0.215;
 		double th = -0.026256;
 
+		double ht = h - 0.14; //height of triangle above ground = 14cm
+
 		double sth = Math.sin(th);
 		double cth = Math.cos(th);
 
@@ -451,12 +453,24 @@ public class ImageProcessing extends VisEventAdapter
 		features.triangles = new double[features.ntriangles][2];
 		for(int i = 0; i < features.ntriangles; i++){
 			double[] mean = triangles.getMean(i);
-			features.triangles[i][0] = (mean[0] - cx) / (mean[1] - cy) * h * 0.3048;
-			features.triangles[i][1] = f * h / (mean[1] - cy) * 0.3048;
+
+
+			double px = mean[0];
+			double py = mean[1];
+			
+			double x = (py*h*sth-f*h*cth-cy*h*sth)/(cy*cth-f*sth-py*cth);
+			double y = -(px*h*sth - x*(cx*cth-px*cth) - cx*h*sth)/f;
+			
+			features.triangles[i][0] = x;
+			features.triangles[i][1] = y;
+
+
+			//features.triangles[i][0] = (mean[0] - cx) / (mean[1] - cy) * h * 0.3048;
+			//features.triangles[i][1] = f * h / (mean[1] - cy) * 0.3048;
 			// account for coordinate frame transformation
-			double temp = features.triangles[i][1];
-			features.triangles[i][1] = -features.triangles[i][0];
-			features.triangles[i][0] = temp;
+			//double temp = features.triangles[i][1];
+			//features.triangles[i][1] = -features.triangles[i][0];
+			//features.triangles[i][0] = temp;
 		}
 		features.utime = timeOfImage;
 		lcm.publish("6_FEATURES", features);
