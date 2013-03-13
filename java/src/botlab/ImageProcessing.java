@@ -28,7 +28,7 @@ public class ImageProcessing extends VisEventAdapter
 	static final double DEFAULT_BLUE_THRESH = 200;
 	static final double DEFAULT_HALF_BOX_THRESH = 130;
 	static final double DEFAULT_GREEN_THRESH = 355;
-	static final double DEFAULT_SAT_THRESH = 0.52;
+	static final double DEFAULT_SAT_THRESH = 0.56;
 	static final double DEFAULT_VALUE_THRESH = 0.62;
 
 	static final boolean DEFAULT_DISP_LONG_LINE = false;
@@ -856,7 +856,7 @@ public class ImageProcessing extends VisEventAdapter
 		}
 
 		ImageSource is = ImageSource.make(url);
-		new ImageProcessing(is, true).run();
+		new ImageProcessing(is, false).run();
 	}
 
 

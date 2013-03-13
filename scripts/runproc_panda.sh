@@ -7,7 +7,7 @@ else
 	echo "LCM logging to: $LCM_LOGFILE"
 fi
 
-#run the brain
+source ~/.mybashrc
 
 ### Java memory constants
 export JAVA=/usr/bin/java
