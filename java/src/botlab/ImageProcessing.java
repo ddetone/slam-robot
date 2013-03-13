@@ -415,12 +415,12 @@ public class ImageProcessing extends VisEventAdapter
 			
 			// fix coordinate frame
 			double temp = features.lineSegs[i][1];
-			features.lineSegs[i][1] = features.lineSegs[i][0];
-			features.lineSegs[i][0] = -temp;
+			features.lineSegs[i][1] = -features.lineSegs[i][0];
+			features.lineSegs[i][0] = temp;
 
 			temp = features.lineSegs[i][3];
-			features.lineSegs[i][3] = features.lineSegs[i][2];
-			features.lineSegs[i][2] = -temp;
+			features.lineSegs[i][3] = -features.lineSegs[i][2];
+			features.lineSegs[i][2] = temp;
 		}
 
 		
@@ -432,8 +432,8 @@ public class ImageProcessing extends VisEventAdapter
 			features.triangles[i][1] = f * h / (mean[1] - cy) * 0.3048;
 			// account for coordinate frame transformation
 			double temp = features.triangles[i][1];
-			features.triangles[i][1] = features.triangles[i][0];
-			features.triangles[i][0] = -temp;
+			features.triangles[i][1] = -features.triangles[i][0];
+			features.triangles[i][0] = temp;
 		}
 		if(lastPose == null)lastPose = new bot_status_t();
 		//features.bot=lastPose;

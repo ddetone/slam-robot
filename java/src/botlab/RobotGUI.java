@@ -93,7 +93,7 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 
 	public void drawMap(map_t map)
 	{
-		System.out.println("drawMap");
+		//System.out.println("drawMap");
 		boolean found_point = false;
 		VisWorld.Buffer vb = vw.getBuffer("Map");
 		for(int i = 0; i < map.size; ++i){
@@ -107,8 +107,8 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 				
 			}
 		}
-		if(found_point)
-			System.out.println("found at least one point");
+		//if(found_point)
+			//System.out.println("found at least one point");
 
 		vb.swap();
 	}
