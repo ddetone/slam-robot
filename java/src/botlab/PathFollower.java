@@ -102,7 +102,6 @@ public class PathFollower implements LCMSubscriber
 				return;
 			}
 
-
 			double delta = Kp * errorAngle - Kd * currDotXYT[2];
 			if(delta > 0)
 				left -= delta;
@@ -112,7 +111,23 @@ public class PathFollower implements LCMSubscriber
 		}
 
 		setMotorCommand(left, right);
+	}
 
+	void rotateBot(int rotations)
+	{
+		//double curangle = currXYT[2];
+
+		double total_radians = rotations * (2*Math.PI);
+
+		while (true) //counterclockwise is positive
+		{
+			if (currXYT[2] >= total_radians)
+			{			
+				stop();
+				return;
+			}
+			setMotorCommand(0.0F,0.5);
+		}
 
 	}
 

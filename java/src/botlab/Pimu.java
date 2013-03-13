@@ -30,6 +30,7 @@ public class Pimu implements LCMSubscriber
 	//Gyro and Accelerometer values
 	public static double[] RPYdot = new double[8]; 	
 	public static double[] XYZdot = new double[3];
+	public static double deltayaw;
 	
 	public static int[] prev_integrator = new int[8];	
 	public static int[] integrator = new int[8];
@@ -119,7 +120,7 @@ public class Pimu implements LCMSubscriber
 					getSensorData();
 					System.out.printf("numcalibs:%d\n",num_calibs);
 					num_calibs++;
-					if (num_calibs == 30)  
+					if (num_calibs == 31)  
 					{
 						calibdone = true;
 						calibrating = false;
@@ -127,13 +128,13 @@ public class Pimu implements LCMSubscriber
 						//create the diff values used in calibration
 						for (int i=0; i<8; i++)
 						{
-							if (i<3)
-								XYZdiff[i] = sum_accel[i]/num_calibs;
-							RPYdiff[i] = sum_angvel[i]/num_calibs;
+							if (i<3) //divide by num_calibs-1 since first point is skipped
+								XYZdiff[i] = sum_accel[i]/(num_calibs-1);
+							RPYdiff[i] = sum_angvel[i]/(num_calibs-1);
 						}
 						calculateDots();	
 					}
-					else	
+					else if (num_calibs>1) //the first diff must be skipped	
 						addToSums();
 				}
 				else if (calibdone && !calibrating)
@@ -173,6 +174,7 @@ public class Pimu implements LCMSubscriber
 		for (int i=0; i<8; i++)
 		{
 			double diff = (integrator[i]-prev_integrator[i])/timediff;
+			System.out.printf("integrator diff:%f\n",diff);
 			sum_angvel[i] += diff;
 		}
 		for (int i=0; i<3; i++)
@@ -194,14 +196,18 @@ public class Pimu implements LCMSubscriber
 	 	
 	 	double[] angvel_dat = new double[8]; 			
 		for (int i=0; i<8; i++)
-			angvel_dat[i] = ((integrator[i]-prev_integrator[i])/timediff) - RPYdiff[i];	//must take derviative
+		{
+			angvel_dat[i] = ((integrator[i]-prev_integrator[i])/timediff) - RPYdiff[i];	
+			//angvel_dat[i] = ((integrator[i]-prev_integrator[i])/timediff);	
+		}
 			
 		//average out the multiple channels for each angular direction
 		RPYdot[0] = (angvel_dat[6]+angvel_dat[7])/2;
 		RPYdot[1] = (angvel_dat[2]+angvel_dat[3])/2;
-		RPYdot[2] = (angvel_dat[0]+angvel_dat[1]+angvel_dat[4]+angvel_dat[5])/4;		
+		//RPYdot[2] = (angvel_dat[0]+angvel_dat[1]+angvel_dat[4]+angvel_dat[5])/4;		
+		RPYdot[2] = (angvel_dat[4]+angvel_dat[5])/2;
 		
-		
+		deltayaw = (RPYdot[2]*timediff)/1000000;
 		
 		for (int i=0; i<3; i++)
 		{
@@ -287,6 +293,7 @@ public class Pimu implements LCMSubscriber
 		}
 		return (new double[]{XYZdot[0], XYZdot[1], XYZdot[2]});
 	}
+	public double getDeltaYaw(){return deltayaw;} 
 	public double getTimeDiff(){return (time-prev_time);}	
 }	
 		
