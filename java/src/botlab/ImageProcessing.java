@@ -842,7 +842,7 @@ public class ImageProcessing extends VisEventAdapter
 		}
 
 		ImageSource is = ImageSource.make(url);
-		new ImageProcessing(is, true).run();
+		new ImageProcessing(is, false).run();
 	}
 
 
