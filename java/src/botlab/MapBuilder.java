@@ -37,12 +37,11 @@ public class MapBuilder implements LCMSubscriber
 	bot_status_t bot_status;
 	map_t map;
 	double dist_traveled;
-	boolean from_log;
 	LinkedList<map_features_t> all_features;
 
 
 
-    MapBuilder(boolean data_from_log)
+    MapBuilder()
     {
         this.lcm =  LCM.getSingleton();
         map = new map_t();
@@ -55,13 +54,13 @@ public class MapBuilder implements LCMSubscriber
         lcm.subscribe("6_POSE",this);
         lcm.subscribe("6_PARAM",this);
         lcm.subscribe("6_FEATURES",this);
+        lcm.subscribe("6_SLAM_POSES",this);
         map.scale = 0.06;
         map.max = 255;
         map.size = (int) (10.0/map.scale);
         map.cost = new byte[(int) map.size][(int) map.size];
         map.knowledge = new byte[(int) map.size][(int) map.size];
         dist_traveled = 0.0;
-        from_log = data_from_log;
     }
 
     public void clear() {
@@ -126,19 +125,22 @@ public class MapBuilder implements LCMSubscriber
 				for(map_features_t features : all_features)
 				{
 					bot_status.xyt = null;
-					for(int i = 0; i < slam_vec.numPoses; ++i){
-						if(slam_vec.xyt[i].utime > features.utime){
-							bot_status.xyt = slam_vec.xyt[(int) Math.max(i - 1,0)].xyt;
+					if(slam_vec.xyt[slam_vec.numPoses - 1].utime <= features.utime);
+					for(int i = slam_vec.numPoses - 1; i > 0; --i){
+						if(slam_vec.xyt[i - 1].utime < features.utime){
+							bot_status.xyt = slam_vec.xyt[i].xyt;
+							break;
 						}
 					}
 					
 					if(bot_status.xyt == null)
-						return;
+						continue;
 					//System.out.println("got_pos");
 					//LinAlg.print(bot_status.xyt);
 					//this.clear();
 					
 					//bot_status = features.bot;
+					System.out.println("adding feature to map");
 					LinAlg.print(bot_status.xyt);
 					bot_status.xyt[0] += (map.size/2)*map.scale;
 					bot_status.xyt[1] += (map.size/2)*map.scale;
@@ -293,11 +295,7 @@ public class MapBuilder implements LCMSubscriber
 	public static void main(String[] args)
 	{
 		MapBuilder mb = null;
-		if(args[1] == "-l") {
-			mb = new MapBuilder(true);
-		} else {
-			mb = new MapBuilder(false);
-		}
+		mb = new MapBuilder();
 
         while(true)
         {
