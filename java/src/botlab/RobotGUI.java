@@ -130,7 +130,8 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 				VisWorld.Buffer vb = vw.getBuffer("Battery");
 				battery = new battery_t(dins);
 				
-				if(battery.voltage < 11)vb.addBack(new VisPixCoords(VisPixCoords.ORIGIN.CENTER, new VzText(VzText.ANCHOR.CENTER, "LOW BATTERY VOLTAGE:" + battery.voltage )));
+				if(battery.voltage < 10)vb.addBack(new VisPixCoords(VisPixCoords.ORIGIN.CENTER, new VzText(VzText.ANCHOR.CENTER, "<<sansserif-bold-16,white>>LOW BATTERY VOLTAGE:" + String.format("%.3g%n", battery.voltage))));
+				vb.swap();
 				
 			}
 			if(channel.equals("6_MAP"))
