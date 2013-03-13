@@ -14,3 +14,8 @@ THINGS TO IMPLEMENT
 
 -PD controller for path follower?
 -Camera calibration in both x and y.(intrinsics/extrinsics) I have had it figured out. Just need to implement.
+
+f  = 660.156450
+cx = 621.242328
+cy = 437.021082
+thX= -0.026261
