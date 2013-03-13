@@ -108,6 +108,12 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 				
 			}
 		}
+		
+		for(int i = 0; i < map.numTriangles ; i++)
+		{	
+			VzTriangle tr = new VzTriangle(0.08,0.08,0.08, new VzMesh.Style(Color.green));
+//            VisObject vo_tr = new VisChain(LinAlg.translate(map.triangles[][]));
+		}
 		//if(found_point)
 			//System.out.println("found at least one point");
 
