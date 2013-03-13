@@ -172,6 +172,7 @@ public class MapSLAM implements LCMSubscriber
  						//For this line lastPoseIndex should always be 0.
 						//****might not be zero if we JUST HAPPEN to get a features
 						// message before a single pose message****
+						if(lastPoseIndex == -1)lastPoseIndex = 0;
 						ge.nodes = new int[]{lastPoseIndex};
 						// should the covariance be 0? or close to 0?
 						ge.z = new double[]{bot.xyt[0], bot.xyt[1], bot.xyt[2]};

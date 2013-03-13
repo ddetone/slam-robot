@@ -20,12 +20,12 @@ import lcm.lcm.*;
 public class ImageProcessing extends VisEventAdapter
 {
 
-	static final double DEFAULT_CALIBRATE_VAL = -2550;
+	static final double DEFAULT_CALIBRATE_VAL = -2700;
 	static final double DEFAULT_THRESH_VAL = 30;
 	static final int DEFAULT_NUM_STEPS = 200;
 	static final int DEFAULT_POINT_SPREAD = 26;
 	static final double DEFAULT_CORNER_ANG_THRESH = 0.6;
-	static final double DEFAULT_BLUE_THRESH = 285;
+	static final double DEFAULT_BLUE_THRESH = 200;
 	static final double DEFAULT_HALF_BOX_THRESH = 130;
 	static final double DEFAULT_GREEN_THRESH = 355;
 	static final double DEFAULT_SAT_THRESH = 0.52;
@@ -552,7 +552,7 @@ public class ImageProcessing extends VisEventAdapter
 			//	 && (eigens[1] > minSizeThreshold) && (eigens[0] < maxSizeThreshold)
 			//	&& (points.size() > 60)){
 			if((Math.abs(cluster.areaBox() / 2.0 - cluster.points.size()) < halfBoxThresh) && 
-				(cluster.points.size() > 60) && (cluster.aspectRatio() > .6)){
+				(cluster.points.size() > 200) && (cluster.aspectRatio() > .6)){
 			//if(cluster.points.size() > 50){
 					
 				triangles.addTriangle(cluster.getMean(), 
@@ -817,7 +817,7 @@ public class ImageProcessing extends VisEventAdapter
 		}
 
 		ImageSource is = ImageSource.make(url);
-		new ImageProcessing(is, false).run();
+		new ImageProcessing(is, true).run();
 	}
 
 
