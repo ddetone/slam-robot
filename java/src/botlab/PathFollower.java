@@ -188,8 +188,6 @@ public class PathFollower implements LCMSubscriber
 	{
 		PathFollower pl = new PathFollower();
 		
-		pl.rotateBot(10);
-
 		//System.out.println(Math.atan2(12.0,0.0));
 		while(true)
 		{
