@@ -250,8 +250,6 @@ public class MapSLAM implements LCMSubscriber
 				boolean needToSolve = false;
 				for(int i = 0; i < features.ntriangles; i++){
 					
-					double[] fit = new double[]{1.0967,-0.2147};
-					features.triangles[i][0] = features.triangles[i][0]*fit[0] + fit[1];
 					// The feature state is represented as (-z, x, theta_bot) to account
 					// for coordinate frame transformation and orientation between image
 					// processing and map making. Orientation is defined as if the feature
@@ -329,8 +327,8 @@ public class MapSLAM implements LCMSubscriber
 						// we might not view the feature from straight on every time we see it.
 						dist = Math.sqrt(ge.z[0] * ge.z[0] + ge.z[1] * ge.z[1]);
 						double distErr = 0.2;
-						ge.P = LinAlg.diag(new double[]{LinAlg.sq(dist*dist*distErr+0.01),
-										LinAlg.sq(dist*dist*distErr+0.01),
+						ge.P = LinAlg.diag(new double[]{LinAlg.sq(dist*distErr+0.01),
+										LinAlg.sq(dist*distErr+0.01),
 										LinAlg.sq(Math.toRadians(90))});
 						g.edges.add(ge);
 					}
@@ -356,8 +354,8 @@ public class MapSLAM implements LCMSubscriber
 						// distance from which the feature was observed.
 						dist = Math.sqrt(ge.z[0] * ge.z[0] + ge.z[1] * ge.z[1]);
 						double distErr = 0.2;
-						ge.P = LinAlg.diag(new double[]{LinAlg.sq(dist*dist*distErr+0.01),
-										LinAlg.sq(dist*dist*distErr+0.01),
+						ge.P = LinAlg.diag(new double[]{LinAlg.sq(dist*distErr+0.01),
+										LinAlg.sq(dist*distErr+0.01),
 										LinAlg.sq(Math.toRadians(90))});
 						g.edges.add(ge);
 						
@@ -366,7 +364,7 @@ public class MapSLAM implements LCMSubscriber
 					}
 				}
 				if(needToSolve){
-					//solve();
+					solve();
 				}
 				packageAndPublish();
 			}
