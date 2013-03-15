@@ -30,7 +30,9 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 	ParameterGUI pg = new ParameterGUI();
 
 	LCM lcm;
-	bot_status_t bot_status;
+	bot_status_t bot_status = new bot_status_t();
+	bot_status_t curr_bot_status;
+	bot_status_t last_bot_status;
 	battery_t battery;
 
 	ArrayList<double[]> robotTraj = new ArrayList<double[]>();
@@ -43,6 +45,7 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 		lcm.subscribe("6_POSE",this);
 		lcm.subscribe("6_BATTERY",this);
 		lcm.subscribe("6_MAP",this);
+		lcm.subscribe("6_SLAM_POSES",this);
 
 		jf.setLayout(new BorderLayout());
 		jf.add(vc, BorderLayout.CENTER);
@@ -136,11 +139,23 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 		{
 			if(channel.equals("6_POSE"))
 			{
-				bot_status = new bot_status_t(dins);
+				
+				curr_bot_status = new bot_status_t(dins);
+				double[]T;
+				if(last_bot_status != null) T = LinAlg.xytInvMul31(last_bot_status.xyt, curr_bot_status.xyt);
+				else T = new double[3];
+				bot_status.xyt = LinAlg.xytMultiply(bot_status.xyt, T);
+				bot_status.utime = curr_bot_status.utime;
+				bot_status.xyt_dot = curr_bot_status.xyt_dot;
+				bot_status.yaw = curr_bot_status.yaw;
+				bot_status.cov = curr_bot_status.cov;
+				bot_status.voltage = curr_bot_status.voltage;
+				
 				drawRobot();
 				drawCovariance();
+				last_bot_status = curr_bot_status;
 			}
-			if(channel.equals("6_BATTERY"))
+			else if(channel.equals("6_BATTERY"))
 			{
 				VisWorld.Buffer vb = vw.getBuffer("Battery");
 				battery = new battery_t(dins);
@@ -149,10 +164,20 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 				vb.swap();
 				
 			}
-			if(channel.equals("6_MAP"))
+			else if(channel.equals("6_MAP"))
 			{
 				map_t map = new map_t(dins);
 				drawMap(map);
+			}
+			else if(channel.equals("6_SLAM_POSES")){
+				slam_vector_t slamVec = new slam_vector_t(dins);
+				ArrayList<double[]>vec = new ArrayList<double[]>();
+				for(int i = 0; i < slamVec.numPoses; i++)vec.add(new double[]{slamVec.xyt[i].xyt[0],slamVec.xyt[i].xyt[1], 0.005});
+				bot_status.xyt = slamVec.xyt[slamVec.numPoses - 1].xyt;
+				
+				VisWorld.Buffer vb = vw.getBuffer("Robot_Path_SLAM");
+				vb.addBack(new VzPoints(new VisVertexData(vec), new VzPoints.Style(Color.magenta,2)));
+				vb.swap();
 			}
 		}
 		catch (IOException e)
@@ -188,18 +213,18 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
         
 		VisWorld.Buffer vb = vw.getBuffer("Robot");
 		
-		vb.addBack(new VzAxes());
+		//vb.addBack(new VzAxes());
 		//vb.addBack(new VisChain(LinAlg.translate(xyt[0],xyt[1],0), LinAlg.rotateZ(xyt[2]-Math.PI/2),new VzTriangle(0.25,0.4,0.4,new VzMesh.Style(Color.GREEN))));
 		vb.addBack(new VisChain(LinAlg.translate(xyt[0],xyt[1],0), LinAlg.rotateZ(xyt[2]-Math.PI/2),pandaBot));
 
 		vb.addBack(new VisPixCoords(VisPixCoords.ORIGIN.BOTTOM_LEFT,new VzText(VzText.ANCHOR.BOTTOM_LEFT, "Angle = " + Math.toDegrees(xyt[2]))));
 		vb.swap();
         
-		robotTraj.add(new double[]{xyt[0],xyt[1],0.005});
-        vb = vw.getBuffer("Robot_Path");
-        //vb.addBack(new VisChain(LinAlg.translate(xyt[0], xyt[1], 0), new VzPoints()));
-        vb.addBack(new VzPoints(new VisVertexData(robotTraj), new VzPoints.Style(Color.gray,2)));
-        vb.swap();
+		robotTraj.add(new double[]{curr_bot_status.xyt[0],curr_bot_status.xyt[1],0.005});
+		vb = vw.getBuffer("Robot_Path");
+		//vb.addBack(new VisChain(LinAlg.translate(xyt[0], xyt[1], 0), new VzPoints()));
+		vb.addBack(new VzPoints(new VisVertexData(robotTraj), new VzPoints.Style(Color.gray,2)));
+		vb.swap();
         
 	}
 
