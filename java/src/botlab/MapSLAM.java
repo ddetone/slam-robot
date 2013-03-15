@@ -23,8 +23,8 @@ public class MapSLAM implements LCMSubscriber
 	GraphNodes featureNodes;
 	bot_status_t lastBot = new bot_status_t();
 
-	double newFeatureDist = 0.5;
-	double oldFeatureDist = 0.3;
+	double newFeatureDist = .7;
+	double oldFeatureDist = 0.5;
 	int num_solver_iterations = 200;
 	int decimate = 1;	// number of poses to throw out. In other words, every <decimate> poses, 1 pose will be added to the graph
 	int numPoseMessages = 0;
