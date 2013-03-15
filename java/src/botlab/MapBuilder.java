@@ -156,14 +156,16 @@ public class MapBuilder implements LCMSubscriber
 					bot_status.xyt[0] += (map.size/2)*map.scale;
 					bot_status.xyt[1] += (map.size/2)*map.scale;
 
-					double knowledge_dist = 0.20;
+
+					double knowledge_dist = 0.9/map.scale;
+					/*
 					for(int i = (int) ((bot_status.xyt[0]-knowledge_dist)/map.scale); i < (bot_status.xyt[0]+knowledge_dist)/map.scale; ++i){
 						for(int j = (int) ((bot_status.xyt[1]-knowledge_dist)/map.scale); j < (bot_status.xyt[0]+knowledge_dist)/map.scale; ++j){
 							if(i > 0 && i < map.size && j > 0 && j < map.size) {
 								map.knowledge[i][j] = (byte) 1;
 							}
 						}
-					}
+					}*/
 
 					for(int f = 0; f < features.nlineSegs; ++f){
 						//System.out.println("adding_feature");
@@ -176,16 +178,20 @@ public class MapBuilder implements LCMSubscriber
 						p1 = LinAlg.xytMultiply(bot_status.xyt, l1);
 						p2 = LinAlg.xytMultiply(bot_status.xyt, l2);
 
-
 						//remove things in line of sight (replaces ray casting)
 						//uses barycentric coords to tell if it's in triangle
 						int xmin = (int) (Math.min(p1[0],Math.min(p2[0],bot_status.xyt[0])) / map.scale);
 						int xmax = (int) (Math.max(p1[0],Math.max(p2[0],bot_status.xyt[0])) / map.scale);
 						int ymin = (int) (Math.min(p1[1],Math.min(p2[1],bot_status.xyt[1])) / map.scale);
 						int ymax = (int) (Math.max(p1[1],Math.max(p2[1],bot_status.xyt[1])) / map.scale);
+						int xcurr = (int) (bot_status.xyt[0] / map.scale);
+						int ycurr = (int) (bot_status.xyt[1] / map.scale);
 						double det = ((p2[1]-bot_status.xyt[1])*(p1[0]-bot_status.xyt[0])+ (bot_status.xyt[0]-p2[0])*(p1[1]-bot_status.xyt[1]));
 						for(int i = xmin; i < xmax; ++i){
 							for(int j = ymin; j < ymax; ++j){
+								if(LinAlg.squaredDistance(new double[]{i,j},new double[]{xcurr,ycurr}) > (knowledge_dist * knowledge_dist))
+									continue;
+
 								double lambda1 = ((p2[1]-bot_status.xyt[1])*(i*map.scale - bot_status.xyt[0])  + (bot_status.xyt[0]-p2[0])*(j*map.scale - bot_status.xyt[1]))/det;
 								if(lambda1 < 0.0 || lambda1 > 1.0)
 									continue;
