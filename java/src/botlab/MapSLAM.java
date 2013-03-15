@@ -23,8 +23,8 @@ public class MapSLAM implements LCMSubscriber
 	GraphNodes featureNodes;
 	bot_status_t lastBot = new bot_status_t();
 
-	double newFeatureDist = .7;
-	double oldFeatureDist = 0.5;
+	double newFeatureDist = .6;
+	double oldFeatureDist = 0.45;
 	int num_solver_iterations = 200;
 	int decimate = 1;	// number of poses to throw out. In other words, every <decimate> poses, 1 pose will be added to the graph
 	int numPoseMessages = 0;
@@ -325,8 +325,8 @@ public class MapSLAM implements LCMSubscriber
 						// we might not view the feature from straight on every time we see it.
 						dist = Math.sqrt(ge.z[0] * ge.z[0] + ge.z[1] * ge.z[1]);
 						double distErr = 0.2;
-						ge.P = LinAlg.diag(new double[]{LinAlg.sq(dist*distErr+0.01),
-										LinAlg.sq(dist*distErr+0.01),
+						ge.P = LinAlg.diag(new double[]{LinAlg.sq(dist*dist*distErr+0.01),
+										LinAlg.sq(dist*dist*distErr+0.01),
 										LinAlg.sq(Math.toRadians(90))});
 						g.edges.add(ge);
 					}
