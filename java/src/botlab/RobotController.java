@@ -31,17 +31,17 @@ public class RobotController implements LCMSubscriber
 	int pastNumTriangles;
 	LinkedList<Integer> trianglesToKill;
 
-    RobotController()
-    {
-        this.lcm =  LCM.getSingleton();
-        lcm.subscribe("6_MAP",this);
+	RobotController()
+	{
+		this.lcm =  LCM.getSingleton();
+		lcm.subscribe("6_MAP",this);
 		tracker = botlab.PoseTracker.getSingleton();
 		map = null;
 		state = "explore";
 		finished = false;
 		pastNumTriangles = 0;
 		trianglesToKill = new LinkedList<Integer>();
-    }
+	}
 
 	public void messageReceived(LCM lcm, String channel, LCMDataInputStream dins)
 	{
@@ -59,7 +59,7 @@ public class RobotController implements LCMSubscriber
 			}
 
 			//frontier planner
-			if(state == "Explore" && !finished){
+			if(state == "explore" && !finished){
 				boolean knowledge_bounds[][] = new boolean[(int) map.size][(int) map.size]; //is [y][x]
 				for(int i = 1; i < map.size-1; ++i){
 					for(int j = 1; j < map.size-1; ++j){
@@ -147,9 +147,9 @@ public class RobotController implements LCMSubscriber
 	{
 		RobotController rc = new RobotController();
 
-        while(true)
-        {
-            Thread.sleep(1000);
-        }
+		while(true)
+		{
+			Thread.sleep(1000);
+		}
 	}
 }
