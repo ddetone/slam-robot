@@ -75,7 +75,7 @@ public class ImageProcessing extends VisEventAdapter
 	int width = 0;
 	int height = 0;
 	
-	int searchHeight = 500;
+	int searchHeight = 490;
 	//WRONG NUMBER BELOW
 	final double TRIANGLE_HEIGHT = 0.3;
 
@@ -466,10 +466,13 @@ public class ImageProcessing extends VisEventAdapter
 			double py = mean[1];
 			
 			double x = ((py * ht * sth) - (f * ht * cth) - (cy * ht * sth)) / ((cy * cth) - (f * sth) - (py * cth));
+			//double[] fit = new double[]{4.5984,-26.3407,57.1470,-57.5768,27.1585,-4.2374};
+			double[] fit = new double[]{1.0967,-0.2147};
+			x = x*fit[0] + fit[1];
 			double y = -((px * ht * sth) - (x * ((cx * cth) - (px * cth))) - (cx * ht * sth)) / f;
-			
+			//x = x*x*x*x*x*fit[0] + x*x*x*x*fit[1] + x*x*x*fit[2] + x*x*fit[3] + x*fit[4] + fit[5];
 			features.triangles[i][0] = x;
-			features.triangles[i][1] = y;
+			features.triangles[i][1] = y*0.95;
 
 
 			//features.triangles[i][0] = (mean[0] - cx) / (mean[1] - cy) * h * 0.3048;
