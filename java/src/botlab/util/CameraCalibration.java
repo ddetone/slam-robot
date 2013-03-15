@@ -28,7 +28,9 @@ public class CameraCalibration extends CordinateDescent
 	static double[][] pointsN;
 	static double[][] pixelsN;
 
-    static double height = 0.215;
+    static double heigth;
+
+	static boolean estimateHeigth = false;
     
 	//params = f cx cy theta
 	public double error(double[] parameters)
@@ -37,6 +39,20 @@ public class CameraCalibration extends CordinateDescent
 		double cx = parameters[1];
 		double cy = parameters[2];
 		double th = parameters[3];
+
+		if(estimateHeigth)
+		{
+			assert(parameters.length == 5);
+			double h = parameters[4];
+
+			for(int i = 0; i < pointsN[0].length; i++)
+			{
+				pointsN[1][i] = h;
+			}
+		}
+		else{
+			assert(parameters.length == 4);
+		}
 
 		//double[][] ext = LinAlg.rotateX(th);
 
@@ -56,12 +72,14 @@ public class CameraCalibration extends CordinateDescent
 			double[] vec1 = new double[]{pixelsN[0][i], pixelsN[1][i], pixelsN[2][i]};
 			double[] vec2 = new double[]{pixelsPred[0][i], pixelsPred[1][i], pixelsPred[2][i]};
 
-			error += LinAlg.distance(vec1,vec2);
+			double dis = LinAlg.distance(vec1,vec2);
+			error += dis;
 		}
 
 		return error;
 
 	}
+
 
 
 	public double[][] transformPoint2Pixel(double f, double cx, double cy, double th, double[][] pointsN)
@@ -87,9 +105,14 @@ public class CameraCalibration extends CordinateDescent
 		}
 	}
 
-	public static void main(String[] args)
+	static void loadBlueLinePoints()
 	{
-		
+		//points {x,y} where x is along direction of robot and y is left wrt dir of robot
+		//			 |	 
+		//			_|_x	
+		//			| |	
+		//     y ---_ _
+		//
 		points.add(new double[]{2,0});
 		points.add(new double[]{3,0});
 		points.add(new double[]{4,0});
@@ -116,6 +139,39 @@ public class CameraCalibration extends CordinateDescent
 		pixels.add(new double[]{161,608});
 		pixels.add(new double[]{511,609});
 
+        heigth = 0.215;   
+
+	}
+
+	static void loadTrianglePoints()
+	{
+		points.add(new double[]{4,0});     	pixels.add(new double[]{622,496});
+		points.add(new double[]{5,0});     	pixels.add(new double[]{620,491});
+		points.add(new double[]{2,1});		pixels.add(new double[]{962,532});
+		points.add(new double[]{3,1});		pixels.add(new double[]{842,510});
+		points.add(new double[]{4,1});		pixels.add(new double[]{781,496});
+		points.add(new double[]{5,1});		pixels.add(new double[]{742,489});
+		points.add(new double[]{3,2});		pixels.add(new double[]{1053,505});
+		points.add(new double[]{2,-1});		pixels.add(new double[]{256,526});
+		points.add(new double[]{3,-1});		pixels.add(new double[]{387,505});
+		points.add(new double[]{4,-1});		pixels.add(new double[]{451,493});
+		points.add(new double[]{5,-1});		pixels.add(new double[]{484,488});
+		points.add(new double[]{3,-2});		pixels.add(new double[]{144,505});
+		
+		heigth = 0.075;   
+
+		estimateHeigth = false;
+	}
+
+	public static void main(String[] args)
+	{
+		
+		//loadBlueLinePoints();
+		loadTrianglePoints();
+
+		if(args.length == 1)
+			heigth = Double.parseDouble(args[0]);
+		
 		assert(pixels.size() == points.size());
 
 		for(int i = 0; i < points.size(); i++){
@@ -131,7 +187,7 @@ public class CameraCalibration extends CordinateDescent
 		for(int i = 0 ; i < n ; i++)
 		{
 			pointsN[0][i] = points.get(i)[1];
-			pointsN[1][i] = height;
+			pointsN[1][i] = heigth;
 			pointsN[2][i] = points.get(i)[0];
 			pointsN[3][i] = 1;
 
@@ -144,6 +200,12 @@ public class CameraCalibration extends CordinateDescent
 		double[] p = new double[]{660,620,440,0};
 		double[] dp = new double[]{1,1,1,0.01};
 		double tolerance = 0.000001;
+
+
+		if(estimateHeigth){
+			p = new double[]{660,620,440,0,heigth};
+			dp = new double[]{1,1,1,0.01,0.001};
+		}
 
 		CameraCalibration cd = new CameraCalibration(p,dp,tolerance);
 

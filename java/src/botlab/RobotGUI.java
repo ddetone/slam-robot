@@ -129,8 +129,8 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 			if(channel.equals("6_POSE"))
 			{
 				bot_status = new bot_status_t(dins);
-						drawRobot();
-						drawCovariance();
+				drawRobot();
+				drawCovariance();
 			}
 			if(channel.equals("6_BATTERY"))
 			{
@@ -177,14 +177,20 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 		VisChain pandaBot = new VisChain();
 
 		pandaBot.add(vo_base,vo_cameraBase,vo_wheels,vo_castor);
+        
 		VisWorld.Buffer vb = vw.getBuffer("Robot");
-
+		
 		vb.addBack(new VzAxes());
 		//vb.addBack(new VisChain(LinAlg.translate(xyt[0],xyt[1],0), LinAlg.rotateZ(xyt[2]-Math.PI/2),new VzTriangle(0.25,0.4,0.4,new VzMesh.Style(Color.GREEN))));
 		vb.addBack(new VisChain(LinAlg.translate(xyt[0],xyt[1],0), LinAlg.rotateZ(xyt[2]-Math.PI/2),pandaBot));
 
 		vb.addBack(new VisPixCoords(VisPixCoords.ORIGIN.BOTTOM_LEFT,new VzText(VzText.ANCHOR.BOTTOM_LEFT, "Angle = " + Math.toDegrees(xyt[2]))));
 		vb.swap();
+        
+//        vb = vw.getBuffer("Robot_Path");
+//        vb.addBack(new VisChain(LinAlg.translate(xyt[0], xyt[1], 0), new VzPoints()));
+        
+        
 	}
 
 	public void drawCovariance()
@@ -194,6 +200,8 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 		double[][] cov22 = new double[][]{{bot_status.cov[0][0], bot_status.cov[0][1]},
 										  {bot_status.cov[1][0], bot_status.cov[1][1]}};
 
+        double covAngle = bot_status.cov[2][2];
+        
 		vb.addBack(new VisChain(LinAlg.translate(0,0,0.01),new VzEllipse(new double[]{bot_status.xyt[0],bot_status.xyt[1]}, cov22, new VzMesh.Style(Color.black))));
 		vb.swap();
 	}
