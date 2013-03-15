@@ -105,6 +105,11 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 					
 					vb.addBack(vo_mapBox);
 				}
+				if((int) (map.knowledge[i][j]) == 1){
+					VzBox mapBox = new VzBox(map.scale,map.scale,.01, new VzMesh.Style(Color.blue));
+					VisObject vo_mapBox = new VisChain(LinAlg.translate(i*map.scale-map.size/2*map.scale,j*map.scale-map.size/2*map.scale,0.0),mapBox);				
+					vb.addBack(vo_mapBox);	
+				}
 				
 			}
 		}
@@ -112,12 +117,14 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 		for(int i = 0; i < map.numTriangles ; i++)
 		{	
 			VzTriangle tr = new VzTriangle(0.08,0.08,0.08, new VzMesh.Style(Color.green));
-            VisObject vo_tr = new VisChain(LinAlg.translate(map.triangles[0][i], map.triangles[1][i], 0.10), tr);
-            vb.addBack(vo_tr);
+            		VisObject vo_tr = new VisChain(LinAlg.translate(map.triangles[i][0], map.triangles[i][1], 0.10), tr);
+            		vb.addBack(vo_tr);
 		}
 		//if(found_point)
 			//System.out.println("found at least one point");
 
+		vb.addBack(new VisChain(LinAlg.translate(0,0,-0.025),new VzBox(map.size * map.scale, map.size * map.scale,0.05,new VzMesh.Style(Color.darkGray))));
+		vw.getBuffer("Ground").swap();
 		vb.swap();
 	}
 

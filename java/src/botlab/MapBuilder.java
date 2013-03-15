@@ -43,7 +43,11 @@ public class MapBuilder implements LCMSubscriber
 
     MapBuilder()
     {
-        this.lcm =  LCM.getSingleton();
+	try{
+        	this.lcm = new LCM("udpm://239.255.76.67:7667?ttl=1");
+	}catch(IOException e){
+        	this.lcm =  LCM.getSingleton();
+	}
         map = new map_t();
         bot_status = null;
         all_features = new LinkedList<map_features_t>();
@@ -65,6 +69,7 @@ public class MapBuilder implements LCMSubscriber
 
     public void clear() {
     	map.cost = new byte[(int) map.size][(int) map.size];
+    	map.knowledge = new byte[(int) map.size][(int) map.size];
     	map.max = 255;
     }
 
@@ -181,8 +186,10 @@ public class MapBuilder implements LCMSubscriber
 								double lambda3 = 1 - lambda1 - lambda2;
 								if(lambda3 < 0.0 || lambda3 > 1.0)
 									continue;
-								map.cost[i][j] = (byte) 0;
-								map.knowledge[i][j] = (byte) 1;
+								if(i > 0 && i < map.size && j > 0 && j < map.size) {
+									map.cost[i][j] = (byte) 0;
+									map.knowledge[i][j] = (byte) 1;
+								}
 							}
 						}
 
@@ -287,6 +294,7 @@ public class MapBuilder implements LCMSubscriber
 
 	public void marginalize(bot_status_t new_bot_status)
 	{
+		/*
 		dist_traveled += LinAlg.distance(new_bot_status.xyt, bot_status.xyt, 2);
 		int decay = 0;
 		while(dist_traveled < decay_dist){
@@ -301,6 +309,7 @@ public class MapBuilder implements LCMSubscriber
 				//map.knowledge[i][j] = (int) Math.max(map.knowledge[i][j], 255.0/(LinAlg.distance(new_bot_status.xyt, xy, 2)*inverse_knowledge_dist));
 			}
 		}
+		*/
 	}
 
 	public static void main(String[] args)

@@ -20,16 +20,17 @@ import lcm.lcm.*;
 public class ImageProcessing extends VisEventAdapter
 {
 
-	static final double DEFAULT_CALIBRATE_VAL = -2700;
-	static final double DEFAULT_THRESH_VAL = 30;
+	static final double DEFAULT_CALIBRATE_VAL = -2500;
+	static final double DEFAULT_GREEN_THRESH = 355;
+	static final double DEFAULT_SAT_THRESH = 0.75;
+	static final double DEFAULT_VALUE_THRESH = 0.55;
+	static final double DEFAULT_HALF_BOX_THRESH = 130;
+	static final double DEFAULT_BLUE_THRESH = 200;
+	static final double DEFAULT_THRESH_VAL = 34;
 	static final int DEFAULT_NUM_STEPS = 200;
 	static final int DEFAULT_POINT_SPREAD = 26;
 	static final double DEFAULT_CORNER_ANG_THRESH = 0.6;
-	static final double DEFAULT_BLUE_THRESH = 200;
-	static final double DEFAULT_HALF_BOX_THRESH = 130;
-	static final double DEFAULT_GREEN_THRESH = 355;
-	static final double DEFAULT_SAT_THRESH = 0.56;
-	static final double DEFAULT_VALUE_THRESH = 0.62;
+	static final double DEFAULT_TRIANGLE_HEIGHT = 0.135;
 
 	static final boolean DEFAULT_DISP_LONG_LINE = false;
 	static final boolean DEFAULT_DISP_BLUE_PIXELS = false;
@@ -48,6 +49,7 @@ public class ImageProcessing extends VisEventAdapter
 	double greenThresh = DEFAULT_GREEN_THRESH;
 	double saturationThresh = DEFAULT_SAT_THRESH;
 	double valueThresh = DEFAULT_VALUE_THRESH;
+	double triangle_height = DEFAULT_TRIANGLE_HEIGHT;
 
 	boolean dispLongLine  = DEFAULT_DISP_LONG_LINE;
 	boolean dispBluePixels = DEFAULT_DISP_BLUE_PIXELS;
@@ -73,7 +75,7 @@ public class ImageProcessing extends VisEventAdapter
 	int width = 0;
 	int height = 0;
 	
-	final int searchHeight = 500;
+	int searchHeight = 500;
 	//WRONG NUMBER BELOW
 	final double TRIANGLE_HEIGHT = 0.3;
 
@@ -104,6 +106,7 @@ public class ImageProcessing extends VisEventAdapter
 		is = _is;
 
 		lcm = LCM.getSingleton();
+		//lcm = new lcm("udpm://239.255.76.67:7667?ttl=1");
 		//lcm.subscribe("6_POSE", this);
 		
 		dispGUI = _dispGUI;
@@ -125,6 +128,7 @@ public class ImageProcessing extends VisEventAdapter
 			pg.addIntSlider("num_steps", "Line Fit Num Steps", 0,200,DEFAULT_NUM_STEPS);
 			pg.addIntSlider("point_spread", "Line Point Spread Max", 0,100,DEFAULT_POINT_SPREAD);
 			pg.addDoubleSlider("cornerAngleThresh", "Line Intersection (Corner) Angle Threshold", 0,1,DEFAULT_CORNER_ANG_THRESH);
+			pg.addDoubleSlider("triangleHeight", "Triangle Height Off Ground", 0.10, 0.17,DEFAULT_TRIANGLE_HEIGHT);
 
 			pg.addCheckBoxes("dispLongLine", "Show Longest Line Mean", DEFAULT_DISP_LONG_LINE);
 			pg.addCheckBoxes("dispBluePixels", "Show Pixels", DEFAULT_DISP_BLUE_PIXELS);
@@ -187,6 +191,9 @@ public class ImageProcessing extends VisEventAdapter
 					}
 					else if(name == "dispTriMap"){
 						dispTriMap = pg.gb("dispTriMap");
+					}
+					else if(name == "triangleHeight"){
+						triangle_height = pg.gd("triangleHeight");
 					}
 			}});
 			
@@ -402,7 +409,7 @@ public class ImageProcessing extends VisEventAdapter
 		double h = 0.215;
 		double th = -0.026256;
 
-		double ht = h - 0.14; //height of triangle above ground = 14cm
+		double ht = h - triangle_height; //height of triangle above ground = 14cm
 
 		double sth = Math.sin(th);
 		double cth = Math.cos(th);
@@ -458,8 +465,8 @@ public class ImageProcessing extends VisEventAdapter
 			double px = mean[0];
 			double py = mean[1];
 			
-			double x = (py*h*sth-f*h*cth-cy*h*sth)/(cy*cth-f*sth-py*cth);
-			double y = -(px*h*sth - x*(cx*cth-px*cth) - cx*h*sth)/f;
+			double x = ((py * ht * sth) - (f * ht * cth) - (cy * ht * sth)) / ((cy * cth) - (f * sth) - (py * cth));
+			double y = -((px * ht * sth) - (x * ((cx * cth) - (px * cth))) - (cx * ht * sth)) / f;
 			
 			features.triangles[i][0] = x;
 			features.triangles[i][1] = y;
@@ -567,7 +574,7 @@ public class ImageProcessing extends VisEventAdapter
 
 					if(cluster == null){
 						cluster = new Cluster();
-						cluster.addPoint(new int[]{i,j});
+						cluster.addPoint(new int[]{i, j});
 						hm.put(rep, cluster);
 					}else{
 						cluster.addPoint(new int[]{i, j});	
@@ -641,7 +648,7 @@ public class ImageProcessing extends VisEventAdapter
 			if(point[0] < minX) minX=point[0];
 			if(point[1] < minY) minY=point[1];
 			if(point[0] > maxX) maxX=point[0];
-			if(point[1] > maxY) maxY=point[1];	
+			if(point[1] > maxY) maxY=point[1];
 			return;
 		}
 
@@ -762,6 +769,7 @@ public class ImageProcessing extends VisEventAdapter
 		// Initialize visualization environment now that we know the image dimensions
 		width = fmt.width;
 		height = fmt.height;
+		searchHeight = Math.min(height, searchHeight);
 		hsvImage = new float[width * searchHeight][3];
 		pixelDists = new float[height * width];
 		pixelThetas = new float[height * width];
@@ -797,7 +805,7 @@ public class ImageProcessing extends VisEventAdapter
 			alf.setPoints(topBluePixels);
 			alf.findSegs();
 
-			VisChain chain = new VisChain(LinAlg.rotateX(Math.PI),LinAlg.translate(0,-height,-5));
+			VisChain chain = new VisChain(LinAlg.rotateX(Math.PI),LinAlg.translate(0,-height,-1));
 
 			if(dispGUI && (dispTriangles)) chain.add(new VzPoints(new VisVertexData(triangles.means),new VzPoints.Style(Color.blue, 5)));
 			if(dispGUI && (dispBluePixels)) chain.add(new VzPoints(new VisVertexData(topBluePixels),new VzPoints.Style(Color.green, 5)));
@@ -856,7 +864,7 @@ public class ImageProcessing extends VisEventAdapter
 		}
 
 		ImageSource is = ImageSource.make(url);
-		new ImageProcessing(is, false).run();
+		new ImageProcessing(is, true).run();
 	}
 
 

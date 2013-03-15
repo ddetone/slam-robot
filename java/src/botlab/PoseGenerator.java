@@ -45,6 +45,8 @@ public class PoseGenerator implements LCMSubscriber
 	double[][] sigmaT = new double[3][3];
 
 	Pimu pimu;
+	
+	double yawsum=0;
 
 	PoseGenerator()
 	{
@@ -55,7 +57,11 @@ public class PoseGenerator implements LCMSubscriber
 		sigmaA = new double[][]{{0.00001,0,0},
 					{0,0.00001,0},
 					{0,0,0.00001}};
-		this.lcm = LCM.getSingleton();
+		try{
+			this.lcm = new LCM("udpm://239.255.76.67:7667?ttl=1");
+		}catch(IOException e){
+			this.lcm = LCM.getSingleton();
+		}
 		lcm.subscribe("6_MOTOR_FEEDBACK", this);
 		lcm.subscribe("6_BATTERY", this);
 		
@@ -133,7 +139,12 @@ public class PoseGenerator implements LCMSubscriber
 		bot.xyt[0] = xyt_B[0];
 		bot.xyt[1] = xyt_B[1];
 		bot.xyt[2] = xyt_B[2];
-		bot.yaw = pimu.getDeltaYaw();
+		bot.yaw = pimu.yaw;
+	
+		/*
+		yawsum += bot.yaw;
+		System.out.printf("yaw sum: %f\n", yawsum);
+		*/
 	
 		//get PIMU data (XYZ and RPY)
 		double[] XYZ = pimu.getXYZdot();
@@ -147,7 +158,7 @@ public class PoseGenerator implements LCMSubscriber
 
 		bot.voltage = battery.voltage;
 		lcm.publish("6_POSE",bot);
-
+		
 		/*
 		try{
 			Thread.sleep(33);

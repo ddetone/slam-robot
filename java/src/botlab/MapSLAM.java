@@ -23,8 +23,8 @@ public class MapSLAM implements LCMSubscriber
 	GraphNodes featureNodes;
 	bot_status_t lastBot = new bot_status_t();
 
-	double newFeatureDist = 0.3;
-	double oldFeatureDist = 0.1;
+	double newFeatureDist = .7;
+	double oldFeatureDist = 0.5;
 	int num_solver_iterations = 200;
 	int decimate = 1;	// number of poses to throw out. In other words, every <decimate> poses, 1 pose will be added to the graph
 	int numPoseMessages = 0;
@@ -177,8 +177,9 @@ public class MapSLAM implements LCMSubscriber
  						//For this line lastPoseIndex should always be 0.
 						//****might not be zero if we JUST HAPPEN to get a features
 						// message before a single pose message****
-						if(lastPoseIndex == -1)lastPoseIndex = 0;
-						ge.nodes = new int[]{lastPoseIndex};
+						// The above should no longer be true. Changed from lastPoseIndex
+						// to currPoseIndex
+						ge.nodes = new int[]{currPoseIndex};
 						// should the covariance be 0? or close to 0?
 						ge.z = new double[]{bot.xyt[0], bot.xyt[1], bot.xyt[2]};
 						// This line is not technically correct. If we assume that
@@ -186,7 +187,7 @@ public class MapSLAM implements LCMSubscriber
 						// However, since we will never be adding another POS edge,
 						// we can be practically 100% sure about this one. And as always,
 						// I just made all of that up. But it does sound plausible.
-						ge.P = LinAlg.diag(new double[]{0.0001,0.0001,0.0001});
+						ge.P = LinAlg.diag(new double[]{0.00001,0.00001,0.00001});
 						g.edges.add(ge);
 					//*/
 						
@@ -199,8 +200,9 @@ public class MapSLAM implements LCMSubscriber
 					ge.z = LinAlg.xytInvMul31(lastBot.xyt, bot.xyt);
 					double dist = Math.sqrt(ge.z[0] * ge.z[0] + ge.z[1] * ge.z[1]);
 					double distErr = 0.1;
-					double rot = Math.abs(MathUtil.mod2pi(ge.z[2]));
+					double rot = ge.z[2];
 					double rotErr = 0.1;
+					// model the covariance in the direction that the robot is travelling
 					ge.P = LinAlg.diag(new double[]{LinAlg.sq(dist*distErr+0.01),
 									LinAlg.sq(dist*distErr+0.01),
 									LinAlg.sq(rot*rotErr)+Math.toRadians(1)});
@@ -322,10 +324,10 @@ public class MapSLAM implements LCMSubscriber
 						// Hopefully the model below works. Theta very uncertain because
 						// we might not view the feature from straight on every time we see it.
 						dist = Math.sqrt(ge.z[0] * ge.z[0] + ge.z[1] * ge.z[1]);
-						double distErr = 0.1;
+						double distErr = 0.2;
 						ge.P = LinAlg.diag(new double[]{LinAlg.sq(dist*distErr+0.01),
 										LinAlg.sq(dist*distErr+0.01),
-										LinAlg.sq(Math.toRadians(180))});
+										LinAlg.sq(Math.toRadians(90))});
 						g.edges.add(ge);
 					}
 					else if (minDist < oldFeatureDist){
@@ -342,29 +344,29 @@ public class MapSLAM implements LCMSubscriber
 						// ge.z = LinAlg.xytInvMul31(bot.xyt, g.nodes.get(closestFeatureNode).state);
 						// Again just made that up. Hope it's right.
 						// ******* CONFIRM THIS IS THE CORRECT Z ******
+						// confirmed
 						ge.z = new double[]{features.triangles[i][0],
 								features.triangles[i][1],
 								0};
 						// Model the reobservation uncertainty proportional to the square of the
 						// distance from which the feature was observed.
 						dist = Math.sqrt(ge.z[0] * ge.z[0] + ge.z[1] * ge.z[1]);
-						double distErr = 0.1;
+						double distErr = 0.2;
 						ge.P = LinAlg.diag(new double[]{LinAlg.sq(dist*distErr+0.01),
 										LinAlg.sq(dist*distErr+0.01),
-										LinAlg.sq(Math.toRadians(180))});
+										LinAlg.sq(Math.toRadians(90))});
 						g.edges.add(ge);
 						
 
 						needToSolve = true;
 					}
 				}
-				packageAndPublish();
 				if(needToSolve){
 					solve();
 				}
+				packageAndPublish();
 			}
-		}
-		catch (IOException e)
+		}		catch (IOException e)
 		{
 			e.printStackTrace();
 		}
@@ -374,6 +376,7 @@ public class MapSLAM implements LCMSubscriber
 		CholeskySolver solver = new CholeskySolver(g);
 		solver.verbose = false;
 		int numIterations = 0;
+
 		double chi2Before = g.getErrorStats().chi2normalized;
 
 		for(int j = 0; j < num_solver_iterations; j++){
@@ -383,7 +386,7 @@ public class MapSLAM implements LCMSubscriber
 			System.out.println("Iteration " + numIterations +
 					" reduced chi2 by " + (chi2Before - chi2After));
 			// if the further iteration is futile
-			if (chi2After >= 0.8*chi2Before || chi2After < 0.00001)
+			if (chi2After >= 0.9 * chi2Before || chi2After < 0.00001)
 				break;
 			chi2Before = chi2After;
 		}
@@ -394,13 +397,13 @@ public class MapSLAM implements LCMSubscriber
 	public void packageAndPublish(){
 		
 		slam_vector_t pose_out = new slam_vector_t();
-		int numNodes = poseNodes.getNumNodes();
+		int numPoses = poseNodes.getNumNodes();
 
-		xyt_t[] pose_out_xyts = new xyt_t[numNodes];
+		xyt_t[] pose_out_xyts = new xyt_t[numPoses];
 		
-		pose_out.numPoses = numNodes;
+		pose_out.numPoses = numPoses;
 
-		for(int i = 0; i < numNodes; i++){
+		for(int i = 0; i < numPoses; i++){
 
 			pose_out_xyts[i] = new xyt_t();
 
@@ -418,9 +421,9 @@ public class MapSLAM implements LCMSubscriber
 		pose_out.triangles = new double[numFeatures][2];
 		
 		for(int i = 0; i < numFeatures; i++){
-			double f_xy[] = g.nodes.get(featureNodes.getNodeGraphIndex(i)).state;
-			pose_out.triangles[i][0] = f_xy[0];
-			pose_out.triangles[i][1] = f_xy[1];
+			
+			pose_out.triangles[i] = g.nodes.get(featureNodes.getNodeGraphIndex(i)).state;
+
 		}
 		
 		lcm.publish("6_SLAM_POSES", pose_out);
