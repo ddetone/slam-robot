@@ -61,7 +61,7 @@ public class MapBuilder implements LCMSubscriber
         lcm.subscribe("6_SLAM_POSES",this);
         map.scale = 0.06;
         map.max = 255;
-        map.size = (int) (18.0/map.scale);
+        map.size = (int) (20.0/map.scale);
         map.cost = new byte[(int) map.size][(int) map.size];
         map.knowledge = new byte[(int) map.size][(int) map.size];
         dist_traveled = 0.0;
