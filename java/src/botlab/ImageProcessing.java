@@ -467,8 +467,8 @@ public class ImageProcessing extends VisEventAdapter
 			
 			double x = ((py * ht * sth) - (f * ht * cth) - (cy * ht * sth)) / ((cy * cth) - (f * sth) - (py * cth));
 			//double[] fit = new double[]{4.5984,-26.3407,57.1470,-57.5768,27.1585,-4.2374};
-			double[] fit = new double[]{1.0967,-0.2147};
-			x = x*fit[0] + fit[1];
+			//double[] fit = new double[]{1.0967,-0.2147};
+			//x = x*fit[0] + fit[1];
 			double y = -((px * ht * sth) - (x * ((cx * cth) - (px * cth))) - (cx * ht * sth)) / f;
 			//x = x*x*x*x*x*fit[0] + x*x*x*x*fit[1] + x*x*x*fit[2] + x*x*fit[3] + x*fit[4] + fit[5];
 			features.triangles[i][0] = x;
@@ -867,7 +867,7 @@ public class ImageProcessing extends VisEventAdapter
 		}
 
 		ImageSource is = ImageSource.make(url);
-		new ImageProcessing(is, true).run();
+		new ImageProcessing(is, false).run();
 	}
 
 

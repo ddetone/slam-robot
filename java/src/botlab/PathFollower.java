@@ -22,6 +22,7 @@ import lcm.lcm.*;
 public class PathFollower implements LCMSubscriber
 {
 
+	final boolean verbose = false;
 	LCM lcm;
 	bot_status_t bot_status;
 
@@ -80,13 +81,13 @@ public class PathFollower implements LCMSubscriber
 			right =  Kp_turn * errorAngle - Kd_turn * currDotXYT[2];
 			left  = -Kp_turn * errorAngle + Kd_turn * currDotXYT[2];
 
-			System.out.println("angle error:" + Math.toDegrees(errorAngle) 
+			if(verbose)System.out.println("angle error:" + Math.toDegrees(errorAngle) 
 					+ "  dest Angle:" + Math.toDegrees(destAngle) 
 					+ "  curr Angle:" + Math.toDegrees(currXYT[2]));
 		}
 		else
 		{
-			System.out.println("distance error:" + errorDist);
+			if(verbose)System.out.println("distance error:" + errorDist);
 			if(errorDist > 0.10)//10cm
 			{
 				right = 0.5;

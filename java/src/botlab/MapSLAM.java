@@ -16,6 +16,7 @@ public class MapSLAM implements LCMSubscriber
 {
 
 	
+	final boolean verbose = false;
 	LCM lcm;
 	Graph g;
 	botlab.PoseTracker pt;
@@ -23,8 +24,8 @@ public class MapSLAM implements LCMSubscriber
 	GraphNodes featureNodes;
 	bot_status_t lastBot = new bot_status_t();
 
-	double newFeatureDist = .6;
-	double oldFeatureDist = 0.45;
+	double newFeatureDist = 0.6;
+	double oldFeatureDist = 0.4;
 	int num_solver_iterations = 200;
 	int decimate = 1;	// number of poses to throw out. In other words, every <decimate> poses, 1 pose will be added to the graph
 	int numPoseMessages = 0;
@@ -152,7 +153,7 @@ public class MapSLAM implements LCMSubscriber
 					int lastPoseIndex = poseNodes.getLastNodeIndex(); //equivalent to g.nodes.size()
 					poseNodes.addNode(g.nodes.size(), bot.utime);
 					int currPoseIndex = poseNodes.getLastNodeIndex(); //equivalent to g.nodes.size()
-					System.out.println("added pose " + poseNodes.getNumNodes() + " to slam graph as node #" + g.nodes.size());
+					if(verbose)System.out.println("added pose " + poseNodes.getNumNodes() + " to slam graph as node #" + g.nodes.size());
 					
 					// If this is the first pose we are receiving add the node to the graph
 					// and add a POS edge to the graph to constrain the SLAM solution to the real world
@@ -232,7 +233,7 @@ public class MapSLAM implements LCMSubscriber
 				// the features in the message are useless to us. This function should
 				// really only return here if we are not receiving pose messages.
 				if(bot == null){
-					System.out.println("Discarding feature message. No corresponding pose found.");
+					if(verbose)System.out.println("Discarding feature message. No corresponding pose found.");
 					return;
 				}
 				
@@ -241,13 +242,16 @@ public class MapSLAM implements LCMSubscriber
 				// the the pose that pose tracker returns
 				int poseNode = poseNodes.findNode(bot.utime);
 				if(poseNode == -1){
-					System.out.println("Discarding feature message. No corresponding slam node found.");
+					if(verbose)System.out.println("Discarding feature message. No corresponding slam node found.");
 					return;
 				}
 				double[] botSlamPose = LinAlg.copy(g.nodes.get(poseNode).state);
 
 				boolean needToSolve = false;
 				for(int i = 0; i < features.ntriangles; i++){
+					
+					double[] fit = new double[]{1.0967,-0.2147};
+					features.triangles[i][0] = features.triangles[i][0]*fit[0] + fit[1];
 					// The feature state is represented as (-z, x, theta_bot) to account
 					// for coordinate frame transformation and orientation between image
 					// processing and map making. Orientation is defined as if the feature
@@ -296,13 +300,13 @@ public class MapSLAM implements LCMSubscriber
 						// euclidean distance. In fact, it just does calculate the euclidean
 						// distance practically ignoring theta for now.
 						
-						dist = mahalanobisDistance(featureState, g.nodes.get(closeFeatureIndex).state, LinAlg.diag(new double[]{1,1,0.01}));
+						dist = mahalanobisDistance(featureState, g.nodes.get(closeFeatureIndex).state, LinAlg.diag(new double[]{1,1,0.1}));
 						if(dist < minDist){
 							minDist = dist;
 							closestFeatureNode = closeFeatureIndex;
 						}
 					}
-					System.out.println("The distance between the current feature and the closest" + 
+					if(verbose)System.out.println("The distance between the current feature and the closest" + 
 								" already observed feature, slam node #" + closestFeatureNode + " is " + minDist);
 					if(minDist > newFeatureDist){
 						// we add the new feature node to the graph and make an
@@ -311,7 +315,7 @@ public class MapSLAM implements LCMSubscriber
 						gna.state = LinAlg.copy(featureState);
 						gna.init = LinAlg.copy(gna.state);
 						featureNodes.addNode(g.nodes.size(), features.utime);
-						System.out.println("added feature " + featureNodes.getNumNodes() + " to slam graph as node #" + g.nodes.size());
+						if(verbose)System.out.println("added feature " + featureNodes.getNumNodes() + " to slam graph as node #" + g.nodes.size());
 						g.nodes.add(gna);
 						// Add an edge between the feature and the pose from which
 						// the feature was observed
@@ -336,7 +340,7 @@ public class MapSLAM implements LCMSubscriber
 						// node to the new pose node from which you reobserved the feature
 						assert(closestFeatureNode != -1);
 						ge.nodes = new int[]{poseNode, closestFeatureNode};
-						System.out.println("added edge between pose " + poseNode + " and feature " + closestFeatureNode + " to slam graph");
+						if(verbose)System.out.println("added edge between pose " + poseNode + " and feature " + closestFeatureNode + " to slam graph");
 						// However you still model the observation as it was taken. From
 						// the new pose to the feature you saw from that pose. NOT from the
 						// new pose to the state of the old feature. Careful of the subtle
@@ -352,8 +356,8 @@ public class MapSLAM implements LCMSubscriber
 						// distance from which the feature was observed.
 						dist = Math.sqrt(ge.z[0] * ge.z[0] + ge.z[1] * ge.z[1]);
 						double distErr = 0.2;
-						ge.P = LinAlg.diag(new double[]{LinAlg.sq(dist*distErr+0.01),
-										LinAlg.sq(dist*distErr+0.01),
+						ge.P = LinAlg.diag(new double[]{LinAlg.sq(dist*dist*distErr+0.01),
+										LinAlg.sq(dist*dist*distErr+0.01),
 										LinAlg.sq(Math.toRadians(90))});
 						g.edges.add(ge);
 						
@@ -362,7 +366,7 @@ public class MapSLAM implements LCMSubscriber
 					}
 				}
 				if(needToSolve){
-					solve();
+					//solve();
 				}
 				packageAndPublish();
 			}
@@ -383,7 +387,7 @@ public class MapSLAM implements LCMSubscriber
 			solver.iterate();
 			numIterations++;
 			double chi2After = g.getErrorStats().chi2normalized;
-			System.out.println("Iteration " + numIterations +
+			if(verbose)System.out.println("Iteration " + numIterations +
 					" reduced chi2 by " + (chi2Before - chi2After));
 			// if the further iteration is futile
 			if (chi2After >= 0.9 * chi2Before || chi2After < 0.00001)
@@ -391,7 +395,7 @@ public class MapSLAM implements LCMSubscriber
 			chi2Before = chi2After;
 		}
 		
-		System.out.println("Done fixing slam graph after " + numIterations + " iterations.");
+		if(verbose)System.out.println("Done fixing slam graph after " + numIterations + " iterations.");
 	}
 
 	public void packageAndPublish(){

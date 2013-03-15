@@ -21,6 +21,7 @@ import lcm.lcm.*;
 public class MapBuilder implements LCMSubscriber
 {
 
+	final boolean verbose = false;
 	static final double DEFAULT_DECAY_DIST = 0.1;
 	static final double DEFAULT_DECAY_RATE = 1.0;
 	static final double DEFAULT_INV_KNOWLEDGE_DIST = 2.0;
@@ -151,8 +152,8 @@ public class MapBuilder implements LCMSubscriber
 					//this.clear();
 					
 					//bot_status = features.bot;
-					System.out.println("adding feature to map");
-					LinAlg.print(bot_status.xyt);
+					if(verbose)System.out.println("adding feature to map");
+					if(verbose)LinAlg.print(bot_status.xyt);
 					bot_status.xyt[0] += (map.size/2)*map.scale;
 					bot_status.xyt[1] += (map.size/2)*map.scale;
 
