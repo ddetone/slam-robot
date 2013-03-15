@@ -156,6 +156,15 @@ public class MapBuilder implements LCMSubscriber
 					bot_status.xyt[0] += (map.size/2)*map.scale;
 					bot_status.xyt[1] += (map.size/2)*map.scale;
 
+					double knowledge_dist = 0.20;
+					for(int i = (int) ((bot_status.xyt[0]-knowledge_dist)/map.scale); i < (bot_status.xyt[0]+knowledge_dist)/map.scale; ++i){
+						for(int j = (int) ((bot_status.xyt[1]-knowledge_dist)/map.scale); j < (bot_status.xyt[0]+knowledge_dist)/map.scale; ++j){
+							if(i > 0 && i < map.size && j > 0 && j < map.size) {
+								map.knowledge[i][j] = (byte) 1;
+							}
+						}
+					}
+
 					for(int f = 0; f < features.nlineSegs; ++f){
 						//System.out.println("adding_feature");
 						//System.out.println(f);
