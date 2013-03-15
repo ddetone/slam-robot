@@ -54,9 +54,18 @@ public class PathPlanner implements LCMSubscriber
 
 			if(map != null && status != null && goal != null){
 				
-				aStar();
-				xyt_t waypoint = nextWaypoint();
-				lcm.publish("6_WAYPOINT",waypoint);
+				if(aStar()){
+					xyt_t waypoint = nextWaypoint();
+					lcm.publish("6_WAYPOINT",waypoint);
+				} else {
+					System.out.println("No possible path to goal");
+					double home[] = {0.0,0.0};
+					goal.xyt = home;
+					if(aStar()){
+						xyt_t waypoint = nextWaypoint();
+						lcm.publish("6_WAYPOINT",waypoint);
+					}
+				}
 			}
 		}
 		catch (IOException e)
@@ -65,7 +74,7 @@ public class PathPlanner implements LCMSubscriber
 		}
 	}
 
-	public void aStar()
+	public boolean aStar()
 	{
 		ArrayList<MapNode> closed_set = new ArrayList<MapNode>();
 		PriorityQueue<MapNode> open_set = new PriorityQueue<MapNode>();
@@ -84,7 +93,7 @@ public class PathPlanner implements LCMSubscriber
 			MapNode current = open_set.poll();
 			closed_set.add(current);
 			if(current.x == status.xyt[0]/map.scale && current.y == status.xyt[1]/map.scale){
-				return;
+				return true;
 			}
 			
 			
@@ -119,7 +128,7 @@ public class PathPlanner implements LCMSubscriber
 				}
 			}
 		}
-		return;
+		return false;
 	}
 
 	public xyt_t nextWaypoint()
@@ -140,14 +149,18 @@ public class PathPlanner implements LCMSubscriber
 		xyt_t ret = new xyt_t();
 		ret.xyt[0] = minNeighbor.x * map.scale;
 		ret.xyt[1] = minNeighbor.y * map.scale;
-		if(secMinNeighbor.x < minNeighbor.x - .01)
-			ret.xyt[2] = Math.PI;
-		else if(secMinNeighbor.x > minNeighbor.x + .01)
-			ret.xyt[2] = 0.0;
-		else if(secMinNeighbor.y < minNeighbor.y - .01)
-			ret.xyt[2] = 3.0* Math.PI / 2.0;
-		else 
-			ret.xyt[2] = Math.PI/2.0;
+		if(minNeighbor.cost() < start.cost()){ //normal
+			if(secMinNeighbor.x < minNeighbor.x - .01)
+				ret.xyt[2] = Math.PI;
+			else if(secMinNeighbor.x > minNeighbor.x + .01)
+				ret.xyt[2] = 0.0;
+			else if(secMinNeighbor.y < minNeighbor.y - .01)
+				ret.xyt[2] = 3.0* Math.PI / 2.0;
+			else 
+				ret.xyt[2] = Math.PI/2.0;
+		} else { //we're at the goal
+			ret.xyt[2] = goal.xyt[2];
+		}
 		return ret;
 	}
 
