@@ -33,6 +33,7 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 	bot_status_t bot_status;
 	battery_t battery;
 
+	ArrayList<double[]> robotTraj = new ArrayList<double[]>();
 	final boolean DEFAULT_SEND_WAYPOINT = false;
 	boolean sendWayPoint = DEFAULT_SEND_WAYPOINT;
 
@@ -194,9 +195,11 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 		vb.addBack(new VisPixCoords(VisPixCoords.ORIGIN.BOTTOM_LEFT,new VzText(VzText.ANCHOR.BOTTOM_LEFT, "Angle = " + Math.toDegrees(xyt[2]))));
 		vb.swap();
         
-//        vb = vw.getBuffer("Robot_Path");
-//        vb.addBack(new VisChain(LinAlg.translate(xyt[0], xyt[1], 0), new VzPoints()));
-        
+		robotTraj.add(new double[]{xyt[0],xyt[1],0.005});
+        vb = vw.getBuffer("Robot_Path");
+        //vb.addBack(new VisChain(LinAlg.translate(xyt[0], xyt[1], 0), new VzPoints()));
+        vb.addBack(new VzPoints(new VisVertexData(robotTraj), new VzPoints.Style(Color.gray,2)));
+        vb.swap();
         
 	}
 
