@@ -172,15 +172,15 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 			}
             else if(channel.equals("6_WAYPOINTS"))
 			{
+
 				xyt_t point = new xyt_t(dins);
 				VisWorld.Buffer vb = vw.getBuffer("Waypoint");
-				VzCircle pointBox = new VzCircle(0.5, new VzMesh.Style(Color.yellow));
-
-				VisObject vo_pointBox = new VisChain(LinAlg.translate(point.xyt[0], point.xyt[1], 0.1),pointBox);
+				VzCircle pointBox = new VzCircle(.25, new VzMesh.Style(Color.yellow));
+				VisObject vo_pointBox = new VisChain(LinAlg.translate(point.xyt[0], point.xyt[1], 0.1),pointBox);		
 				vb.addBack(vo_pointBox);
-            }
-			else if(channel.equals("6_SLAM_POSES"))
-            {
+				vb.swap();
+			}
+			else if(channel.equals("6_SLAM_POSES")){
 				slam_vector_t slamVec = new slam_vector_t(dins);
 				ArrayList<double[]>vec = new ArrayList<double[]>();
 				for(int i = 0; i < slamVec.numPoses; i++)vec.add(new double[]{slamVec.xyt[i].xyt[0],slamVec.xyt[i].xyt[1], 0.005});
