@@ -44,7 +44,7 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 		this.lcm =  LCM.getSingleton();
 		lcm.subscribe("6_POSE",this);
 		lcm.subscribe("6_BATTERY",this);
-		lcm.subscribe("6_MAP",this);D
+		lcm.subscribe("6_MAP",this);
 		lcm.subscribe("6_WAYPOINTS", this);
 		lcm.subscribe("6_SLAM_POSES",this);
 
@@ -170,14 +170,16 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 				map_t map = new map_t(dins);
 				drawMap(map);
 			}
-			if(channel.equals("6_WAYPOINTS"))
+			else if(channel.equals("6_WAYPOINTS"))
 			{
+
 				xyt_t point = new xyt_t(dins);
 				VisWorld.Buffer vb = vw.getBuffer("Waypoint");
-				VzCircle pointBox = new VzCircle(0.5, new VzMesh.Style(Color.yellow));
-
+				VzCircle pointBox = new VzCircle(.25, new VzMesh.Style(Color.yellow));
 				VisObject vo_pointBox = new VisChain(LinAlg.translate(point.xyt[0], point.xyt[1], 0.1),pointBox);		
 				vb.addBack(vo_pointBox);
+				vb.swap();
+			}
 			else if(channel.equals("6_SLAM_POSES")){
 				slam_vector_t slamVec = new slam_vector_t(dins);
 				ArrayList<double[]>vec = new ArrayList<double[]>();
