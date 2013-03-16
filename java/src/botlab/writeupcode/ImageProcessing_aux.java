@@ -843,11 +843,6 @@ public class ImageProcessing_aux extends VisEventAdapter
 		}
 	}
 
-	Line 0, start:(1170.000000,963.000000) end:(1116.000000,963.000000)
-	Line 1, start:(1116.381522,962.050357) end:(746.618478,564.759166)
-
-Line 0, start:(1026.372020,895.778878) end:(791.627980,558.295196)
-
 
 	public static void printLines()
 	{
