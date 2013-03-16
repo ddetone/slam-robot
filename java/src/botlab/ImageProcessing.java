@@ -22,9 +22,9 @@ public class ImageProcessing extends VisEventAdapter
 
 	static final double DEFAULT_CALIBRATE_VAL = -2500;
 	static final double DEFAULT_GREEN_THRESH = 355;
-	static final double DEFAULT_SAT_THRESH = 0.75;
+	static final double DEFAULT_SAT_THRESH = 0.6977;
 	static final double DEFAULT_VALUE_THRESH = 0.55;
-	static final double DEFAULT_HALF_BOX_THRESH = 130;
+	static final double DEFAULT_HALF_BOX_THRESH = 210;
 	static final double DEFAULT_BLUE_THRESH = 200;
 	static final double DEFAULT_THRESH_VAL = 34;
 	static final int DEFAULT_NUM_STEPS = 200;
@@ -76,8 +76,6 @@ public class ImageProcessing extends VisEventAdapter
 	int height = 0;
 	
 	int searchHeight = 500;
-	//WRONG NUMBER BELOW
-	final double TRIANGLE_HEIGHT = 0.3;
 
 	float pixelDists[] = null;
 	float pixelThetas[] = null;
@@ -362,7 +360,7 @@ public class ImageProcessing extends VisEventAdapter
 
 		int index;
 		
-		for (int i = 0; i < height; i++)
+		for (int i = height - searchHeight; i < height; i++)
 		{
 			for (int j = 0; j < width; j++)
 			{
@@ -467,8 +465,7 @@ public class ImageProcessing extends VisEventAdapter
 			
 			double x = ((py * ht * sth) - (f * ht * cth) - (cy * ht * sth)) / ((cy * cth) - (f * sth) - (py * cth));
 			double y = -((px * ht * sth) - (x * ((cx * cth) - (px * cth))) - (cx * ht * sth)) / f;
-			
-			features.triangles[i][0] = x;
+			features.triangles[i][0] = 46.39056/triangles.getHeight(i);
 			features.triangles[i][1] = y;
 
 
@@ -497,6 +494,11 @@ public class ImageProcessing extends VisEventAdapter
 
 		public double[] getMean(int i){
 			return means.get(i);
+		}
+
+		public double getHeight(int i){
+			int temp[] = boundingBoxes.get(i);
+			return (temp[3] - temp[1]);
 		}
 
 		public void addTriangle(double[] _mean, int[] _bounds){
@@ -614,7 +616,7 @@ public class ImageProcessing extends VisEventAdapter
 				for(int i = 0; i < width; i++){
 					double cost = costMap[(j - height + searchHeight) * width + i];
 					if(cost == 1) data[j * width + i] = 0xff0000ff;
-					else  data[j * width + i] = 0xff000000;
+					else data[j * width + i] = 0xff000000;
 				}
 			}
 		}
@@ -864,7 +866,9 @@ public class ImageProcessing extends VisEventAdapter
 		}
 
 		ImageSource is = ImageSource.make(url);
-		new ImageProcessing(is, true).run();
+		//*
+		new ImageProcessing(is, false).run();
+		//*/new ImageProcessing(is, true).run();
 	}
 
 

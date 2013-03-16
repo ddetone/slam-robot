@@ -4,5 +4,5 @@ struct slam_vector_t
 	int32_t numPoses;
 	xyt_t xyt[numPoses];
 	int32_t numTriangles;
-	double triangles[numTriangles][2];
+	double triangles[numTriangles][4];
 }
