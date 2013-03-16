@@ -196,8 +196,8 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 		        {
 			        VzTriangle tr = new VzTriangle(0.08,0.08,0.08, new VzMesh.Style(Color.green));
             	    VisObject vo_tr = new VisChain(LinAlg.translate(slamVec.triangles[i][0], slamVec.triangles[i][1], 0.10),
+                                                   LinAlg.rotateZ(slamVec.triangles[i][2]),
                                                    LinAlg.rotateY(Math.PI/2),
-                                                   LinAlg.rotateX(slamVec.triangles[i][3]),
                                                    tr);
             		vb.addBack(vo_tr);
 		        }

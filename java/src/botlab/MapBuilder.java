@@ -181,6 +181,7 @@ public class MapBuilder implements LCMSubscriber
 
 						//remove things in line of sight (replaces ray casting)
 						//uses barycentric coords to tell if it's in triangle
+						/*
 						int xmin = (int) (Math.min(p1[0],Math.min(p2[0],bot_status.xyt[0])) / map.scale);
 						int xmax = (int) (Math.max(p1[0],Math.max(p2[0],bot_status.xyt[0])) / map.scale);
 						int ymin = (int) (Math.min(p1[1],Math.min(p2[1],bot_status.xyt[1])) / map.scale);
@@ -208,7 +209,7 @@ public class MapBuilder implements LCMSubscriber
 								}
 							}
 						}
-
+						*/
 
 						//add points to map
 						double dist = LinAlg.distance(p1,p2,2);
