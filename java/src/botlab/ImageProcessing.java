@@ -463,9 +463,10 @@ public class ImageProcessing extends VisEventAdapter
 			double px = mean[0];
 			double py = mean[1];
 			
-			double x = ((py * ht * sth) - (f * ht * cth) - (cy * ht * sth)) / ((cy * cth) - (f * sth) - (py * cth));
+			//double x = ((py * ht * sth) - (f * ht * cth) - (cy * ht * sth)) / ((cy * cth) - (f * sth) - (py * cth));
+			double x = 46.39056 / triangles.getHeight(i);
 			double y = -((px * ht * sth) - (x * ((cx * cth) - (px * cth))) - (cx * ht * sth)) / f;
-			features.triangles[i][0] = 46.39056/triangles.getHeight(i);
+			features.triangles[i][0] = x;
 			features.triangles[i][1] = y;
 
 

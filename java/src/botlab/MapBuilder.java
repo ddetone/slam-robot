@@ -292,13 +292,6 @@ public class MapBuilder implements LCMSubscriber
 					}
 				}
 
-				map.numTriangles = slam_vec.numTriangles;
-				map.triangles = new double[map.numTriangles][2];
-				for(int i = 0; i < map.numTriangles; i++){
-					map.triangles[i][0] = slam_vec.triangles[i][0];
-					map.triangles[i][1] = slam_vec.triangles[i][1];
-				}
-
 				lcm.publish("6_MAP",map);
 			}
 		}
