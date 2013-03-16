@@ -6,9 +6,6 @@ struct map_t
 	int32_t max;
 	double scale;
 
-	int32_t numTriangles;
-	double triangles[numTriangles][2];
-
 	byte cost[size][size];
 	byte knowledge[size][size];
 }

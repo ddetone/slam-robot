@@ -372,7 +372,7 @@ public class MapSLAM implements LCMSubscriber
 					}
 				}
 				if(needToSolve){
-					solve();
+					//solve();
 				}
 				packageAndPublish();
 			}	
