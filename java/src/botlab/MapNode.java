@@ -54,16 +54,16 @@ public class MapNode implements Comparable
 	{
 		ArrayList<MapNode> ret = new ArrayList<MapNode>();	
 		
-		if(x <= 0)
+		if(x > 0)
 			ret.add(new MapNode(x - 1, y, pp));
 	
-		if(y <= 0)
+		if(y > 0)
 			ret.add(new MapNode(x, y - 1, pp));
 	
-		if(x >=pp.map.size-1)
+		if(x < pp.map.size-1)
 			ret.add(new MapNode(x + 1, y, pp));
 	
-		if(y >=pp.map.size-1)
+		if(y < pp.map.size-1)
 			ret.add(new MapNode(x, y+1, pp));
 
 		return ret;
