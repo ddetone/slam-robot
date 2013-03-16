@@ -205,10 +205,13 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 		        VisWorld.Buffer vb_t = vw.getBuffer("Triangles");
 		        for(int i = 0; i < slamVec.numTriangles ; i++)
 		        {
-			        VzTriangle tr = new VzTriangle(0.08,0.08,0.08, new VzMesh.Style(Color.green));
-            	    VisObject vo_tr = new VisChain(LinAlg.translate(slamVec.triangles[i][0], slamVec.triangles[i][1], 0.10),
+			        VzTriangle trB = new VzTriangle(0.08,0.08,0.08, new VzMesh.Style(Color.black));
+			        VzTriangle trG = new VzTriangle(0.08,0.08,0.08, new VzMesh.Style(Color.green));
+                    VisObject tr = new VisChain(trB, LinAlg.translate(0,0,0.001), trG);
+            	    VisObject vo_tr = new VisChain(LinAlg.translate(slamVec.triangles[i][0], slamVec.triangles[i][1], 0.15),
                                                    LinAlg.rotateZ(slamVec.triangles[i][2]),
-                                                   LinAlg.rotateY(Math.PI/2),
+                                                   LinAlg.rotateY(-Math.PI/2),
+                                                   LinAlg.rotateZ(Math.PI/2),
                                                    tr);
             		vb.addBack(vo_tr);
 		        }
