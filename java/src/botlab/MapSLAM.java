@@ -24,8 +24,8 @@ public class MapSLAM implements LCMSubscriber
 	GraphNodes featureNodes;
 	bot_status_t lastBot = new bot_status_t();
 
-	double newFeatureDist = 0.6;
-	double oldFeatureDist = 0.4;
+	double newFeatureDist = .8;
+	double oldFeatureDist = .6;
 	int num_solver_iterations = 200;
 	int decimate = 1;	// number of poses to throw out. In other words, every <decimate> poses, 1 pose will be added to the graph
 	int numPoseMessages = 0;
@@ -34,16 +34,19 @@ public class MapSLAM implements LCMSubscriber
 	private class GraphNodes{
 		ArrayList<Integer> graphNodeIndices;
 		ArrayList<Long> utimes;
+		ArrayList<Integer> IDs;
 		
 		GraphNodes(){
 			graphNodeIndices = new ArrayList<Integer>();
 			utimes = new ArrayList<Long>();
+			IDs = new ArrayList<Integer>();
 		}
 
-		public void addNode(int _nodeIndex, long _utime)
+		public void addNode(int _nodeIndex, long _utime, int _id)
 		{
 			graphNodeIndices.add(new Integer(_nodeIndex));
 			utimes.add(new Long(_utime));
+			IDs.add(new Integer(_id));
 		}
 
 		// Check if array list has an optimized search routine.
@@ -60,6 +63,10 @@ public class MapSLAM implements LCMSubscriber
 				return graphNodeIndices.get(0);
 			}
 			return -1;
+		}
+
+		public int getID(int index){
+			return (int)IDs.get(index);
 		}
 
 		public int getNumNodes(){
@@ -151,7 +158,7 @@ public class MapSLAM implements LCMSubscriber
 					bot_status_t bot = new bot_status_t(dins);
 
 					int lastPoseIndex = poseNodes.getLastNodeIndex(); //equivalent to g.nodes.size()
-					poseNodes.addNode(g.nodes.size(), bot.utime);
+					poseNodes.addNode(g.nodes.size(), bot.utime, numPoseMessages);
 					int currPoseIndex = poseNodes.getLastNodeIndex(); //equivalent to g.nodes.size()
 					if(verbose)System.out.println("added pose " + poseNodes.getNumNodes() + " to slam graph as node #" + g.nodes.size());
 					
@@ -298,7 +305,7 @@ public class MapSLAM implements LCMSubscriber
 						// euclidean distance. In fact, it just does calculate the euclidean
 						// distance practically ignoring theta for now.
 						
-						dist = mahalanobisDistance(featureState, g.nodes.get(closeFeatureIndex).state, LinAlg.diag(new double[]{1,1,0.1}));
+						dist = mahalanobisDistance(featureState, g.nodes.get(closeFeatureIndex).state, LinAlg.diag(new double[]{1,1,0}));
 						if(dist < minDist){
 							minDist = dist;
 							closestFeatureNode = closeFeatureIndex;
@@ -312,7 +319,7 @@ public class MapSLAM implements LCMSubscriber
 						GXYTNode gna = new GXYTNode();
 						gna.state = LinAlg.copy(featureState);
 						gna.init = LinAlg.copy(gna.state);
-						featureNodes.addNode(g.nodes.size(), features.utime);
+						featureNodes.addNode(g.nodes.size(), features.utime, numFeatureMessages);
 						if(verbose)System.out.println("added feature " + featureNodes.getNumNodes() + " to slam graph as node #" + g.nodes.size());
 						g.nodes.add(gna);
 						// Add an edge between the feature and the pose from which
@@ -331,6 +338,7 @@ public class MapSLAM implements LCMSubscriber
 										LinAlg.sq(dist*distErr+0.01),
 										LinAlg.sq(Math.toRadians(90))});
 						g.edges.add(ge);
+						numFeatureMessages++;
 					}
 					else if (minDist < oldFeatureDist){
 						GXYTEdge ge = new GXYTEdge();
@@ -367,8 +375,8 @@ public class MapSLAM implements LCMSubscriber
 					solve();
 				}
 				packageAndPublish();
-			}
-		}		catch (IOException e)
+			}	
+		}catch (IOException e)
 		{
 			e.printStackTrace();
 		}
@@ -420,11 +428,12 @@ public class MapSLAM implements LCMSubscriber
 		int numFeatures = featureNodes.getNumNodes();
 		
 		pose_out.numTriangles = numFeatures;
-		pose_out.triangles = new double[numFeatures][2];
+		pose_out.triangles = new double[numFeatures][4];
 		
 		for(int i = 0; i < numFeatures; i++){
 			
-			pose_out.triangles[i] = g.nodes.get(featureNodes.getNodeGraphIndex(i)).state;
+			double[] tmp = g.nodes.get(featureNodes.getNodeGraphIndex(i)).state;
+			pose_out.triangles[i] = new double[]{tmp[0],tmp[1],tmp[2],featureNodes.getID(i)};
 
 		}
 		
