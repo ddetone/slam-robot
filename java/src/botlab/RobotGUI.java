@@ -176,7 +176,7 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 				xyt_t point = new xyt_t(dins);
 				VisWorld.Buffer vb = vw.getBuffer("Waypoint");
 				VzCircle pointBox = new VzCircle(.25, new VzMesh.Style(Color.yellow));
-				VisObject vo_pointBox = new VisChain(LinAlg.translate(point.xyt[0], point.xyt[1], 0.1),pointBox);		
+				VisObject vo_pointBox = new VisChain(LinAlg.translate(point.xyt[0], point.xyt[1], 0.1),pointBox);
 				vb.addBack(vo_pointBox);
 				vb.swap();
 			}
