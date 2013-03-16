@@ -41,7 +41,7 @@ public class MapNode implements Comparable
 	public int heuristic()
 	{
 		double xy[] = {x,y};
-		double goalxy[] = {pp.goal.xyt[0]/pp.map.scale,pp.goal.xyt[1]/pp.map.scale};
+		double goalxy[] = {pp.status.xyt[0]/pp.map.scale,pp.status.xyt[1]/pp.map.scale};
 		return (int) LinAlg.distance(xy, goalxy,2);
 	}
 
@@ -53,30 +53,19 @@ public class MapNode implements Comparable
 	public ArrayList<MapNode> neighbors()
 	{
 		ArrayList<MapNode> ret = new ArrayList<MapNode>();	
-		for(int i = 0; i < 4; ++i){
-			int deltax = 0;
-			int deltay = 0;
-			if(i == 0){
-				if(x == 0)
-					continue;
-				ret.add(new MapNode(x - 1, y, pp));
-			}
-			if(i == 1){
-				if(y == 0)
-					continue;
-				ret.add(new MapNode(x, y - 1, pp));
-			}
-			if(i == 2){
-				if(x ==pp.map.size)
-					continue;
-				ret.add(new MapNode(x + 1, y, pp));
-			}
-			if(i == 3){
-				if(y ==pp.map.size)
-					continue;
-				ret.add(new MapNode(x, y+1, pp));
-			}
-		}
+		
+		if(x <= 0)
+			ret.add(new MapNode(x - 1, y, pp));
+	
+		if(y <= 0)
+			ret.add(new MapNode(x, y - 1, pp));
+	
+		if(x >=pp.map.size-1)
+			ret.add(new MapNode(x + 1, y, pp));
+	
+		if(y >=pp.map.size-1)
+			ret.add(new MapNode(x, y+1, pp));
+
 		return ret;
 	}
 
