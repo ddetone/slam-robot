@@ -305,6 +305,15 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
         double covAngle = curr_bot_status.cov[2][2];
 
 		vb.addBack(new VisChain(LinAlg.translate(0,0,0.01),new VzEllipse(new double[]{curr_bot_status.xyt[0],curr_bot_status.xyt[1]}, cov22, new VzMesh.Style(Color.black))));
+
+		//vb.addBack(new VzAxes());
+	 
+		vb.addBack(new VisChain(LinAlg.translate(bot_status.xyt[0],bot_status.xyt[1],0.002),LinAlg.rotateZ(bot_status.xyt[2]),LinAlg.rotateY(Math.PI/2),LinAlg.translate(0,0.3*Math.asin(covAngle),0.3),LinAlg.rotateX(-covAngle),new VzBox(0.003,0.003,0.6,new VzMesh.Style(Color.green))));
+		vb.addBack(new VisChain(LinAlg.translate(bot_status.xyt[0],bot_status.xyt[1],0.002),LinAlg.rotateZ(bot_status.xyt[2]),LinAlg.rotateY(Math.PI/2),LinAlg.translate(0,0.3*Math.asin(-covAngle),0.3),LinAlg.rotateX(covAngle),new VzBox(0.003,0.003,0.6,new VzMesh.Style(Color.green))));	
+
+		//vb.addBack(new VisChain(LinAlg.translate(0.15,0,0.02),LinAlg.rotateY(Math.PI/2), LinAlg.translate(0.3*Math.asin(1),0,0), LinAlg.rotateX(1),new VzBox(0.005,0.005,0.3,new VzMesh.Style(Color.green))));
+		//vb.addBack(new VzBox(0.005,0.005,0.3,new VzMesh.Style(Color.green)));
+
 		vb.swap();
 	}
 	//returns two eigen values (first one larger) and theta of max eigen vector
