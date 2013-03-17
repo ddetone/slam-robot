@@ -26,6 +26,7 @@ public class RobotController implements LCMSubscriber
 	botlab.PoseTracker tracker;
 	map_t map;
 	String state;
+	xyt_t robotPose;
 
 	int pastNumTriangles;
 	LinkedList<Integer> trianglesToKill;
@@ -39,14 +40,15 @@ public class RobotController implements LCMSubscriber
 		}
 		tracker = botlab.PoseTracker.getSingleton();
 		map = null;
+		robotPose = null;
 		state = "explore";
 		pastNumTriangles = 0;
 		trianglesToKill = new LinkedList<Integer>();
 		lcm.subscribe("6_MAP",this);
+		lcm.subscribe("6_SLAM_POSES",this);
 	}
 	
 	public void planFrontier(){
-	
 		//frontier planner
 		if(state == "explore"){
 			boolean knowledge_bounds[][] = new boolean[(int) map.size][(int) map.size]; //is [y][x]
@@ -77,8 +79,8 @@ public class RobotController implements LCMSubscriber
 			UnionFind edge_sets = new UnionFind(map.size*map.size);
 			edge_sets.FindSets(knowledge_bounds, map.size, map.size);
 			HashMap<Integer, Integer> counter = new HashMap<Integer, Integer>();
-			HashMap<Integer, Double> mean_x = new HashMap<Integer, Double>();
-			HashMap<Integer, Double> mean_y = new HashMap<Integer, Double>();
+			HashMap<Integer, ArrayList<Double>> mean_x = new HashMap<Integer, ArrayList<Double>>();
+			HashMap<Integer, ArrayList<Double>> mean_y = new HashMap<Integer, ArrayList<Double>>();
 			for(int i = 1; i < map.size-1; ++i){
 				for(int j = 1; j < map.size-1; ++j){
 					if(knowledge_bounds[i][j]) {
@@ -86,16 +88,16 @@ public class RobotController implements LCMSubscriber
 						if(counter.containsKey(representative)){
 							Integer old_count = counter.get(representative);
 							counter.put(representative, new Integer(old_count + 1));
-
-							Double old_x = mean_x.get(representative);
-							mean_x.put(representative, new Double(old_x + i));
-
-							Double old_y = mean_y.get(representative);
-							mean_y.put(representative, new Double(old_y + j));
+							mean_x.get(representative).add(new Double(i));
+							mean_y.get(representative).add(new Double(j));
 						} else {
 							counter.put(representative, new Integer(1));
-							mean_x.put(representative, new Double(i));
-							mean_y.put(representative, new Double(j));
+							ArrayList<Double> xs = new ArrayList<Double>();
+							xs.add(new Double(i));
+							mean_x.put(representative, xs);
+							ArrayList<Double> ys = new ArrayList<Double>();
+							ys.add(new Double(j));
+							mean_y.put(representative, ys);
 						}
 					}
 				}
@@ -104,14 +106,29 @@ public class RobotController implements LCMSubscriber
 			double goal_x = 0;
 			double goal_y = 0;
 			for(Integer i : counter.keySet()){
-				if(counter.get(i) > max_size){
-					max_size = counter.get(i);
-					goal_x = mean_x.get(i)*map.scale/counter.get(i) - (map.size/2)*map.scale;
-					goal_y = mean_y.get(i)*map.scale/counter.get(i) - (map.size/2)*map.scale;
+				int size_not_in_wall = 0;
+				for(int j = 0; j < counter.get(i); ++j){
+					if((int)(map.cost[mean_x.get(i).get(j).intValue()][mean_y.get(i).get(j).intValue()] & 255) < 255*0.6)
+						size_not_in_wall++;
+				}
+				double lowest_distance = Double.MAX_VALUE;
+				if(size_not_in_wall > max_size){
+					max_size = size_not_in_wall;
+					for(int j = 0; j < counter.get(i); ++j){
+						if((int)(map.cost[mean_x.get(i).get(j).intValue()][mean_y.get(i).get(j).intValue()] & 255) < 255*0.6){
+							double[] robotXY = new double[]{robotPose.xyt[0]/map.scale + map.size/2,robotPose.xyt[1]/map.scale + map.size/2};
+							double dist = LinAlg.squaredDistance(robotXY, new double[]{mean_x.get(i).get(j), mean_y.get(i).get(j)});
+							if(dist < lowest_distance){
+								lowest_distance = dist;
+								goal_x = mean_x.get(i).get(j)*map.scale - (map.size/2)*map.scale;
+								goal_y = mean_y.get(i).get(j)*map.scale - (map.size/2)*map.scale;
+							}
+						}
+					}
 				}
 			}
 
-			if(max_size < 8){ //map explored return to start
+			if(max_size < 0.10/map.scale){ //map explored return to start
 				goal_x = 0;
 				goal_y = 0;
 			}
@@ -121,7 +138,7 @@ public class RobotController implements LCMSubscriber
 			double xyt[] = {goal_x, goal_y, 0.0};
 			goal.xyt = xyt;
 			lcm.publish("6_GOAL", goal);
-		}
+		}	
 	}
 	
 	
@@ -132,7 +149,7 @@ public class RobotController implements LCMSubscriber
 		{
 			if(channel.equals("6_MAP")){
 				map = new map_t(dins);
-				planFrontier();
+				if(robotPose != null) planFrontier();
 				/*for(int i = pastNumTriangles; i < map.numTriangles; ++i) {
 					trianglesToKill.add(new Integer(i));
 				}
@@ -140,6 +157,9 @@ public class RobotController implements LCMSubscriber
 					state = "Shoot";
 					//do shooting stuff
 				}*/
+			} else if(channel.equals("6_SLAM_POSES")){
+				slam_vector_t slam_vec = new slam_vector_t(dins);
+				robotPose = slam_vec.xyt[slam_vec.numPoses - 1];
 			}
 		}
 		catch (IOException e)
