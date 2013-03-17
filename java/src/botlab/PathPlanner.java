@@ -24,7 +24,9 @@ public class PathPlanner implements LCMSubscriber
 	LCM lcm;
 	map_t map = null;
 	int travel_cost_map[][];
-	bot_status_t status = null;
+	bot_status_t openLoopBot = null;
+	xyt_t status = null;
+	double[] slamBot = null;
 	xyt_t goal = null;
 	xyt_t lastPlannedWaypoint = null;
 
@@ -40,6 +42,7 @@ public class PathPlanner implements LCMSubscriber
 		lcm.subscribe("6_POSE",this);
 		lcm.subscribe("6_MAP",this);
 		lcm.subscribe("6_GOAL",this);
+		lcm.subscribe("6_SLAM_POSES",this);
 	}
 
 	public void messageReceived(LCM lcm, String channel, LCMDataInputStream dins)
@@ -73,17 +76,21 @@ public class PathPlanner implements LCMSubscriber
 					}
 				}
 			}
-			if(channel.equals("6_POSE"))
+			else if(channel.equals("6_POSE"))
 			{
+				openLoopBot = new bot_status_t(dins);
+			}
+			else if(channel.equals("6_SLAM_POSES")){
 				
 				if(map != null){
-					
-					status = new bot_status_t(dins);
-					status.xyt[0] += (map.size/2)*map.scale;
-					status.xyt[1] += (map.size/2)*map.scale;
+					slam_vector_t temp = new slam_vector_t(dins);
+					slamBot = LinAlg.copy(temp.xyt[temp.numPoses].xyt);
+					status.xyt[0] = temp.xyt[temp.numPoses].xyt[0] + (map.size/2)*map.scale;
+					status.xyt[0] = temp.xyt[temp.numPoses].xyt[1] + (map.size/2)*map.scale;
 				}
+				
 			}
-			if(channel.equals("6_GOAL"))
+			else if(channel.equals("6_GOAL"))
 			{
 				if(verbose)System.out.println("goal");
 				goal = new xyt_t(dins);
@@ -235,6 +242,7 @@ public class PathPlanner implements LCMSubscriber
 		} else { //we're at the goal
 			ret.xyt[2] = goal.xyt[2];
 		}
+		ret.xyt = LinAlg.xytMultiply(ret.xyt,LinAlg.xytInvMul31(slamBot, openLoopBot.xyt));
 		return ret;
 	}
 

@@ -66,9 +66,11 @@ public class AgglomerativeLineFitter
 	}
 
 	public void plotCorners(VisWorld.Buffer vb, VisChain vc){
-		vc.add(new VzPoints(new VisVertexData(corners),
+		if(corners != null){
+			vc.add(new VzPoints(new VisVertexData(corners),
 					new VzPoints.Style(Color.yellow, 5)));
-		vb.addBack(vc);
+			vb.addBack(vc);
+		}
 	}
 	
 	public void findSegs(){
@@ -179,6 +181,7 @@ public class AgglomerativeLineFitter
 			}
 		}
 
+/*
 		
 		corners = new ArrayList<double []>();
 		// Consider the intersections of all valid lines
@@ -211,7 +214,7 @@ public class AgglomerativeLineFitter
 				}
 			}
 		}
-	
+//*/	
 	
 	}
 

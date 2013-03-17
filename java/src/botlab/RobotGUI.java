@@ -97,7 +97,10 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 			double temp[] = ray.intersectPlaneXY();
 			wayPoint.utime = TimeUtil.utime();
 			wayPoint.xyt = new double[]{temp[0], temp[1], 0};
-			lcm.publish("6_GOAL", wayPoint);
+
+			double[] T = LinAlg.xytInvMul31(bot_status.xyt, curr_bot_status.xyt);
+			wayPoint.xyt = LinAlg.xytMultiply(wayPoint.xyt, T);
+			lcm.publish("6_WAYPOINT", wayPoint);
 
 			//pg.sb("sendWayPoint",false);
 			return true;
