@@ -56,7 +56,7 @@ public class MapBuilder implements LCMSubscriber
         lcm.subscribe("6_PARAM",this);
         lcm.subscribe("6_FEATURES",this);
         lcm.subscribe("6_SLAM_POSES",this);
-        map.scale = 0.01;
+        map.scale = 0.04;
         map.max = 255;
         map.size = (int) (10.0/map.scale);
         map.cost = new byte[(int) map.size][(int) map.size];
@@ -200,7 +200,7 @@ public class MapBuilder implements LCMSubscriber
 								if(lambda3 < 0.0 || lambda3 > 1.0)
 									continue;
 								if(i > 0 && i < map.size && j > 0 && j < map.size) {
-									//map.cost[i][j] = (byte) 0;
+									map.cost[i][j] = (byte) 0;
 									map.knowledge[i][j] = (byte) 1;
 								}
 							}
@@ -240,17 +240,18 @@ public class MapBuilder implements LCMSubscriber
 								map.cost[x][y] = (byte) 255; //highest cost
 								map.knowledge[x][y] = (byte) 2;
 							}
-							/*
-							for(int j = x - 3; j < x + 3; ++j){
-								for(int k = y - 3; k < y + 3; ++k){
+							
+							for(int j = x - 7; j <= x + 7; ++j){
+								for(int k = y - 7; k <= y + 7; ++k){
 									if(j == x && k == y || k < 0 || k >= map.size || j < 0 || j >= map.size)
 										continue;
 									double w[] = {x,y};
 									double d[] = {j,k};
-									map.cost[j][k] = (byte) Math.max(255.0 - (inverse_cost_decay * LinAlg.distance(w,d)), map.cost[j][k]);
+									map.cost[j][k] = (byte) Math.max(255.0 - (600.0*map.scale * LinAlg.distance(w,d)), (int)(map.cost[j][k] & 0xFF));
+									//System.out.println(Math.max(255.0 - (408.0*map.scale * LinAlg.distance(w,d)), (int)(map.cost[j][k] & 0xFF)));
 								}
 							}
-							//*/
+							
 
 							//System.out.println((wall_point[0]/map.scale)+ ", " +(int)(wall_point[1]/map.scale));
 							/*
