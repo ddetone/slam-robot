@@ -31,6 +31,9 @@ public class MapSLAM implements LCMSubscriber
 	int numPoseMessages = 0;
 	int numFeatureMessages = 0;
 
+	final static int POSE_TO_POSE = 0;
+	final static int POSE_TO_FEATURE = 0;
+
 	private class GraphNodes{
 		ArrayList<Integer> graphNodeIndices;
 		ArrayList<Long> utimes;
@@ -97,7 +100,7 @@ public class MapSLAM implements LCMSubscriber
 		pt = botlab.PoseTracker.getSingleton();
 		poseNodes = new GraphNodes();
 		featureNodes = new GraphNodes();
-
+		
 		lcm.subscribe("6_FEATURES",this);
 		lcm.subscribe("6_POSE",this);
 	}
@@ -157,9 +160,9 @@ public class MapSLAM implements LCMSubscriber
 				if(numPoseMessages % decimate == 0){
 					bot_status_t bot = new bot_status_t(dins);
 
-					int lastPoseIndex = poseNodes.getLastNodeIndex(); //equivalent to g.nodes.size()
+					int lastPoseIndex = poseNodes.getLastNodeIndex(); //equivalent to g.nodes.size() at this point in time
 					poseNodes.addNode(g.nodes.size(), bot.utime, numPoseMessages);
-					int currPoseIndex = poseNodes.getLastNodeIndex(); //equivalent to g.nodes.size()
+					int currPoseIndex = poseNodes.getLastNodeIndex(); //equivalent to g.nodes.size() at this point in time
 					if(verbose)System.out.println("added pose " + poseNodes.getNumNodes() + " to slam graph as node #" + g.nodes.size());
 					
 					// If this is the first pose we are receiving add the node to the graph
@@ -196,6 +199,7 @@ public class MapSLAM implements LCMSubscriber
 						// we can be practically 100% sure about this one. And as always,
 						// I just made all of that up. But it does sound plausible.
 						ge.P = LinAlg.diag(new double[]{0.00001,0.00001,0.00001});
+						ge.setAttribute("edge_type",POSE_TO_POSE);
 						g.edges.add(ge);
 					//*/
 						
@@ -206,21 +210,49 @@ public class MapSLAM implements LCMSubscriber
 					GXYTEdge ge = new GXYTEdge();
 					ge.nodes = new int[]{lastPoseIndex, currPoseIndex};
 					ge.z = LinAlg.xytInvMul31(lastBot.xyt, bot.xyt);
-					double dist = Math.sqrt(ge.z[0] * ge.z[0] + ge.z[1] * ge.z[1]);
-					double distErr = 0.1;
-					double rot = ge.z[2];
-					double rotErr = 0.1;
-					// model the covariance in the direction that the robot is travelling
-					ge.P = LinAlg.diag(new double[]{LinAlg.sq(dist*distErr+0.01),
-									LinAlg.sq(dist*distErr+0.01),
-									LinAlg.sq(rot*rotErr)+Math.toRadians(1)});
+
+					double alpha 	= 0.1;	//uncertainty of X direction, based on X
+					double bravo  	= 0.01; //uncertainty of Y direction, based on X (assume no lateral movement)
+					double charlie 	= 0.1;  //uncertainty of Theta, based on Theta
+					
+					double[] lastSlamPose = g.nodes.get(lastPoseIndex).state;
+					double ca = Math.cos(lastSlamPose[2]);
+					double sa = Math.sin(lastSlamPose[2]);
+					
+					double sigmaT_xx = (alpha*ge.z[0])*(alpha*ge.z[0])+.001;
+					double sigmaT_yy = (bravo *ge.z[0])*(bravo *ge.z[0])+.001;
+					double sigmaT_tt = (charlie*ge.z[2])*(charlie*ge.z[2])+.001;
+
+					double[][] Jt = new double[][]{	{ca,-sa, 0 },
+									{sa, ca, 0 },
+									{0 , 0 , 1 }};
+					double[][] Jt_T = LinAlg.transpose(Jt);
+
+					double[][] sigmaT = new double[][]{{sigmaT_xx, 0, 0},
+									{0, sigmaT_yy, 0},
+									{0, 0, sigmaT_tt}};
+					
+					ge.P = LinAlg.matrixABC(Jt,sigmaT,Jt_T);
+//THIS DOESNT GO HERE					
+/*
+					// The first edge is guaranteed to be a POSE_TO_POSE edge
+					GEdge prevGlobalEdge = g.edges.get(0);
+					for(int i = 1; i < g.edges.size(); i++){
+						GEdge temp = g.edges.get(i);
+						if((int)temp.getAttribute() == POSE_TO_POSE){
+							prevGlobalEdge.compose((GXYTEdge)temp);
+						}
+						
+					}
+*/
+					ge.setAttribute("edge_type",POSE_TO_POSE);
 					g.edges.add(ge);
 					
 					GXYTNode gn = new GXYTNode();
 					// make the state of this node equal to the state of the last node after
 					// slam + the current POSE observation. Notice the difference between this
 					// line and gn.state = new double[]{bot.xyt[0], bot.xyt[1], bot.xyt[2]};
-					gn.state = LinAlg.xytMultiply(g.nodes.get(lastPoseIndex).state, ge.z);
+					gn.state = LinAlg.xytMultiply(lastSlamPose, ge.z);
 					gn.init = LinAlg.copy(gn.state);
 					g.nodes.add(gn);
 					
@@ -327,16 +359,35 @@ public class MapSLAM implements LCMSubscriber
 						GXYTEdge ge = new GXYTEdge();
 						ge.nodes = new int[]{poseNode, g.nodes.size() - 1};
 						// ******* CONFIRM THIS IS THE CORRECT Z ******
+						// confirmed
 						ge.z = new double[]{features.triangles[i][0],
 								features.triangles[i][1],
 								0};
-						// Hopefully the model below works. Theta very uncertain because
-						// we might not view the feature from straight on every time we see it.
-						dist = Math.sqrt(ge.z[0] * ge.z[0] + ge.z[1] * ge.z[1]);
-						double distErr = 0.2;
-						ge.P = LinAlg.diag(new double[]{LinAlg.sq(dist*distErr+0.01),
-										LinAlg.sq(dist*distErr+0.01),
-										LinAlg.sq(Math.toRadians(90))});
+
+						double alpha 	= 0.3;	//uncertainty of X direction, based on X
+						double bravo  	= 0.1; //uncertainty of Y direction, based on X (assume no lateral movement)
+						
+						int lastPoseIndex = poseNodes.getLastNodeIndex(); //equivalent to g.nodes.size() at this point in time
+						double[] lastSlamPose = g.nodes.get(lastPoseIndex).state;
+						double ca = Math.cos(lastSlamPose[2]);
+						double sa = Math.sin(lastSlamPose[2]);
+						
+						double sigmaT_xx = (alpha*ge.z[0])*(alpha*ge.z[0])+.001;
+						double sigmaT_yy = (bravo *ge.z[1])*(bravo *ge.z[1])+.001;
+						double sigmaT_tt = Math.toRadians(90)*Math.toRadians(90);
+
+						double[][] Jt = new double[][]{	{ca,-sa, 0 },
+										{sa, ca, 0 },
+										{0 , 0 , 1 }};
+						double[][] Jt_T = LinAlg.transpose(Jt);
+
+						double[][] sigmaT = new double[][]{{sigmaT_xx, 0, 0},
+										{0, sigmaT_yy, 0},
+										{0, 0, sigmaT_tt}};
+						
+						ge.P = LinAlg.matrixABC(Jt,sigmaT,Jt_T);
+
+						ge.setAttribute("edge_type", POSE_TO_FEATURE);
 						g.edges.add(ge);
 						numFeatureMessages++;
 					}
@@ -358,13 +409,30 @@ public class MapSLAM implements LCMSubscriber
 						ge.z = new double[]{features.triangles[i][0],
 								features.triangles[i][1],
 								0};
-						// Model the reobservation uncertainty proportional to the square of the
-						// distance from which the feature was observed.
-						dist = Math.sqrt(ge.z[0] * ge.z[0] + ge.z[1] * ge.z[1]);
-						double distErr = 0.2;
-						ge.P = LinAlg.diag(new double[]{LinAlg.sq(dist*distErr+0.01),
-										LinAlg.sq(dist*distErr+0.01),
-										LinAlg.sq(Math.toRadians(90))});
+						double alpha 	= 0.3;	//uncertainty of X direction, based on X
+						double bravo  	= 0.1; //uncertainty of Y direction, based on X (assume no lateral movement)
+						
+						int lastPoseIndex = poseNodes.getLastNodeIndex(); //equivalent to g.nodes.size() at this point in time
+						double[] lastSlamPose = g.nodes.get(lastPoseIndex).state;
+						double ca = Math.cos(lastSlamPose[2]);
+						double sa = Math.sin(lastSlamPose[2]);
+						
+						double sigmaT_xx = (alpha*ge.z[0])*(alpha*ge.z[0])+.001;
+						double sigmaT_yy = (bravo *ge.z[1])*(bravo *ge.z[1])+.001;
+						double sigmaT_tt = (90)*(90);
+
+						double[][] Jt = new double[][]{	{ca,-sa, 0 },
+										{sa, ca, 0 },
+										{0 , 0 , 1 }};
+						double[][] Jt_T = LinAlg.transpose(Jt);
+
+						double[][] sigmaT = new double[][]{{sigmaT_xx, 0, 0},
+									{0, sigmaT_yy, 0},
+									{0, 0, sigmaT_tt}};
+						
+						ge.P = LinAlg.matrixABC(Jt,sigmaT,Jt_T);
+
+						ge.setAttribute("edge_type", POSE_TO_FEATURE);
 						g.edges.add(ge);
 						
 
@@ -372,7 +440,7 @@ public class MapSLAM implements LCMSubscriber
 					}
 				}
 				if(needToSolve){
-					//solve();
+					solve();
 				}
 				packageAndPublish();
 			}	

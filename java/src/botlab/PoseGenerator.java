@@ -190,12 +190,12 @@ public class PoseGenerator implements LCMSubscriber
 		double yt = xyt_T[1];
 
 		double[][] Ja = new double[][]{	{1, 0,-xt*sa-yt*ca },
-					   					{0, 1, xt*ca-yt*sa },
-					   					{0, 0, 1}};
+						{0, 1, xt*ca-yt*sa },
+						{0, 0, 1}};
 
 		double[][] Jt = new double[][]{	{ca,-sa, 0 },
-										{sa, ca, 0 },
-										{0 , 0 , 1 }};
+						{sa, ca, 0 },
+						{0 , 0 , 1 }};
 
 		double[][] Jt_T = LinAlg.transpose(Jt);
 		double[][] Ja_T = LinAlg.transpose(Ja);
