@@ -28,13 +28,15 @@ public class PathPlanner implements LCMSubscriber
 	xyt_t goal = null;
 	xyt_t lastPlannedWaypoint = null;
 
-    PathPlanner()
-    {
-        this.lcm =  LCM.getSingleton();
-        lcm.subscribe("6_POSE",this);
-        lcm.subscribe("6_MAP",this);
-        lcm.subscribe("6_GOAL",this);
-    }
+	final boolean verbose = false;
+
+	PathPlanner()
+	{
+		this.lcm =  LCM.getSingleton();
+		lcm.subscribe("6_POSE",this);
+		lcm.subscribe("6_MAP",this);
+		lcm.subscribe("6_GOAL",this);
+	}
 
 	public void messageReceived(LCM lcm, String channel, LCMDataInputStream dins)
 	{
@@ -45,21 +47,21 @@ public class PathPlanner implements LCMSubscriber
 				map = new map_t(dins);
 				//TODO: switch to only run when near waypoint or waypoint's cost is too high
 
-				System.out.println("starting map");
+				if(verbose)System.out.println("starting map");
 				if(map != null && status != null && goal != null){
-					System.out.println("found everything");
+					if(verbose)System.out.println("found everything");
 				
 					if(lastPlannedWaypoint == null || LinAlg.distance(status.xyt, lastPlannedWaypoint.xyt, 2) < 0.2 || 
 								(map.cost[(int) (lastPlannedWaypoint.xyt[0]/map.scale)+map.size/2][ (int) (lastPlannedWaypoint.xyt[1]/map.scale)+map.size/2] & 0xFF) > 0.6 * map.max)
 					{
-						System.out.println("attempting A Star");
+						if(verbose)System.out.println("attempting A Star");
 						if(aStar(false)){
-							System.out.println("A Start finished finding next waypoint");
+							if(verbose)System.out.println("A Start finished finding next waypoint");
 							xyt_t waypoint = nextWaypoint();
-							System.out.println("publishing");
+							if(verbose)System.out.println("publishing");
 							lcm.publish("6_WAYPOINTS",waypoint);
 						} else {
-							System.out.println("No possible path to goal, trying to get close");
+							if(verbose)System.out.println("No possible path to goal, trying to get close");
 							aStar(true);
 							xyt_t waypoint = nextWaypoint();
 							lcm.publish("6_WAYPOINTS",waypoint);
@@ -79,7 +81,7 @@ public class PathPlanner implements LCMSubscriber
 			}
 			if(channel.equals("6_GOAL"))
 			{
-				System.out.println("goal");
+				if(verbose)System.out.println("goal");
 				goal = new xyt_t(dins);
 				goal.xyt[0] += (map.size/2)*map.scale;
 				goal.xyt[1] += (map.size/2)*map.scale;
@@ -119,7 +121,7 @@ public class PathPlanner implements LCMSubscriber
 			for(MapNode neighbor : current.neighbors())
 			{
 				if(neighbor.x < 0 || neighbor.y < 0 || neighbor.x >= map.size || neighbor.y >= map.size){
-					System.out.println("planning to edge of map:"+neighbor.x+","+neighbor.y);
+					if(verbose)System.out.println("planning to edge of map:"+neighbor.x+","+neighbor.y);
 					continue;
 				}
 
@@ -164,7 +166,7 @@ public class PathPlanner implements LCMSubscriber
 
 		//plan long path
 		for(int i = 0; i < 30; ++i) {
-			System.out.println(LinAlg.distance(new double[]{current.x,current.y}, new double[]{status.xyt[0]/map.scale, status.xyt[1]/map.scale}) + " xy:" +current.x + ","+ current.y+" cost:"+travel_cost_map[current.x][current.y]);
+			if(verbose)System.out.println(LinAlg.distance(new double[]{current.x,current.y}, new double[]{status.xyt[0]/map.scale, status.xyt[1]/map.scale}) + " xy:" +current.x + ","+ current.y+" cost:"+travel_cost_map[current.x][current.y]);
 			//find lowest cost neighbor to crrent
 			minNeighbor = null;
 			secMinNeighbor = null;
@@ -229,10 +231,10 @@ public class PathPlanner implements LCMSubscriber
 	{
 		PathPlanner pp = new PathPlanner();
 
-        while(true)
-        {
-            Thread.sleep(1000);
-        }
+		while(true)
+		{
+			Thread.sleep(1000);
+		}
 
 	}
 

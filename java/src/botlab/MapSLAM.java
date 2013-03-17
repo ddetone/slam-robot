@@ -24,8 +24,8 @@ public class MapSLAM implements LCMSubscriber
 	GraphNodes featureNodes;
 	bot_status_t lastBot = new bot_status_t();
 
-	double newFeatureDist = .8;
-	double oldFeatureDist = .6;
+	double newFeatureDist = .6;
+	double oldFeatureDist = .4;
 	int num_solver_iterations = 200;
 	int decimate = 1;	// number of poses to throw out. In other words, every <decimate> poses, 1 pose will be added to the graph
 	int numPoseMessages = 0;
@@ -160,9 +160,9 @@ public class MapSLAM implements LCMSubscriber
 				if(numPoseMessages % decimate == 0){
 					bot_status_t bot = new bot_status_t(dins);
 
-					int lastPoseIndex = poseNodes.getLastNodeIndex(); //equivalent to g.nodes.size() at this point in time
+					int lastPoseIndex = poseNodes.getLastNodeIndex();
 					poseNodes.addNode(g.nodes.size(), bot.utime, numPoseMessages);
-					int currPoseIndex = poseNodes.getLastNodeIndex(); //equivalent to g.nodes.size() at this point in time
+					int currPoseIndex = poseNodes.getLastNodeIndex();
 					if(verbose)System.out.println("added pose " + poseNodes.getNumNodes() + " to slam graph as node #" + g.nodes.size());
 					
 					// If this is the first pose we are receiving add the node to the graph
@@ -211,17 +211,17 @@ public class MapSLAM implements LCMSubscriber
 					ge.nodes = new int[]{lastPoseIndex, currPoseIndex};
 					ge.z = LinAlg.xytInvMul31(lastBot.xyt, bot.xyt);
 
-					double alpha 	= 0.1;	//uncertainty of X direction, based on X
-					double bravo  	= 0.01; //uncertainty of Y direction, based on X (assume no lateral movement)
-					double charlie 	= 0.1;  //uncertainty of Theta, based on Theta
+					double alpha 	= 0.8;	//uncertainty of X direction, based on X
+					double bravo  	= 0.005; //uncertainty of Y direction, based on X (assume no lateral movement)
+					double charlie 	= 0.06;  //uncertainty of Theta, based on Theta
 					
 					double[] lastSlamPose = g.nodes.get(lastPoseIndex).state;
 					double ca = Math.cos(lastSlamPose[2]);
 					double sa = Math.sin(lastSlamPose[2]);
 					
-					double sigmaT_xx = (alpha*ge.z[0])*(alpha*ge.z[0])+.001;
-					double sigmaT_yy = (bravo *ge.z[0])*(bravo *ge.z[0])+.001;
-					double sigmaT_tt = (charlie*ge.z[2])*(charlie*ge.z[2])+.001;
+					double sigmaT_xx = (alpha*ge.z[0])*(alpha*ge.z[0])+0.00000001;
+					double sigmaT_yy = (bravo *ge.z[0])*(bravo *ge.z[0])+0.00000001;
+					double sigmaT_tt = (charlie*ge.z[2])*(charlie*ge.z[2])+0.00000001;
 
 					double[][] Jt = new double[][]{	{ca,-sa, 0 },
 									{sa, ca, 0 },
@@ -233,18 +233,8 @@ public class MapSLAM implements LCMSubscriber
 									{0, 0, sigmaT_tt}};
 					
 					ge.P = LinAlg.matrixABC(Jt,sigmaT,Jt_T);
-//THIS DOESNT GO HERE					
-/*
-					// The first edge is guaranteed to be a POSE_TO_POSE edge
-					GEdge prevGlobalEdge = g.edges.get(0);
-					for(int i = 1; i < g.edges.size(); i++){
-						GEdge temp = g.edges.get(i);
-						if((int)temp.getAttribute() == POSE_TO_POSE){
-							prevGlobalEdge.compose((GXYTEdge)temp);
-						}
-						
-					}
-*/
+					//ge.P = LinAlg.copy(sigmaT);
+					
 					ge.setAttribute("edge_type",POSE_TO_POSE);
 					g.edges.add(ge);
 					
@@ -337,7 +327,14 @@ public class MapSLAM implements LCMSubscriber
 						// euclidean distance. In fact, it just does calculate the euclidean
 						// distance practically ignoring theta for now.
 						
-						dist = mahalanobisDistance(featureState, g.nodes.get(closeFeatureIndex).state, LinAlg.diag(new double[]{1,1,0}));
+						GXYTEdge testEdge = new GXYTEdge();
+						DijkstraProjection dp = new DijkstraProjection(g, closeFeatureIndex);
+
+						testEdge.z = LinAlg.xytInvMul31(g.nodes.get(closeFeatureIndex).state, featureState);
+						testEdge.P = dp.getEdge(closeFeatureIndex).P;
+						
+						//dist = mahalanobisDistance(featureState, g.nodes.get(closeFeatureIndex).state, LinAlg.diag(new double[]{1,1,0.001}));
+						dist = mahalanobisDistance(testEdge, oldFeatureDist);
 						if(dist < minDist){
 							minDist = dist;
 							closestFeatureNode = closeFeatureIndex;
@@ -364,8 +361,8 @@ public class MapSLAM implements LCMSubscriber
 								features.triangles[i][1],
 								0};
 
-						double alpha 	= 0.3;	//uncertainty of X direction, based on X
-						double bravo  	= 0.1; //uncertainty of Y direction, based on X (assume no lateral movement)
+						double alpha 	= 0.05;	//uncertainty of X direction, based on X
+						double bravo  	= 0.05; //uncertainty of Y direction, based on X (assume no lateral movement)
 						
 						int lastPoseIndex = poseNodes.getLastNodeIndex(); //equivalent to g.nodes.size() at this point in time
 						double[] lastSlamPose = g.nodes.get(lastPoseIndex).state;
@@ -373,8 +370,8 @@ public class MapSLAM implements LCMSubscriber
 						double sa = Math.sin(lastSlamPose[2]);
 						
 						double sigmaT_xx = (alpha*ge.z[0])*(alpha*ge.z[0])+.001;
-						double sigmaT_yy = (bravo *ge.z[1])*(bravo *ge.z[1])+.001;
-						double sigmaT_tt = Math.toRadians(90)*Math.toRadians(90);
+						double sigmaT_yy = (bravo*ge.z[1])*(bravo*ge.z[1])+.001;
+						double sigmaT_tt = Math.toRadians(180)*Math.toRadians(180);
 
 						double[][] Jt = new double[][]{	{ca,-sa, 0 },
 										{sa, ca, 0 },
@@ -392,6 +389,7 @@ public class MapSLAM implements LCMSubscriber
 						numFeatureMessages++;
 					}
 					else if (minDist < oldFeatureDist){
+						assert(minDist >= 0);
 						GXYTEdge ge = new GXYTEdge();
 						// When reobserving a feature, you add an edge from the old feature
 						// node to the new pose node from which you reobserved the feature
@@ -409,8 +407,8 @@ public class MapSLAM implements LCMSubscriber
 						ge.z = new double[]{features.triangles[i][0],
 								features.triangles[i][1],
 								0};
-						double alpha 	= 0.3;	//uncertainty of X direction, based on X
-						double bravo  	= 0.1; //uncertainty of Y direction, based on X (assume no lateral movement)
+						double alpha 	= 0.05;	//uncertainty of X direction, based on X
+						double bravo  	= 0.05; //uncertainty of Y direction, based on X (assume no lateral movement)
 						
 						int lastPoseIndex = poseNodes.getLastNodeIndex(); //equivalent to g.nodes.size() at this point in time
 						double[] lastSlamPose = g.nodes.get(lastPoseIndex).state;
@@ -418,8 +416,8 @@ public class MapSLAM implements LCMSubscriber
 						double sa = Math.sin(lastSlamPose[2]);
 						
 						double sigmaT_xx = (alpha*ge.z[0])*(alpha*ge.z[0])+.001;
-						double sigmaT_yy = (bravo *ge.z[1])*(bravo *ge.z[1])+.001;
-						double sigmaT_tt = (90)*(90);
+						double sigmaT_yy = (bravo*ge.z[1])*(bravo*ge.z[1])+.001;
+						double sigmaT_tt = Math.toRadians(180)*Math.toRadians(180);
 
 						double[][] Jt = new double[][]{	{ca,-sa, 0 },
 										{sa, ca, 0 },
@@ -474,38 +472,50 @@ public class MapSLAM implements LCMSubscriber
 
 	public void packageAndPublish(){
 		
-		slam_vector_t pose_out = new slam_vector_t();
+		slam_vector_t slam_out = new slam_vector_t();
 		int numPoses = poseNodes.getNumNodes();
 
-		xyt_t[] pose_out_xyts = new xyt_t[numPoses];
+		slam_out.utime = TimeUtil.utime();
+
+		xyt_t[] slam_out_xyts = new xyt_t[numPoses];
 		
-		pose_out.numPoses = numPoses;
+		slam_out.numPoses = numPoses;
 
 		for(int i = 0; i < numPoses; i++){
 
-			pose_out_xyts[i] = new xyt_t();
+			slam_out_xyts[i] = new xyt_t();
 
-			pose_out_xyts[i].xyt = g.nodes.get(poseNodes.getNodeGraphIndex(i)).state;
+			slam_out_xyts[i].xyt = g.nodes.get(poseNodes.getNodeGraphIndex(i)).state;
 
-			pose_out_xyts[i].utime = poseNodes.utimes.get(i);
+			slam_out_xyts[i].utime = poseNodes.utimes.get(i);
 
 		}
+
 		
-		pose_out.xyt = pose_out_xyts;
+		DijkstraProjection dp = new DijkstraProjection(g, 0);
+		slam_out.poseCov = new covariance_t();
+		slam_out.poseCov.size = 3;
+		slam_out.poseCov.cov = dp.getEdge(poseNodes.getNodeGraphIndex(poseNodes.getNumNodes() - 1)).P;
+		
+		slam_out.xyt = slam_out_xyts;
 
 		int numFeatures = featureNodes.getNumNodes();
 		
-		pose_out.numTriangles = numFeatures;
-		pose_out.triangles = new double[numFeatures][4];
+		slam_out.numTriangles = numFeatures;
+		slam_out.triangles = new double[numFeatures][4];
 		
+		slam_out.trianglesCov = new covariance_t[numFeatures];
 		for(int i = 0; i < numFeatures; i++){
 			
 			double[] tmp = g.nodes.get(featureNodes.getNodeGraphIndex(i)).state;
-			pose_out.triangles[i] = new double[]{tmp[0],tmp[1],tmp[2],featureNodes.getID(i)};
+			slam_out.triangles[i] = new double[]{tmp[0],tmp[1],tmp[2],featureNodes.getID(i)};
+			slam_out.trianglesCov[i] = new covariance_t();
+			slam_out.trianglesCov[i].size = 3;
+			slam_out.trianglesCov[i].cov = dp.getEdge(featureNodes.getNodeGraphIndex(i)).P;
 
 		}
 		
-		lcm.publish("6_SLAM_POSES", pose_out);
+		lcm.publish("6_SLAM_POSES", slam_out);
 		
 	}
 
