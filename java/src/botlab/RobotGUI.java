@@ -266,7 +266,7 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 
 		double wheelRadius = 0.04;
 		VzBox base = new VzBox(0.155,0.166,0.07, new VzMesh.Style(Color.red));
-		VisObject vo_base = new VisChain(LinAlg.translate(0,0.08,0.10),base);
+		VisObject vo_base = new VisChain(LinAlg.translate(0,0.06,0.10),base);
 
 		VzBox cameraBase = new VzBox(0.05,0.01,0.04, new VzMesh.Style(Color.white));
 		VisObject vo_cameraBase = new VisChain(LinAlg.translate(0,0,0.145),cameraBase);
@@ -276,7 +276,7 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 
 		double castorRad = 0.03;
 		VzCylinder castor = new VzCylinder(castorRad,0.02, new VzMesh.Style(Color.black));
-		VisObject vo_castor = new VisChain(LinAlg.rotateY(Math.PI/2), LinAlg.translate(-castorRad,0.13,0),castor);
+		VisObject vo_castor = new VisChain(LinAlg.rotateY(Math.PI/2), LinAlg.translate(-castorRad,0.115,0),castor);
 
 		VisChain pandaBot = new VisChain();
 
