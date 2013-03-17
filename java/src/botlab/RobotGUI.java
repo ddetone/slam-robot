@@ -180,17 +180,34 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 				vb.addBack(vo_pointBox);
 				vb.swap();
 			}
-			else if(channel.equals("6_SLAM_POSES")){
+			else if(channel.equals("6_SLAM_POSES"))
+            {
 				slam_vector_t slamVec = new slam_vector_t(dins);
 				ArrayList<double[]>vec = new ArrayList<double[]>();
-				for(int i = 0; i < slamVec.numPoses; i++)vec.add(new double[]{slamVec.xyt[i].xyt[0],slamVec.xyt[i].xyt[1], 0.005});
-				bot_status.xyt = slamVec.xyt[slamVec.numPoses - 1].xyt;
+
+				for(int i = 0; i < slamVec.numPoses; i++)
+                    vec.add(new double[]{ slamVec.xyt[i].xyt[0], slamVec.xyt[i].xyt[1], 0.005 });
+
+                bot_status.xyt = slamVec.xyt[slamVec.numPoses - 1].xyt;
 
 				VisWorld.Buffer vb = vw.getBuffer("Robot_Path_SLAM");
 				vb.addBack(new VzPoints(new VisVertexData(vec), new VzPoints.Style(Color.magenta,2)));
 				vb.swap();
 
 
+                //Draws the covariance ellipse for the slam pose
+                /*
+                VisWorld.Buffer vb = vw.getBuffer("CovarianceEllipseSlam");
+		        double[][] cov22 = new double[][]{{slamVec.cov[0][0], slamVec.cov[0][1]},
+				        						  {slamVec.cov[1][0], slamVec.cov[1][1]}};
+
+                double covAngle = slamVec.cov[2][2];
+
+		        vb.addBack(new VisChain(LinAlg.translate(0,0,0.01),new VzEllipse(new double[]{bot_status.xyt[0],bot_status.xyt[1]}, cov22, new VzMesh.Style(Color.black))));
+        		vb.swap();
+                */
+
+                //Draws the triangles as given by the slam vector LCM message
 		        VisWorld.Buffer vb_t = vw.getBuffer("Triangles");
 		        for(int i = 0; i < slamVec.numTriangles ; i++)
 		        {
@@ -259,13 +276,13 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 	public void drawCovariance()
 	{
 		//double[] eigTheta = computerEigenValues();
-		VisWorld.Buffer vb = vw.getBuffer("Covariance Ellipse");
-		double[][] cov22 = new double[][]{{bot_status.cov[0][0], bot_status.cov[0][1]},
-										  {bot_status.cov[1][0], bot_status.cov[1][1]}};
+		VisWorld.Buffer vb = vw.getBuffer("CovarianceEllipse");
+		double[][] cov22 = new double[][]{{curr_bot_status.cov[0][0], curr_bot_status.cov[0][1]},
+										  {curr_bot_status.cov[1][0], curr_bot_status.cov[1][1]}};
 
-        double covAngle = bot_status.cov[2][2];
+        double covAngle = curr_bot_status.cov[2][2];
 
-		vb.addBack(new VisChain(LinAlg.translate(0,0,0.01),new VzEllipse(new double[]{bot_status.xyt[0],bot_status.xyt[1]}, cov22, new VzMesh.Style(Color.black))));
+		vb.addBack(new VisChain(LinAlg.translate(0,0,0.01),new VzEllipse(new double[]{curr_bot_status.xyt[0],curr_bot_status.xyt[1]}, cov22, new VzMesh.Style(Color.black))));
 		vb.swap();
 	}
 	//returns two eigen values (first one larger) and theta of max eigen vector
