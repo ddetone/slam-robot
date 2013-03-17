@@ -97,6 +97,7 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 			double temp[] = ray.intersectPlaneXY();
 			wayPoint.utime = TimeUtil.utime();
 			wayPoint.xyt = new double[]{temp[0], temp[1], 0};
+
 			double[] T = LinAlg.xytInvMul31(bot_status.xyt, curr_bot_status.xyt);
 			wayPoint.xyt = LinAlg.xytMultiply(wayPoint.xyt, T);
 			lcm.publish("6_WAYPOINT", wayPoint);
@@ -114,8 +115,8 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 		VisWorld.Buffer vb = vw.getBuffer("Map");
 		for(int i = 0; i < map.size; ++i){
 			for(int j = 0; j < map.size; ++j){
-				if((int) (map.cost[i][j] & 0xFF) > 20){
-					VzBox mapBox = new VzBox(map.scale,map.scale,(int)(map.cost[i][j] & 0xFF)/map.max*map.scale*3, new VzMesh.Style(Color.red));
+				if((int) (map.cost[i][j] & 0xFF) > 0.6*255){
+					VzBox mapBox = new VzBox(map.scale,map.scale,((double)((int)(map.cost[i][j] & 0xFF)))/map.max*.06*3, new VzMesh.Style(Color.red));
 					VisObject vo_mapBox = new VisChain(LinAlg.translate(i*map.scale-map.size/2*map.scale,j*map.scale-map.size/2*map.scale,0.0),mapBox);
 
 					vb.addBack(vo_mapBox);
@@ -184,7 +185,7 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 				xyt_t point = new xyt_t(dins);
 				VisWorld.Buffer vb = vw.getBuffer("Waypoint");
 				VzCircle pointBox = new VzCircle(.03, new VzMesh.Style(Color.yellow));
-				VisObject vo_pointBox = new VisChain(LinAlg.translate(point.xyt[0], point.xyt[1], 0.1),pointBox);
+				VisObject vo_pointBox = new VisChain(LinAlg.translate(point.xyt[0], point.xyt[1], 0.01),pointBox);
 				vb.addBack(vo_pointBox);
 				vb.swap();
 			}
@@ -195,7 +196,7 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 				if(verbose)System.out.println("found goal at: "+point.xyt[0]+","+point.xyt[1]);
 				VisWorld.Buffer vb = vw.getBuffer("Goal");
 				VzCircle pointBox = new VzCircle(.03, new VzMesh.Style(Color.white));
-				VisObject vo_pointBox = new VisChain(LinAlg.translate(point.xyt[0], point.xyt[1], 0.1),pointBox);
+				VisObject vo_pointBox = new VisChain(LinAlg.translate(point.xyt[0], point.xyt[1], 0.01),pointBox);
 				vb.addBack(vo_pointBox);
 				vb.swap();
 			}
