@@ -46,7 +46,6 @@ public class RobotController implements LCMSubscriber
 	}
 	
 	public void planFrontier(){
-	
 		//frontier planner
 		if(state == "explore"){
 			boolean knowledge_bounds[][] = new boolean[(int) map.size][(int) map.size]; //is [y][x]
@@ -77,8 +76,8 @@ public class RobotController implements LCMSubscriber
 			UnionFind edge_sets = new UnionFind(map.size*map.size);
 			edge_sets.FindSets(knowledge_bounds, map.size, map.size);
 			HashMap<Integer, Integer> counter = new HashMap<Integer, Integer>();
-			HashMap<Integer, Double> mean_x = new HashMap<Integer, Double>();
-			HashMap<Integer, Double> mean_y = new HashMap<Integer, Double>();
+			HashMap<Integer, ArrayList<Double>> mean_x = new HashMap<Integer, ArrayList<Double>>();
+			HashMap<Integer, ArrayList<Double>> mean_y = new HashMap<Integer, ArrayList<Double>>();
 			for(int i = 1; i < map.size-1; ++i){
 				for(int j = 1; j < map.size-1; ++j){
 					if(knowledge_bounds[i][j]) {
@@ -86,16 +85,16 @@ public class RobotController implements LCMSubscriber
 						if(counter.containsKey(representative)){
 							Integer old_count = counter.get(representative);
 							counter.put(representative, new Integer(old_count + 1));
-
-							Double old_x = mean_x.get(representative);
-							mean_x.put(representative, new Double(old_x + i));
-
-							Double old_y = mean_y.get(representative);
-							mean_y.put(representative, new Double(old_y + j));
+							mean_x.get(representative).add(new Double(i));
+							mean_y.get(representative).add(new Double(j));
 						} else {
 							counter.put(representative, new Integer(1));
-							mean_x.put(representative, new Double(i));
-							mean_y.put(representative, new Double(j));
+							ArrayList<Double> xs = new ArrayList<Double>();
+							xs.add(new Double(i));
+							mean_x.put(representative, xs);
+							ArrayList<Double> ys = new ArrayList<Double>();
+							ys.add(new Double(j));
+							mean_y.put(representative, ys);
 						}
 					}
 				}
@@ -104,14 +103,22 @@ public class RobotController implements LCMSubscriber
 			double goal_x = 0;
 			double goal_y = 0;
 			for(Integer i : counter.keySet()){
-				if(counter.get(i) > max_size){
-					max_size = counter.get(i);
-					goal_x = mean_x.get(i)*map.scale/counter.get(i) - (map.size/2)*map.scale;
-					goal_y = mean_y.get(i)*map.scale/counter.get(i) - (map.size/2)*map.scale;
+				int size_not_in_wall = 0;
+				for(int j = 0; j < counter.get(i); ++j){
+					if((int)(map.cost[mean_x.get(i).get(j).intValue()][mean_y.get(i).get(j).intValue()] & 255) > 255*0.6)
+						size_not_in_wall++;
+				}
+				if(size_not_in_wall > max_size){
+					int rand = (int )(Math.random() * counter.get(i));
+					while((int)(map.cost[mean_x.get(i).get(rand).intValue()][mean_y.get(i).get(rand).intValue()] & 255) > 255*0.6)
+						rand = (int )(Math.random() * counter.get(i));
+					max_size = size_not_in_wall;
+					goal_x = mean_x.get(i).get(rand)*map.scale - (map.size/2)*map.scale;
+					goal_y = mean_y.get(i).get(rand)*map.scale - (map.size/2)*map.scale;
 				}
 			}
 
-			if(max_size < 8){ //map explored return to start
+			if(max_size < 0.10/map.scale){ //map explored return to start
 				goal_x = 0;
 				goal_y = 0;
 			}
@@ -121,7 +128,7 @@ public class RobotController implements LCMSubscriber
 			double xyt[] = {goal_x, goal_y, 0.0};
 			goal.xyt = xyt;
 			lcm.publish("6_GOAL", goal);
-		}
+		}	
 	}
 	
 	
