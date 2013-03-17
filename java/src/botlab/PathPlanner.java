@@ -81,6 +81,8 @@ public class PathPlanner implements LCMSubscriber
 			{
 				System.out.println("goal");
 				goal = new xyt_t(dins);
+				goal.xyt[0] += (map.size/2)*map.scale;
+				goal.xyt[1] += (map.size/2)*map.scale;
 			}
 		}
 		catch (IOException e)
@@ -102,6 +104,7 @@ public class PathPlanner implements LCMSubscriber
 		}
 		
 		open_set.add(new MapNode((int)(goal.xyt[0]/map.scale),(int)(goal.xyt[1]/map.scale),this));
+		travel_cost_map[(int)(goal.xyt[0]/map.scale)][(int)(goal.xyt[1]/map.scale)] = 0;
 
 		while(open_set.size() > 0)
 		{
@@ -113,17 +116,16 @@ public class PathPlanner implements LCMSubscriber
 				return true;
 			}
 			
-			
 			for(MapNode neighbor : current.neighbors())
 			{
 				if(neighbor.x < 0 || neighbor.y < 0 || neighbor.x >= map.size || neighbor.y >= map.size){
-					System.out.println("planning to edge of map");
+					System.out.println("planning to edge of map:"+neighbor.x+","+neighbor.y);
 					continue;
 				}
 
 				if(!plan_through_walls && (map.cost[neighbor.x][neighbor.y] & 0xFF) > 0.6 * map.max)
 					continue;
-				int tentative_g_score = travel_cost_map[current.x][current.y] + map.max/(map.size*map.size) + map.cost[neighbor.x][neighbor.y] & 0xFF;
+				int tentative_g_score = travel_cost_map[current.x][current.y] + 1 + (map.cost[neighbor.x][neighbor.y] & 0xFF);
 
 				boolean in_closed_set = false;
 				for(MapNode compare : closed_set) {
@@ -162,14 +164,18 @@ public class PathPlanner implements LCMSubscriber
 
 		//plan long path
 		for(int i = 0; i < 30; ++i) {
-			System.out.println(LinAlg.distance(new double[]{current.x,current.y}, new double[]{status.xyt[0]/map.scale, status.xyt[1]/map.scale}) + " xy:" +current.x + ","+ current.y);
+			System.out.println(LinAlg.distance(new double[]{current.x,current.y}, new double[]{status.xyt[0]/map.scale, status.xyt[1]/map.scale}) + " xy:" +current.x + ","+ current.y+" cost:"+travel_cost_map[current.x][current.y]);
 			//find lowest cost neighbor to crrent
+			minNeighbor = null;
+			secMinNeighbor = null;
 			for(MapNode neighbor : current.neighbors()){
 				if(minNeighbor == null || travel_cost_map[neighbor.x][neighbor.y] < travel_cost_map[minNeighbor.x][minNeighbor.y]){
 					minNeighbor = neighbor;
 				}
 			}
 
+			if(minNeighbor == null)
+				break;
 			//raycast path
 			double[] nextPoint = new double[]{minNeighbor.x, minNeighbor.y};
 			double[] startPoint = new double[]{start.x,start.y};
