@@ -250,10 +250,11 @@ public class MapBuilder implements LCMSubscriber
 									map.cost[j][k] = (byte) Math.max(255.0 - (inverse_cost_decay * LinAlg.distance(w,d)), map.cost[j][k]);
 								}
 							}
-							*/
+							//*/
 
 							//System.out.println((wall_point[0]/map.scale)+ ", " +(int)(wall_point[1]/map.scale));
-							/*for(int k = 0; k < map.size; ++k){ //calculate costs
+							/*
+							for(int k = 0; k < map.size; ++k){ //calculate costs
 								for(int j = 0; j < map.size; ++j){
 
 									//use if marginalizing
@@ -284,7 +285,7 @@ public class MapBuilder implements LCMSubscriber
 									/*
 								}
 							}
-							*/
+							/*/
 						}
 					}
 				}
