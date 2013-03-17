@@ -1,0 +1,7 @@
+struct covariance_t
+{
+
+    int32_t size;
+    double cov[size][size];
+
+}

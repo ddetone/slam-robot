@@ -175,7 +175,7 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 				xyt_t point = new xyt_t(dins);
 				VisWorld.Buffer vb = vw.getBuffer("Waypoint");
 				VzCircle pointBox = new VzCircle(.12, new VzMesh.Style(Color.yellow));
-				VisObject vo_pointBox = new VisChain(LinAlg.translate(point.xyt[0], point.xyt[1], 0.1),pointBox);		
+				VisObject vo_pointBox = new VisChain(LinAlg.translate(point.xyt[0], point.xyt[1], 0.1),pointBox);
 				vb.addBack(vo_pointBox);
 				vb.swap();
 			}
@@ -186,7 +186,7 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 				System.out.println("found goal at: "+point.xyt[0]+","+point.xyt[1]);
 				VisWorld.Buffer vb = vw.getBuffer("Goal");
 				VzCircle pointBox = new VzCircle(.12, new VzMesh.Style(Color.green));
-				VisObject vo_pointBox = new VisChain(LinAlg.translate(point.xyt[0], point.xyt[1], 0.1),pointBox);		
+				VisObject vo_pointBox = new VisChain(LinAlg.translate(point.xyt[0], point.xyt[1], 0.1),pointBox);
 				vb.addBack(vo_pointBox);
 				vb.swap();
 			}
@@ -206,16 +206,14 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 
 
                 //Draws the covariance ellipse for the slam pose
-                /*
-                VisWorld.Buffer vb = vw.getBuffer("CovarianceEllipseSlam");
-		        double[][] cov22 = new double[][]{{slamVec.cov[0][0], slamVec.cov[0][1]},
-				        						  {slamVec.cov[1][0], slamVec.cov[1][1]}};
+                VisWorld.Buffer vb_pc = vw.getBuffer("CovarianceEllipseSlam");
+		        double[][] cov22 = new double[][]{{slamVec.poseCov.cov[0][0], slamVec.poseCov.cov[0][1]},
+				        						  {slamVec.poseCov.cov[1][0], slamVec.poseCov.cov[1][1]}};
 
-                double covAngle = slamVec.cov[2][2];
 
-		        vb.addBack(new VisChain(LinAlg.translate(0,0,0.01),new VzEllipse(new double[]{bot_status.xyt[0],bot_status.xyt[1]}, cov22, new VzMesh.Style(Color.black))));
-        		vb.swap();
-                */
+		        vb_pc.addBack(new VisChain(LinAlg.translate(0,0,0.01),new VzEllipse(new double[]{bot_status.xyt[0],bot_status.xyt[1]}, cov22, new VzMesh.Style(Color.blue))));
+        		vb_pc.swap();
+
 
                 //Draws the triangles as given by the slam vector LCM message
 		        VisWorld.Buffer vb_t = vw.getBuffer("Triangles");
@@ -229,9 +227,23 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
                                                    LinAlg.rotateY(-Math.PI/2),
                                                    LinAlg.rotateZ(Math.PI/2),
                                                    tr);
-            		vb.addBack(vo_tr);
+            		vb_t.addBack(vo_tr);
+
+                    //Draws the covariance of the triangles
+                    VisWorld.Buffer vb_tc = vw.getBuffer("CovarianceTriangles");
+                    double[][] cov22_t = new double[][]{{slamVec.trianglesCov[i].cov[0][0], slamVec.trianglesCov[i].cov[0][1]},
+				        			    			 {slamVec.trianglesCov[i].cov[1][0], slamVec.trianglesCov[i].cov[1][1]}};
+
+                    vb_tc.addBack(new VisChain(LinAlg.rotateZ(slamVec.triangles[i][2]),
+                                               new VzEllipse(new double[]{slamVec.triangles[i][0], slamVec.triangles[i][1]}, cov22_t, new VzMesh.Style(Color.blue))));
+;
+
+                    vb_tc.swap();
+
 		        }
                 vb_t.swap();
+
+
 
 			}
 		}
@@ -293,6 +305,15 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
         double covAngle = curr_bot_status.cov[2][2];
 
 		vb.addBack(new VisChain(LinAlg.translate(0,0,0.01),new VzEllipse(new double[]{curr_bot_status.xyt[0],curr_bot_status.xyt[1]}, cov22, new VzMesh.Style(Color.black))));
+
+		//vb.addBack(new VzAxes());
+	 
+		vb.addBack(new VisChain(LinAlg.translate(bot_status.xyt[0],bot_status.xyt[1],0.002),LinAlg.rotateZ(bot_status.xyt[2]),LinAlg.rotateY(Math.PI/2),LinAlg.translate(0,0.3*Math.asin(covAngle),0.3),LinAlg.rotateX(-covAngle),new VzBox(0.003,0.003,0.6,new VzMesh.Style(Color.green))));
+		vb.addBack(new VisChain(LinAlg.translate(bot_status.xyt[0],bot_status.xyt[1],0.002),LinAlg.rotateZ(bot_status.xyt[2]),LinAlg.rotateY(Math.PI/2),LinAlg.translate(0,0.3*Math.asin(-covAngle),0.3),LinAlg.rotateX(covAngle),new VzBox(0.003,0.003,0.6,new VzMesh.Style(Color.green))));	
+
+		//vb.addBack(new VisChain(LinAlg.translate(0.15,0,0.02),LinAlg.rotateY(Math.PI/2), LinAlg.translate(0.3*Math.asin(1),0,0), LinAlg.rotateX(1),new VzBox(0.005,0.005,0.3,new VzMesh.Style(Color.green))));
+		//vb.addBack(new VzBox(0.005,0.005,0.3,new VzMesh.Style(Color.green)));
+
 		vb.swap();
 	}
 	//returns two eigen values (first one larger) and theta of max eigen vector
