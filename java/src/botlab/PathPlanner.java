@@ -32,7 +32,11 @@ public class PathPlanner implements LCMSubscriber
 
 	PathPlanner()
 	{
-		this.lcm =  LCM.getSingleton();
+		try{
+			this.lcm = new LCM("udpm://239.255.76.67:7667?ttl=1");
+		}catch(IOException e){
+			this.lcm = LCM.getSingleton();
+		}
 		lcm.subscribe("6_POSE",this);
 		lcm.subscribe("6_MAP",this);
 		lcm.subscribe("6_GOAL",this);
@@ -59,12 +63,12 @@ public class PathPlanner implements LCMSubscriber
 							if(verbose)System.out.println("A Start finished finding next waypoint");
 							xyt_t waypoint = nextWaypoint();
 							if(verbose)System.out.println("publishing");
-							lcm.publish("6_WAYPOINTS",waypoint);
+							lcm.publish("6_WAYPOINT",waypoint);
 						} else {
 							if(verbose)System.out.println("No possible path to goal, trying to get close");
 							aStar(true);
 							xyt_t waypoint = nextWaypoint();
-							lcm.publish("6_WAYPOINTS",waypoint);
+							lcm.publish("6_WAYPOINT",waypoint);
 						}
 					}
 				}

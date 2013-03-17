@@ -14,7 +14,7 @@ if [ "$2" = "ant" ]; then
 	ant clean; ant
 fi
 
-ssh $1 'mkdir -p $3botlab; mkdir -p $3botlab/data'
+ssh $1 'mkdir -p $3botlab; mkdir -p $3botlab/data; HI=$(date +%s); ssh panda "echo "eecs498" | sudo -S date -s \"@$HI\""'
 
 #scp -pr $BOTLAB_HOME/config $1:$2botlab/
 #scp -pr $BOTLAB_HOME/java/botlab.jar $1:$2botlab/

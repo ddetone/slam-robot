@@ -49,7 +49,7 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 		lcm.subscribe("6_BATTERY",this);
 		lcm.subscribe("6_MAP",this);
 		lcm.subscribe("6_GOAL",this);
-		lcm.subscribe("6_WAYPOINTS", this);
+		lcm.subscribe("6_WAYPOINT", this);
 		lcm.subscribe("6_SLAM_POSES",this);
 
 		jf.setLayout(new BorderLayout());

@@ -33,6 +33,16 @@ proc# : process {
 }
 
 proc# : process {
+    cmd = "java botlab.PathPlanner";
+    name = "Image Processing";
+}
+
+//proc# : process {
+//    cmd = "java botlab.RobotController";
+//    name = "Image Processing";
+//}
+
+proc# : process {
     cmd = "$ARL_HOME/bin/motordriver -p 6";
     name = "Motor Driver";
 }

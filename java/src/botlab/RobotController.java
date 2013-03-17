@@ -32,13 +32,17 @@ public class RobotController implements LCMSubscriber
 
 	RobotController()
 	{
-		this.lcm =  LCM.getSingleton();
-		lcm.subscribe("6_MAP",this);
+		try{
+			this.lcm = new LCM("udpm://239.255.76.67:7667?ttl=1");
+		}catch(IOException e){
+			this.lcm = LCM.getSingleton();
+		}
 		tracker = botlab.PoseTracker.getSingleton();
 		map = null;
 		state = "explore";
 		pastNumTriangles = 0;
 		trianglesToKill = new LinkedList<Integer>();
+		lcm.subscribe("6_MAP",this);
 	}
 
 	public void messageReceived(LCM lcm, String channel, LCMDataInputStream dins)
