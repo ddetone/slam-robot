@@ -1,6 +1,5 @@
 struct covariance_t
 {
-    int64_t utime;
 
     int32_t size;
     double cov[size][size];
