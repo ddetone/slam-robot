@@ -26,6 +26,7 @@ public class RobotController implements LCMSubscriber
 	botlab.PoseTracker tracker;
 	map_t map;
 	String state;
+	xyt_t robotPose;
 
 	int pastNumTriangles;
 	LinkedList<Integer> trianglesToKill;
@@ -39,10 +40,12 @@ public class RobotController implements LCMSubscriber
 		}
 		tracker = botlab.PoseTracker.getSingleton();
 		map = null;
+		robotPose = null;
 		state = "explore";
 		pastNumTriangles = 0;
 		trianglesToKill = new LinkedList<Integer>();
 		lcm.subscribe("6_MAP",this);
+		lcm.subscribe("6_SLAM_POSES",this);
 	}
 	
 	public void planFrontier(){
@@ -105,16 +108,23 @@ public class RobotController implements LCMSubscriber
 			for(Integer i : counter.keySet()){
 				int size_not_in_wall = 0;
 				for(int j = 0; j < counter.get(i); ++j){
-					if((int)(map.cost[mean_x.get(i).get(j).intValue()][mean_y.get(i).get(j).intValue()] & 255) > 255*0.6)
+					if((int)(map.cost[mean_x.get(i).get(j).intValue()][mean_y.get(i).get(j).intValue()] & 255) < 255*0.6)
 						size_not_in_wall++;
 				}
+				double lowest_distance = Double.MAX_VALUE;
 				if(size_not_in_wall > max_size){
-					int rand = (int )(Math.random() * counter.get(i));
-					while((int)(map.cost[mean_x.get(i).get(rand).intValue()][mean_y.get(i).get(rand).intValue()] & 255) > 255*0.6)
-						rand = (int )(Math.random() * counter.get(i));
 					max_size = size_not_in_wall;
-					goal_x = mean_x.get(i).get(rand)*map.scale - (map.size/2)*map.scale;
-					goal_y = mean_y.get(i).get(rand)*map.scale - (map.size/2)*map.scale;
+					for(int j = 0; j < counter.get(i); ++j){
+						if((int)(map.cost[mean_x.get(i).get(j).intValue()][mean_y.get(i).get(j).intValue()] & 255) < 255*0.6){
+							double[] robotXY = new double[]{robotPose.xyt[0]/map.scale + map.size/2,robotPose.xyt[1]/map.scale + map.size/2};
+							double dist = LinAlg.squaredDistance(robotXY, new double[]{mean_x.get(i).get(j), mean_y.get(i).get(j)});
+							if(dist < lowest_distance){
+								lowest_distance = dist;
+								goal_x = mean_x.get(i).get(j)*map.scale - (map.size/2)*map.scale;
+								goal_y = mean_y.get(i).get(j)*map.scale - (map.size/2)*map.scale;
+							}
+						}
+					}
 				}
 			}
 
@@ -139,7 +149,7 @@ public class RobotController implements LCMSubscriber
 		{
 			if(channel.equals("6_MAP")){
 				map = new map_t(dins);
-				planFrontier();
+				if(robotPose != null) planFrontier();
 				/*for(int i = pastNumTriangles; i < map.numTriangles; ++i) {
 					trianglesToKill.add(new Integer(i));
 				}
@@ -147,6 +157,9 @@ public class RobotController implements LCMSubscriber
 					state = "Shoot";
 					//do shooting stuff
 				}*/
+			} else if(channel.equals("6_SLAM_POSES")){
+				slam_vector_t slam_vec = new slam_vector_t(dins);
+				robotPose = slam_vec.xyt[slam_vec.numPoses - 1];
 			}
 		}
 		catch (IOException e)

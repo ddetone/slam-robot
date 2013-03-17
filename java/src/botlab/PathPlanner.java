@@ -39,6 +39,7 @@ public class PathPlanner implements LCMSubscriber
 		}catch(IOException e){
 			this.lcm = LCM.getSingleton();
 		}
+		status = new xyt_t();
 		lcm.subscribe("6_POSE",this);
 		lcm.subscribe("6_MAP",this);
 		lcm.subscribe("6_GOAL",this);
@@ -84,9 +85,9 @@ public class PathPlanner implements LCMSubscriber
 				
 				if(map != null){
 					slam_vector_t temp = new slam_vector_t(dins);
-					slamBot = LinAlg.copy(temp.xyt[temp.numPoses].xyt);
-					status.xyt[0] = temp.xyt[temp.numPoses].xyt[0] + (map.size/2)*map.scale;
-					status.xyt[0] = temp.xyt[temp.numPoses].xyt[1] + (map.size/2)*map.scale;
+					slamBot = LinAlg.copy(temp.xyt[temp.numPoses - 1].xyt);
+					status.xyt[0] = temp.xyt[temp.numPoses-1].xyt[0] + (map.size/2)*map.scale;
+					status.xyt[1] = temp.xyt[temp.numPoses-1].xyt[1] + (map.size/2)*map.scale;
 				}
 				
 			}

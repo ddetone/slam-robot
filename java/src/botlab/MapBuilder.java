@@ -241,8 +241,8 @@ public class MapBuilder implements LCMSubscriber
 								map.knowledge[x][y] = (byte) 2;
 							}
 							
-							for(int j = x - 0.28/map.scale; j <= x + 0.28/map.scale; ++j){
-								for(int k = y - 0.28/map.scale; k <= y + 0.28/map.scale; ++k){
+							for(int j =(int) (x - 0.28/map.scale); j <= x + 0.28/map.scale; ++j){
+								for(int k =(int) (y - 0.28/map.scale); k <= y + 0.28/map.scale; ++k){
 									if(j == x && k == y || k < 0 || k >= map.size || j < 0 || j >= map.size)
 										continue;
 									double w[] = {x,y};
