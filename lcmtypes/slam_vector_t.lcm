@@ -1,8 +1,12 @@
 struct slam_vector_t
 {
 	int64_t utime;
+
 	int32_t numPoses;
 	xyt_t xyt[numPoses];
+    double cov[3][3];
+
 	int32_t numTriangles;
 	double triangles[numTriangles][4];
+    double trianglesCov[3][3];
 }
