@@ -26,7 +26,6 @@ public class RobotController implements LCMSubscriber
 	botlab.PoseTracker tracker;
 	map_t map;
 	String state;
-	boolean finished;
 
 	int pastNumTriangles;
 	LinkedList<Integer> trianglesToKill;
@@ -38,7 +37,6 @@ public class RobotController implements LCMSubscriber
 		tracker = botlab.PoseTracker.getSingleton();
 		map = null;
 		state = "explore";
-		finished = false;
 		pastNumTriangles = 0;
 		trianglesToKill = new LinkedList<Integer>();
 	}
@@ -49,17 +47,17 @@ public class RobotController implements LCMSubscriber
 		{
 			if(channel.equals("6_MAP")){
 				map = new map_t(dins);
-				for(int i = pastNumTriangles; i < map.numTriangles; ++i) {
+				/*for(int i = pastNumTriangles; i < map.numTriangles; ++i) {
 					trianglesToKill.add(new Integer(i));
 				}
 				if(trianglesToKill.size() > 0){
 					state = "Shoot";
 					//do shooting stuff
-				}
+				}*/
 			}
 
 			//frontier planner
-			if(state == "explore" && !finished){
+			if(state == "explore"){
 				boolean knowledge_bounds[][] = new boolean[(int) map.size][(int) map.size]; //is [y][x]
 				for(int i = 1; i < map.size-1; ++i){
 					for(int j = 1; j < map.size-1; ++j){
@@ -102,7 +100,7 @@ public class RobotController implements LCMSubscriber
 								mean_x.put(representative, new Double(old_x + i));
 
 								Double old_y = mean_y.get(representative);
-								mean_y.put(representative, new Double(old_y + i));
+								mean_y.put(representative, new Double(old_y + j));
 							} else {
 								counter.put(representative, new Integer(1));
 								mean_x.put(representative, new Double(i));
@@ -117,15 +115,14 @@ public class RobotController implements LCMSubscriber
 				for(Integer i : counter.keySet()){
 					if(counter.get(i) > max_size){
 						max_size = counter.get(i);
-						goal_x = mean_x.get(i)/counter.get(i) - (map.size/2)*map.scale;
-						goal_y = mean_x.get(i)/counter.get(i) - (map.size/2)*map.scale;
+						goal_x = mean_x.get(i)*map.scale/counter.get(i) - (map.size/2)*map.scale;
+						goal_y = mean_y.get(i)*map.scale/counter.get(i) - (map.size/2)*map.scale;
 					}
 				}
 
-				if(max_size < 0.22/map.scale){ //map explored return to start
+				if(max_size < 8){ //map explored return to start
 					goal_x = 0;
 					goal_y = 0;
-					finished = true;
 				}
 
 				xyt_t goal = new xyt_t();
