@@ -361,8 +361,8 @@ public class MapSLAM implements LCMSubscriber
 								features.triangles[i][1],
 								0};
 
-						double alpha 	= 0.05;	//uncertainty of X direction, based on X
-						double bravo  	= 0.05; //uncertainty of Y direction, based on X (assume no lateral movement)
+						double alpha 	= 0.09;	//uncertainty of X direction, based on X
+						double bravo  	= 0.09; //uncertainty of Y direction, based on X (assume no lateral movement)
 						
 						int lastPoseIndex = poseNodes.getLastNodeIndex(); //equivalent to g.nodes.size() at this point in time
 						double[] lastSlamPose = g.nodes.get(lastPoseIndex).state;
@@ -407,8 +407,8 @@ public class MapSLAM implements LCMSubscriber
 						ge.z = new double[]{features.triangles[i][0],
 								features.triangles[i][1],
 								0};
-						double alpha 	= 0.05;	//uncertainty of X direction, based on X
-						double bravo  	= 0.05; //uncertainty of Y direction, based on X (assume no lateral movement)
+						double alpha 	= 0.09;	//uncertainty of X direction, based on X
+						double bravo  	= 0.09; //uncertainty of Y direction, based on X (assume no lateral movement)
 						
 						int lastPoseIndex = poseNodes.getLastNodeIndex(); //equivalent to g.nodes.size() at this point in time
 						double[] lastSlamPose = g.nodes.get(lastPoseIndex).state;

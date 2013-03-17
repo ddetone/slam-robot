@@ -222,7 +222,7 @@ public class MapBuilder implements LCMSubscriber
 							wall_point[1] = p1[1]*(double)i/nsteps + p2[1]*(1.0-(double)i/nsteps);
 
 							//raycast to points
-							/*
+							//*
 							double rdist = LinAlg.distance(bot_status.xyt,wall_point,2);
 							int rsteps = (int) (rdist/map.scale)+1;
 							
@@ -234,7 +234,7 @@ public class MapBuilder implements LCMSubscriber
 									//map.knowledge[rx][ry] = 1;
 								}
 							}
-							*/
+							//*/
 							
 							int x = (int) (wall_point[0] / map.scale);
 							int y = (int) (wall_point[1] / map.scale);
