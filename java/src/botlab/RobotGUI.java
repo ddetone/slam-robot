@@ -211,7 +211,7 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 				        						  {slamVec.poseCov.cov[1][0], slamVec.poseCov.cov[1][1]}};
 
 
-		        vb_pc.addBack(new VisChain(LinAlg.translate(0,0,0.01),new VzEllipse(new double[]{bot_status.xyt[0],bot_status.xyt[1]}, cov22, new VzMesh.Style(Color.blue))));
+		        vb_pc.addBack(new VisChain(LinAlg.translate(0,0,0.01),new VzEllipse(new double[]{bot_status.xyt[0],bot_status.xyt[1]}, cov22, new VzMesh.Style(Color.black))));
         		vb_pc.swap();
 
 
@@ -234,8 +234,8 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
                     double[][] cov22_t = new double[][]{{slamVec.trianglesCov[i].cov[0][0], slamVec.trianglesCov[i].cov[0][1]},
 				        			    			 {slamVec.trianglesCov[i].cov[1][0], slamVec.trianglesCov[i].cov[1][1]}};
 
-                    vb_tc.addBack(new VisChain(LinAlg.rotateZ(slamVec.triangles[i][2]),
-                                               new VzEllipse(new double[]{slamVec.triangles[i][0], slamVec.triangles[i][1]}, cov22_t, new VzMesh.Style(Color.blue))));
+                    vb_tc.addBack(new VisChain(LinAlg.translate(0,0,0.005),LinAlg.rotateZ(slamVec.triangles[i][2]),
+                                               new VzEllipse(new double[]{slamVec.triangles[i][0], slamVec.triangles[i][1]}, cov22_t, new VzMesh.Style(Color.green))));
 ;
 
                     vb_tc.swap();
@@ -307,9 +307,9 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 		vb.addBack(new VisChain(LinAlg.translate(0,0,0.01),new VzEllipse(new double[]{curr_bot_status.xyt[0],curr_bot_status.xyt[1]}, cov22, new VzMesh.Style(Color.black))));
 
 		//vb.addBack(new VzAxes());
-	 
+
 		vb.addBack(new VisChain(LinAlg.translate(bot_status.xyt[0],bot_status.xyt[1],0.002),LinAlg.rotateZ(bot_status.xyt[2]),LinAlg.rotateY(Math.PI/2),LinAlg.translate(0,0.3*Math.asin(covAngle),0.3),LinAlg.rotateX(-covAngle),new VzBox(0.003,0.003,0.6,new VzMesh.Style(Color.green))));
-		vb.addBack(new VisChain(LinAlg.translate(bot_status.xyt[0],bot_status.xyt[1],0.002),LinAlg.rotateZ(bot_status.xyt[2]),LinAlg.rotateY(Math.PI/2),LinAlg.translate(0,0.3*Math.asin(-covAngle),0.3),LinAlg.rotateX(covAngle),new VzBox(0.003,0.003,0.6,new VzMesh.Style(Color.green))));	
+		vb.addBack(new VisChain(LinAlg.translate(bot_status.xyt[0],bot_status.xyt[1],0.002),LinAlg.rotateZ(bot_status.xyt[2]),LinAlg.rotateY(Math.PI/2),LinAlg.translate(0,0.3*Math.asin(-covAngle),0.3),LinAlg.rotateX(covAngle),new VzBox(0.003,0.003,0.6,new VzMesh.Style(Color.green))));
 
 		//vb.addBack(new VisChain(LinAlg.translate(0.15,0,0.02),LinAlg.rotateY(Math.PI/2), LinAlg.translate(0.3*Math.asin(1),0,0), LinAlg.rotateX(1),new VzBox(0.005,0.005,0.3,new VzMesh.Style(Color.green))));
 		//vb.addBack(new VzBox(0.005,0.005,0.3,new VzMesh.Style(Color.green)));
