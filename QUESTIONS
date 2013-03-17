@@ -1,3 +1,26 @@
+Things to do:
+NEED TO FIX SPINNING IN PATH FOLLOWER!!
+Why does path planning hit obstacles?
+Why does the exploration code not pick the best frontier?
+Logic for shooting targets.
+FASTER IMAGE PROCESSING
+Robot gui goals need to be projected from closed loop coordinates to open loop coordinates
+Video
+Report
+
+
+Things we finished:
+Slam
+Image Processing
+Calibration
+Map Building
+Pose generation
+
+
+
+
+
+
 Log camera and odometry info simultaneously
 
 Should the covariance for the first pose in slam be 0?
@@ -6,6 +29,7 @@ When reobserving a feature, do we need to make a new node for that feature or is
 
 FOR ANDREW:
 Make sure the map building code will work with a winding theta. Ie a theta on the range [-inf, inf]
+
 
 
 
