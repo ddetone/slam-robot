@@ -535,21 +535,23 @@ public class ImageProcessing extends VisEventAdapter
 				costMap[i] = 1;
 			else costMap[i] = 0;
 		}
+		
+		int jstep = 1;
 
-		for(int j = height - searchHeight; j < height; j+=2){
+		for(int j = height - searchHeight; j < height; j+=jstep){
 			int tempj = j - height + searchHeight;
 			for(int i = 0; i < width; i+=2){
-				if(j != height - 2){
+				if(j != height - jstep){
 					float[] pixel = hsvImage[tempj * width + i];
 					if(within(colorScore(i,j,GREEN), greenThresh, 10) && within(pixel[1], saturationThresh, .17) && within(pixel[2], valueThresh, .4))
-						costMap[(tempj + 2) * width + i] = 1;
-					else costMap[(tempj + 2) * width + i] = 0;
+						costMap[(tempj + jstep) * width + i] = 1;
+					else costMap[(tempj + jstep) * width + i] = 0;
 				}
 
 				if(costMap[(tempj * width) + i] == 1){
-					if(j != height - 2){
-						if(costMap[(tempj + 2) * width + i] == 1){
-							uf.connectNodes((tempj + 2) * width + i,
+					if(j != height - jstep){
+						if(costMap[(tempj + jstep) * width + i] == 1){
+							uf.connectNodes((tempj + jstep) * width + i,
 									tempj * width + i);
 						}
 
@@ -694,7 +696,7 @@ public class ImageProcessing extends VisEventAdapter
 		Arrays.fill(state, BLUE_STATE.PREBLUE);
 
 		for(int j = height - 1; ((j >= height - searchHeight) && (numPostBlue < width)); j--){
-			for(int i = 0; ((i < width) && (numPostBlue < width)); i += 9){
+			for(int i = 0; ((i < width) && (numPostBlue < width)); i += 8){
 				if(state[i] != BLUE_STATE.POSTBLUE){
 					if(colorScore(i, j, BLUE) > blueThresh){
 					//if((data[j * width + i] & 0x000000ff) > blueThresh){
@@ -717,9 +719,9 @@ public class ImageProcessing extends VisEventAdapter
 	}
 
 	public void convertToHSV(){
-		for(int j = height - searchHeight; j < height; j++){
+		for(int j = height - searchHeight; j < height; j+=1){
 			int tempj = j - height + searchHeight;
-			for(int i = 0; i < width; i++){
+			for(int i = 0; i < width; i+=2){
 				int aRGB = data[j * width + i];
 				Color.RGBtoHSB(((aRGB & 0x00FF0000) >> 16), ((aRGB & 0x0000FF00) >> 8), (aRGB & 0x000000FF), hsvImage[tempj * width + i]);
 				float temp = hsvImage[tempj * width + i][0];

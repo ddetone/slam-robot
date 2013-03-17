@@ -1,9 +1,9 @@
 Things to do:
 NEED TO FIX SPINNING IN PATH FOLLOWER!!
-Why does path planning hit obstacles?
+//Why does path planning hit obstacles?
 Why does the exploration code not pick the best frontier?
 Logic for shooting targets.
-FASTER IMAGE PROCESSING
+//FASTER IMAGE PROCESSING
 Robot gui goals need to be projected from closed loop coordinates to open loop coordinates
 Video
 Report
