@@ -116,7 +116,6 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 					VisObject vo_mapBox = new VisChain(LinAlg.translate(i*map.scale-map.size/2*map.scale,j*map.scale-map.size/2*map.scale,0.0),mapBox);
 					vb.addBack(vo_mapBox);
 				}
-
 			}
 		}
 

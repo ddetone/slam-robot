@@ -100,7 +100,7 @@ public class RobotController implements LCMSubscriber
 								mean_x.put(representative, new Double(old_x + i));
 
 								Double old_y = mean_y.get(representative);
-								mean_y.put(representative, new Double(old_y + i));
+								mean_y.put(representative, new Double(old_y + j));
 							} else {
 								counter.put(representative, new Integer(1));
 								mean_x.put(representative, new Double(i));
@@ -116,11 +116,11 @@ public class RobotController implements LCMSubscriber
 					if(counter.get(i) > max_size){
 						max_size = counter.get(i);
 						goal_x = mean_x.get(i)*map.scale/counter.get(i) - (map.size/2)*map.scale;
-						goal_y = mean_x.get(i)*map.scale/counter.get(i) - (map.size/2)*map.scale;
+						goal_y = mean_y.get(i)*map.scale/counter.get(i) - (map.size/2)*map.scale;
 					}
 				}
 
-				if(max_size < 0.22/map.scale){ //map explored return to start
+				if(max_size < 8){ //map explored return to start
 					goal_x = 0;
 					goal_y = 0;
 				}
