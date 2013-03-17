@@ -67,14 +67,14 @@ public class ImageProcessing extends VisEventAdapter
 
 	ImageSource is;
 
-	JFrame jf; 
+	JFrame jf;
 	JImage jim;
 
 	ParameterGUI pg;
 
 	int width = 0;
 	int height = 0;
-	
+
 	int searchHeight = 500;
 
 	float pixelDists[] = null;
@@ -106,7 +106,7 @@ public class ImageProcessing extends VisEventAdapter
 		lcm = LCM.getSingleton();
 		//lcm = new lcm("udpm://239.255.76.67:7667?ttl=1");
 		//lcm.subscribe("6_POSE", this);
-		
+
 		dispGUI = _dispGUI;
 
 		if(dispGUI){
@@ -134,8 +134,8 @@ public class ImageProcessing extends VisEventAdapter
 			pg.addCheckBoxes("dispCorners", "Show Corners", DEFAULT_DISP_CORNERS);
 			pg.addCheckBoxes("dispTriangles", "Show Triangles", DEFAULT_DISP_TRIANGLES);
 			pg.addCheckBoxes("dispTriMap", "Show Triangle Cost Map", DEFAULT_TRIANGLE_COST_MAP);
-			
-			
+
+
 			pg.addListener(new ParameterListener() {
 				public void parameterChanged(ParameterGUI pg, String name)
 				{
@@ -155,11 +155,11 @@ public class ImageProcessing extends VisEventAdapter
 						alf.threshold = threshold;
 					}
 					else if(name == "num_steps"){
-						numSteps = pg.gi("num_steps"); 
+						numSteps = pg.gi("num_steps");
 						alf.numSteps = numSteps;
 					}
 					else if(name == "point_spread"){
-						pointSpreadMax = pg.gi("point_spread"); 
+						pointSpreadMax = pg.gi("point_spread");
 						alf.pointSpreadMax = pointSpreadMax;
 					}
 					else if(name == "cornerAngleThresh"){
@@ -194,7 +194,7 @@ public class ImageProcessing extends VisEventAdapter
 						triangle_height = pg.gd("triangleHeight");
 					}
 			}});
-			
+
 			jf = new JFrame("Image Processing");
 			jim = new JImage();
 			jim.setFit(true);
@@ -243,10 +243,10 @@ public class ImageProcessing extends VisEventAdapter
 
 
 	public void computeHomography(int numCorrespondences, ArrayList<double[]> realWorld, ArrayList<double[]> pixels){
-		
+
 		// Compute H
 		Matrix j = new Matrix(3 * numCorrespondences, 9);
-	
+
 		for(int i = 0; i < numCorrespondences; i++){
 			j.set(0 + 3 * i, 0, J_Cross( realWorld.get(i)[0], realWorld.get(i)[1], pixels.get(i)[0], pixels.get(i)[1]));
 		}
@@ -259,21 +259,21 @@ public class ImageProcessing extends VisEventAdapter
 			{htemp[0][0], htemp[1][0], htemp[2][0]},
 			{htemp[3][0], htemp[4][0], htemp[5][0]},
 			{htemp[6][0], htemp[7][0], htemp[8][0]}});
-		
+
 	}
 
 
 	public static double[][] J_Cross(double x, double y, double cx, double cy){
-		
+
 		double cw = 1;
-		
+
 		double[][] jacobian = new double[][]{
 			{     0,     0,   0, -cw*x, -cw*y, -cw,  cy*x,  cy*y,  cy},
 			{  cw*x,  cw*y,  cw,     0,     0,   0, -cx*x, -cx*y, -cx},
 			{ -cy*x, -cy*y, -cy,  cx*x,  cx*y,  cx,     0,     0,   0}};
 
 		return jacobian;
-		
+
 	}
 //*
 	// x_start, y_start, x_end, y_end
@@ -294,9 +294,9 @@ public class ImageProcessing extends VisEventAdapter
 
 		}
 	}
-//*/	
+//*/
 
-   
+
 	public static float dist2d(float x1, float x2, float y1, float y2)
 	{
 		double X = x2-x1;
@@ -305,61 +305,61 @@ public class ImageProcessing extends VisEventAdapter
 	}
 
 	public int convertPix(int index)
-	{	
+	{
 		int val;
-		
+
 		//calculate x & y pos
 		int x = index%width;
 		int y = (index - x)/width;
-		
+
 		//x = 750;
 		//y = 550;
-		
+
 		double B = 1.0 / calibrateVal;
 		//double B = 1.0 / pg.gd("calib");
 		double r = (double)pixelDists[y * width + x];
-		
+
 		double th_out = (double)pixelThetas[y * width + x];
-		//double B = pg.gi("calib");	
-		
-		
-		//need to shift x&y so that middle pixel is (0,0) 
+		//double B = pg.gi("calib");
+
+
+		//need to shift x&y so that middle pixel is (0,0)
 		//x = x - width / 2;
 		//y = y - height / 2;
-		
+
 		//System.out.printf("x:%d, y:%d, TH:%f, B:%f\n",x,y,th_out,B);
 		//System.out.printf("before r:%f\n",r);
 		r = r + B*r*r;
 		//System.out.printf("after r:%f\n",r);
-		
-		
+
+
 		int nx = (int)((r * Math.cos(th_out)) + (width / 2));
 		int ny = (int)((r * Math.sin(th_out)) + (height / 2));
-				
+
 		//System.out.printf("nx:%f, ny:%f\n\n",nx,ny);
-		
-		
+
+
 		//nx = nx + (int)(width/2);
 		//ny = ny + (int)(height/2);
-		
+
 		//System.out.printf("nx:%f, ny:%f\n\n",nx,ny);
 
 		if (nx < 0 || nx >= width || ny < 0 || ny >= height) val = -1;
 		else val = ny * width + nx;
-		
+
 		return val;
-	
+
 	}
-	
-	
+
+
 	public void calibrate()
 	{
-	
+
 		int[] temp = new int[data.length];
 		//Arrays.fill(temp, 0);
 
 		int index;
-		
+
 		for (int i = height - searchHeight; i < height; i++)
 		{
 			for (int j = 0; j < width; j++)
@@ -371,11 +371,11 @@ public class ImageProcessing extends VisEventAdapter
 					if(temp[index] == 0) temp[index] = data[index];
 					data[i * width + j] = temp[index];
 				}
-			}	
+			}
 		}
-		
-		return;  	
-	
+
+		return;
+
 	}
 
 	public void calculatePixelsState(){
@@ -395,10 +395,10 @@ public class ImageProcessing extends VisEventAdapter
 			}
 		}
 	}
-	
-		
-	
-	
+
+
+
+
 	public void publish(Triangles triangles, ArrayList<ArrayList<double[]> > lineSegs){
 		map_features_t features = new map_features_t();
 		double f = 660.15739;
@@ -419,22 +419,22 @@ public class ImageProcessing extends VisEventAdapter
 			ArrayList<double[]> line = lineSegs.get(i);
 			double[] lineStart = line.get(0);
 			double[] lineEnd = line.get(1);
-			
+
 			double px = lineStart[0];
 			double py = lineStart[1];
-			
-			double x = (py*h*sth-f*h*cth-cy*h*sth)/(cy*cth-f*sth-py*cth);
-			double y = -(px*h*sth - x*(cx*cth-px*cth) - cx*h*sth)/f;
-			
+
+			double x =  ( py*h*sth - f*h*cth - cy*h*sth ) / ( cy*cth -f*sth -py*cth) ;
+			double y = -( px*h*sth - x*(cx*cth-px*cth) - cx*h*sth ) / f;
+
 			features.lineSegs[i][0] = x;
 			features.lineSegs[i][1] = y;
 
 			px = lineEnd[0];
 			py = lineEnd[1];
-			
+
 			x = (py*h*sth-f*h*cth-cy*h*sth)/(cy*cth-f*sth-py*cth);
 			y = -(px*h*sth - x*(cx*cth-px*cth) - cx*h*sth)/f;
-			
+
 			features.lineSegs[i][2] = x;
 			features.lineSegs[i][3] = y;
 
@@ -442,7 +442,7 @@ public class ImageProcessing extends VisEventAdapter
 			//features.lineSegs[i][1] = f * h / (lineStart[1] - cy) * 0.3048;
 			///features.lineSegs[i][2] = (lineEnd[0] - cx) / (lineEnd[1] - cy) * h * 0.3048;
 			//features.lineSegs[i][3] = f * h / (lineEnd[1] - cy) * 0.3048;
-			
+
 			// fix coordinate frame
 			//double temp = features.lineSegs[i][1];
 			//features.lineSegs[i][1] = -features.lineSegs[i][0];
@@ -453,7 +453,7 @@ public class ImageProcessing extends VisEventAdapter
 			//features.lineSegs[i][2] = temp;
 		}
 
-		
+
 		features.ntriangles = triangles.numTriangles;
 		features.triangles = new double[features.ntriangles][2];
 		for(int i = 0; i < features.ntriangles; i++){
@@ -462,7 +462,7 @@ public class ImageProcessing extends VisEventAdapter
 
 			double px = mean[0];
 			double py = mean[1];
-			
+
 			//double x = ((py * ht * sth) - (f * ht * cth) - (cy * ht * sth)) / ((cy * cth) - (f * sth) - (py * cth));
 			double x = 46.39056 / triangles.getHeight(i);
 			double y = -((px * ht * sth) - (x * ((cx * cth) - (px * cth))) - (cx * ht * sth)) / f;
@@ -485,7 +485,7 @@ public class ImageProcessing extends VisEventAdapter
 	public class Triangles{
 		ArrayList<double[]> means;
 		ArrayList<int[]> boundingBoxes;
-		
+
 		int numTriangles = 0;
 
 		Triangles(){
@@ -522,7 +522,7 @@ public class ImageProcessing extends VisEventAdapter
 
 
 	public Triangles findTriangles(){
-		
+
 		UnionFind uf = new UnionFind(width * searchHeight);
 		byte costMap[] = new byte[width * searchHeight];
 		//pre compute first row of values for optimization of union find
@@ -532,7 +532,7 @@ public class ImageProcessing extends VisEventAdapter
 				costMap[i] = 1;
 			else costMap[i] = 0;
 		}
-		
+
 		for(int j = height - searchHeight; j < height; j++){
 			int tempj = j - height + searchHeight;
 			for(int i = 0; i < width; i++){
@@ -542,7 +542,7 @@ public class ImageProcessing extends VisEventAdapter
 						costMap[(tempj + 1) * width + i] = 1;
 					else costMap[(tempj + 1) * width + i] = 0;
 				}
-				
+
 				if(costMap[(tempj * width) + i] == 1){
 					if(j != height - 1){
 						if(costMap[(tempj + 1) * width + i] == 1){
@@ -560,8 +560,8 @@ public class ImageProcessing extends VisEventAdapter
 				}
 			}
 		}
-		
-		
+
+
 		HashMap<Integer, Cluster> hm = new HashMap(width*height);
 		ArrayList<Integer> reps = new ArrayList<Integer>();
 		// Go back through and reorganize clusters into a hash table.
@@ -580,7 +580,7 @@ public class ImageProcessing extends VisEventAdapter
 						cluster.addPoint(new int[]{i, j});
 						hm.put(rep, cluster);
 					}else{
-						cluster.addPoint(new int[]{i, j});	
+						cluster.addPoint(new int[]{i, j});
 					}
 				}
 			}
@@ -596,22 +596,22 @@ public class ImageProcessing extends VisEventAdapter
 			Cluster cluster = hm.get(reps.get(j));
 			//Matrix P = new Matrix(mg.getCovariance());
 			//double[] eigens = eig(P.copyArray());
-			
+
 			//if(isCircular(eigens)
 			//	 && (eigens[1] > minSizeThreshold) && (eigens[0] < maxSizeThreshold)
 			//	&& (points.size() > 60)){
-			if((Math.abs(cluster.areaBox() / 2.0 - cluster.points.size()) < halfBoxThresh) && 
+			if((Math.abs(cluster.areaBox() / 2.0 - cluster.points.size()) < halfBoxThresh) &&
 				(cluster.points.size() > 200) && (cluster.aspectRatio() > .6)){
 			//if(cluster.points.size() > 50){
-					
-				triangles.addTriangle(cluster.getMean(), 
+
+				triangles.addTriangle(cluster.getMean(),
 						cluster.boundingBox());
 				if(dispTriangles)drawBox(cluster.boundingBox(), 0xffff0000);
-					
-				
+
+
 			}
 		}
-		
+
 		if(dispTriMap){
 			for(int j = height - searchHeight; j < height; j++){
 				for(int i = 0; i < width; i++){
@@ -621,11 +621,11 @@ public class ImageProcessing extends VisEventAdapter
 				}
 			}
 		}
-		
+
 		return triangles;
-		
+
 	}
-	
+
 	public class Cluster{
 
 		ArrayList<int []> points;
@@ -642,7 +642,7 @@ public class ImageProcessing extends VisEventAdapter
 			points = new ArrayList<int []>();
 			sumPoints = new long[2];
 		}
-		
+
 		public void addPoint(int[] point){
 			points.add(point);
 			numPoints++;
@@ -675,14 +675,14 @@ public class ImageProcessing extends VisEventAdapter
 			return new double[]{(double)sumPoints[0] / (double)numPoints, (double)sumPoints[1] / (double)numPoints};
 		}
 
-		
+
 	}
 
 
 	public ArrayList<double []> findTape(){
 
 		ArrayList<double []> maxes = new ArrayList<double []>();
-		
+
 		int numPostBlue = 0;
 
 		//int maxBlue[] = new int[width];
@@ -710,7 +710,7 @@ public class ImageProcessing extends VisEventAdapter
 
 		maxes.add(new double[]{0,height - 0});
 		return maxes;
-		
+
 	}
 
 	public void convertToHSV(){
@@ -728,14 +728,14 @@ public class ImageProcessing extends VisEventAdapter
 
 
 	public double colorScore(int i, int j, int color){
-		
+
 		//System.out.println((height - (j + 1)) * width + i);
 		float[] pixel = hsvImage[(j - height + searchHeight) * width + i];
 		int distFromColor = Math.max(color, (int)pixel[0]) - Math.min(color, (int)pixel[0]);
 		return(double)(360 - distFromColor);
-		
+
 	}
-	
+
 	public void run()
 	{
 /*
@@ -759,13 +759,13 @@ public class ImageProcessing extends VisEventAdapter
 		pixels.add(new double[]{1,447});
 		pixels.add(new double[]{1,454});
 		pixels.add(new double[]{1,459});
-		
+
 		computeHomography(9,pixels,realWorld);
 		Matrix newPoint = Matrix.columnMatrix(new double[]{0,407,1});
 		//H.print();
 		//H.times(newPoint).print();
 		//System.exit(1);
-*/		
+*/
 		is.start();
 		ImageSourceFormat fmt = is.getCurrentFormat();
 
@@ -794,15 +794,15 @@ public class ImageProcessing extends VisEventAdapter
 			timeOfImage = TimeUtil.utime();
 			// Grab the image, and convert it to gray scale immediately
 			BufferedImage im = ImageConvert.convertToImage(fmt.format, fmt.width, fmt.height, buf);
-			
+
 			data = ((DataBufferInt) (im.getRaster().getDataBuffer())).getData();
-			
+
 			calibrate();
 			convertToHSV();
 
 			ArrayList<double []> topBluePixels = findTape();
 			Triangles triangles = findTriangles();
-			
+
 
 			Collections.sort(topBluePixels,new PointComparator());
 			alf.setPoints(topBluePixels);
@@ -819,7 +819,7 @@ public class ImageProcessing extends VisEventAdapter
 			if(dispGUI && (dispLongLine)){
 				double dist = pixelToDistanceX(alf.getLongestSeg()[1], 0);
 				vb.addBack(new VisPixCoords(VisPixCoords.ORIGIN.BOTTOM_LEFT,
-						new VzText(VzText.ANCHOR.BOTTOM_LEFT, 
+						new VzText(VzText.ANCHOR.BOTTOM_LEFT,
 						"Longest Segment Mean:" + alf.getLongestSeg()[0] + ", " + alf.getLongestSeg()[1] + "\n" + "Distance to Target:" + dist)));
 			}
 			if(dispGUI){
@@ -827,17 +827,17 @@ public class ImageProcessing extends VisEventAdapter
 					new VzText(VzText.ANCHOR.BOTTOM_LEFT, "hue: " + checkHSV[0] + "\nsaturation: " + checkHSV[1] + "\nvalue: " + checkHSV[2] + "\nmouse:" + mouse[0] + ", " + mouse[1])));
 				vb.swap();
 			}
-			
+
 			publish(triangles, alf.getLineSegs());
-					
-		   
+
+
 		}
 	}
 
 	public static double pixelToDistanceX(double pixelY, double BLAH){
 		return (-413.1089 / (pixelY - 503.80119) - 0.30247) * 0.3048;
 	}
-	
+
 
 	static class PointComparator implements Comparator<double[]>
 	{
