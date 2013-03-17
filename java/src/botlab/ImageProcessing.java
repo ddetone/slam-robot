@@ -103,7 +103,11 @@ public class ImageProcessing extends VisEventAdapter
 	{
 		is = _is;
 
-		lcm = LCM.getSingleton();
+		try{
+			this.lcm = new LCM("udpm://239.255.76.67:7667?ttl=1");
+		}catch(IOException e){
+			this.lcm = LCM.getSingleton();
+		}
 		//lcm = new lcm("udpm://239.255.76.67:7667?ttl=1");
 		//lcm.subscribe("6_POSE", this);
 
@@ -867,7 +871,7 @@ public class ImageProcessing extends VisEventAdapter
 		}
 
 		ImageSource is = ImageSource.make(url);
-		/*
+		//*
 		new ImageProcessing(is, false).run();
 		//*/new ImageProcessing(is, true).run();
 	}

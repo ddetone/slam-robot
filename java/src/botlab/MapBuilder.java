@@ -44,11 +44,7 @@ public class MapBuilder implements LCMSubscriber
 
     MapBuilder()
     {
-	try{
-        	this.lcm = new LCM("udpm://239.255.76.67:7667?ttl=1");
-	}catch(IOException e){
-        	this.lcm =  LCM.getSingleton();
-	}
+       	this.lcm =  LCM.getSingleton();
         map = new map_t();
         bot_status = null;
         all_features = new LinkedList<map_features_t>();

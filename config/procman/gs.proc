@@ -1,0 +1,32 @@
+//Default arguments, others will inherit there
+:process : object {
+    auto-restart = "true";
+    restart-delay-ms = "10";
+    auto-start = "true";
+    host = "gs";
+ }
+
+proc# : process {
+    cmd = "java botlab.RobotGUI";
+    name = "Robot Gui";
+}
+
+proc# : process {
+    cmd = "java botlab.MapBuilder";
+    name = "Map Builder";
+}
+
+proc# : process {
+    cmd = "java botlab.MapSLAM";
+    name = "Map Slam";
+}
+
+proc# : process {
+    cmd = "java botlab.PathPlanner";
+    name = "Path Planner";
+}
+
+//proc# : process {
+//    cmd = "java botlab.RobotController";
+//    name = "Robot Controller";
+//}

@@ -44,7 +44,11 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 
 	RobotGUI()
 	{
-		this.lcm =  LCM.getSingleton();
+		try{
+			this.lcm = new LCM("udpm://239.255.76.67:7667?ttl=1");
+		}catch(IOException e){
+			this.lcm = LCM.getSingleton();
+		}
 		lcm.subscribe("6_POSE",this);
 		lcm.subscribe("6_BATTERY",this);
 		lcm.subscribe("6_MAP",this);
@@ -92,7 +96,7 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 			xyt_t wayPoint = new xyt_t();
 			double temp[] = ray.intersectPlaneXY();
 			wayPoint.utime = TimeUtil.utime();
-			wayPoint.xyt = new double[]{temp[0], temp[1], temp[2]};
+			wayPoint.xyt = new double[]{temp[0], temp[1], 0};
 			lcm.publish("6_GOAL", wayPoint);
 
 			//pg.sb("sendWayPoint",false);
