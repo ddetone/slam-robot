@@ -1,6 +1,7 @@
 package botlab.util;
 
 import java.util.*;
+import april.util.*;
 
 public class PidController 
 {
@@ -15,7 +16,7 @@ public class PidController
 
 	double prevUtime;
 
-	PidController(double Kp, double Ki, double Kd)
+	public PidController(double Kp, double Ki, double Kd)
 	{
 		this.Kp = Kp;
 		this.Ki = Ki;
@@ -25,21 +26,21 @@ public class PidController
 		integral = 0;
 	}
 	
-	void resetController()
+	public void resetController()
 	{
 		prevUtime = 0;
 		prevError = 0;
 		integral = 0;
 	}
 
-	double getOutput(double error)
+	public double getOutput(double error)
 	{
 		double currUtime = TimeUtil.utime();
 
 		//for first time the dt should be 0
 		double dt;
 		if(prevUtime == 0)
-			dt = 0
+			dt = 0;
 		else
 			dt = currUtime - prevUtime;
 
@@ -50,9 +51,9 @@ public class PidController
 		double output = Kp * error + Ki * integral + Kd * derivative;
 
 		prevError = error;
-		prevUtime = currUtime();
+		prevUtime = currUtime;
 
-		return;
+		return(output);
 	}
 
 	

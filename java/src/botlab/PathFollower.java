@@ -15,6 +15,7 @@ import april.image.*;
 import april.jmat.geom.*;
 
 import botlab.lcmtypes.*;
+import botlab.util.*;
 
 import lcm.lcm.*;
 
@@ -39,7 +40,7 @@ public class PathFollower implements LCMSubscriber
 	
 	//The PID controller for finer turning
 	double[] KPID = new double[]{0, 0, 0};
-	PidController pidAngle = new PidController(new double[]{KPID[0], KPID[1], KPID[2]});
+	PidController pidAngle = new PidController(KPID[0], KPID[1], KPID[2]);
 
 
 	PathFollower()
@@ -66,12 +67,6 @@ public class PathFollower implements LCMSubscriber
 		isFollow = false;
 	}
 
-	void rotateRobotFine(double error)
-	{
-		errorAngleInteg += error;
-		
-		KPID[0]*error + KPID[1]*
-	}
 
 
 	void moveRobot()
@@ -84,7 +79,7 @@ public class PathFollower implements LCMSubscriber
 		double errorAngle = destAngle - currXYT[2];
 
 		//This error angle is the final orientation of the robot when it reached its destination. This will only be used when the robot is within 3cm of the final robot orientation
-		errorAngleFinal = destXYT[2] - currXYT[2];
+		double errorAngleFinal = destXYT[2] - currXYT[2];
 
 		//errorAngle = Math	(Math.Pi * 2);
 		while(errorAngle > Math.PI)errorAngle -= 2 * Math.PI;
@@ -118,10 +113,11 @@ public class PathFollower implements LCMSubscriber
 			}
 			//Now instead of stopping(when the robot is 3 cm within its goal), we will turn to the angle specified in xyt
 			else{
-				if(errorAngleFinal < Math.toRadians(1))
-					double pid = pidAngle.output(destXYT[2]-currXYT[2]);
+				if(errorAngleFinal < Math.toRadians(1)){
+					double pid = pidAngle.getOutput(destXYT[2]-currXYT[2]);
 					right = pid;
 					left = -pid;
+				}
 				else{
 					//Reset Controller for next run
 					pidAngle.resetController();
