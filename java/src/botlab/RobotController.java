@@ -129,7 +129,7 @@ public class RobotController implements LCMSubscriber
 				
 			}
 
-			if(max_size < 0.45/map.scale){ //map explored return to start
+			if(max_size < 0.25/map.scale){ //map explored return to start
 				goal_x = 0;
 				goal_y = 0;
 			}

@@ -101,17 +101,12 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 			
 			if((slamBot == null) || (curr_bot_status.xyt == null))
 				return true;
+
+			/*
 			double[] T = LinAlg.xytInvMul31(slamBot, wayPoint.xyt);
-			//System.out.println("Waypoint:");
-			//LinAlg.print(wayPoint.xyt);
 			wayPoint.xyt = LinAlg.xytMultiply(curr_bot_status.xyt, T);
-			//System.out.println("Slam pose: " + slamBot[0] + ", " + slamBot[1] + ", " + slamBot[2]);
-			//System.out.println("Open pose: " + curr_bot_status.xyt[0] + ", " + curr_bot_status.xyt[1] + ", " + curr_bot_status.xyt[2]);
-			//System.out.println("Waypoint after transformation:");
-			LinAlg.print(wayPoint.xyt);
-			//System.out.println("T: ");
-			//LinAlg.print(T);
-			lcm.publish("6_WAYPOINT", wayPoint);
+			//*/
+			lcm.publish("6_GOAL", wayPoint);
 
 			//pg.sb("sendWayPoint",false);
 			return true;
