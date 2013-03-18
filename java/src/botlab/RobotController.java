@@ -70,6 +70,8 @@ public class RobotController implements LCMSubscriber
 
 			if(channel.equals("6_MAP")){
 				map = new map_t(dins);
+				//planFrontier();
+//*
 				if(robotPose != null && bot_status != null && features != null){
 					if(state == "explore"){
 						System.out.println("Explore");
@@ -78,22 +80,30 @@ public class RobotController implements LCMSubscriber
 						}
 						if(slam_vec.numTriangles > killedTriangles.size()){
 							double min_dist = Double.MAX_VALUE;
-							for(int i = 0; i < slam_vec.numTriangles; ++i){
-								if(!killedTriangles.contains(new Double(slam_vec.triangles[i][3]))){
+							for(int i = 0; i < slam_vec.numTriangles; ++i)
+							{
+								if(!killedTriangles.contains(new Double(slam_vec.triangles[i][3])))
+								{
 									double dist = LinAlg.distance(slam_vec.triangles[i],robotPose.xyt,2);
 									if(dist < min_dist){
-										min_dist = dist;
-										state = "moving to point";
-										triangle_to_kill = slam_vec.triangles[i][3];
+										if(dist < 1)
+										{
+											min_dist = dist;
+											state = "moving to point";
+											triangle_to_kill = slam_vec.triangles[i][3];
+											break;
+										}
 									}
 									
 								}
 							}
+							if(min_dist == Double.MAX_VALUE)
+								planFrontier();
 						} else {
 							planFrontier();
 						}
 					}
-					if(state == "moving to point"){
+					else if(state == "moving to point"){
 						System.out.println("moving to point");
 						double[] triangle = null;
 						for(int i = 0; i < slam_vec.numTriangles; ++i){
@@ -117,21 +127,24 @@ public class RobotController implements LCMSubscriber
 							xyt_t new_goal = new xyt_t();
 							new_goal.xyt = new double[]{triangle[0], triangle[1], triangle[2]};
 							lcm.publish("6_GOAL", new_goal);
-						}else planFrontier();
+						}else {
+							planFrontier();
+							System.out.println("Plan Frontier");
+						}
 					}
-					if(state == "aligning to triangle"){
+					else if(state == "aligning to triangle"){
 						System.out.println("alinging to triangle. Num features found:" + features.ntriangles);
-						if(features.ntriangles == 0)state="moving to point";
+						if(features.ntriangles == 0)state="explore";//XXX
 						double min_dist = Double.MAX_VALUE;
 						int min_triangle = 0;
 						for(int i = 0; i < features.ntriangles; ++i){
-							if(LinAlg.distance(new double[]{0.0,0.0},features.triangles[i],2) < min_dist){
+						if(LinAlg.distance(new double[]{0.0,0.0},features.triangles[i],2) < min_dist){
 								min_dist = LinAlg.distance(new double[]{0.0,0.0},features.triangles[i],2);
 								min_triangle = i;
 							}
 						}
 						if(min_dist != Double.MAX_VALUE){
-							
+									
 							double angle = Math.atan2(features.triangles[min_triangle][1], features.triangles[min_triangle][0]);
 							System.out.println("alinging to triangle, angle:" + angle);
 							System.out.println("features:" + features.triangles[min_triangle][0] + ", " + features.triangles[min_triangle][1]);
@@ -160,6 +173,7 @@ public class RobotController implements LCMSubscriber
 					}
 				}
 				System.out.println(state);
+//*/
 			} else if(channel.equals("6_SLAM_POSES")){
 				slam_vec = new slam_vector_t(dins);
 				robotPose = slam_vec.xyt[slam_vec.numPoses - 1];

@@ -23,7 +23,7 @@ public class Laser implements LCMSubscriber
 		lcm = LCM.getSingleton();
 		orc = Orc.makeOrc();
 		laser = new DigitalOutput(orc, 0);
-		lcm.subscribe("6_LASER", this);
+		//lcm.subscribe("6_LASER", this);
 	}
 	
 	public void messageReceived(LCM lcm, String channel, LCMDataInputStream dins)
