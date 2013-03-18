@@ -58,6 +58,7 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 		lcm.subscribe("6_GOAL",this);
 		lcm.subscribe("6_WAYPOINT", this);
 		lcm.subscribe("6_SLAM_POSES",this);
+		lcm.subscribe("6_ASTAR",this);
 
 		jf.setLayout(new BorderLayout());
 		jf.add(vc, BorderLayout.CENTER);
@@ -146,6 +147,27 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 		vb.swap();
 	}
 
+	public void drawAStar(astar_view_t map)
+	{
+		//System.out.println("drawMap");
+		
+		VisWorld.Buffer vb = vw.getBuffer("astar");
+		for(int i = 0; i < map.size; ++i){
+			for(int j = 0; j < map.size; ++j){
+				if(map.cost[i][j]  != Integer.MAX_VALUE){
+					VzBox mapBox = new VzBox(map.scale,map.scale,map.cost[i][j]/255.0*.06*3.0, new VzMesh.Style(Color.green));
+					VisObject vo_mapBox = new VisChain(LinAlg.translate(i*map.scale-map.size/2*map.scale,j*map.scale-map.size/2*map.scale,0.0),mapBox);
+
+					vb.addBack(vo_mapBox);
+				}
+			}
+		}
+
+		vb.addBack(new VisChain(LinAlg.translate(0,0,-0.025),new VzBox(map.size * map.scale, map.size * map.scale,0.05,new VzMesh.Style(Color.darkGray))));
+		vw.getBuffer("Ground").swap();
+		vb.swap();
+	}
+
 
 	public void messageReceived(LCM lcm, String channel, LCMDataInputStream dins)
 	{
@@ -188,12 +210,17 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 				map_t map = new map_t(dins);
 				drawMap(map);
 			}
+			else if(channel.equals("6_ASTAR"))
+			{
+				astar_view_t map = new astar_view_t(dins);
+				drawAStar(map);
+			}
 			else if(channel.equals("6_WAYPOINT"))
 			{
 				xyt_t point = new xyt_t(dins);
 				VisWorld.Buffer vb = vw.getBuffer("Waypoint");
 				VzCircle pointBox = new VzCircle(.04, new VzMesh.Style(Color.yellow));
-				VisObject vo_pointBox = new VisChain(LinAlg.translate(point.xyt[0], point.xyt[1], 0.009),pointBox);
+				VisObject vo_pointBox = new VisChain(LinAlg.translate(point.xyt[0], point.xyt[1], 0.11),pointBox);
 				vb.addBack(vo_pointBox);
 				vb.swap();
 			}
@@ -204,7 +231,7 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 				if(verbose)System.out.println("found goal at: "+point.xyt[0]+","+point.xyt[1]);
 				VisWorld.Buffer vb = vw.getBuffer("Goal");
 				VzCircle pointBox = new VzCircle(.03, new VzMesh.Style(Color.white));
-				VisObject vo_pointBox = new VisChain(LinAlg.translate(point.xyt[0], point.xyt[1], 0.01),pointBox);
+				VisObject vo_pointBox = new VisChain(LinAlg.translate(point.xyt[0], point.xyt[1], 0.1),pointBox);
 				vb.addBack(vo_pointBox);
 				vb.swap();
 			}

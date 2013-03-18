@@ -35,7 +35,7 @@ public class MapNode implements Comparable
 	public int compareTo(Object o)
 	{
 		MapNode n = (MapNode) o;
-		return (cost() + heuristic()) - (n.cost() + n.heuristic());
+		return (n.cost() + n.heuristic()) + (cost() + heuristic());
 	}
 
 	public int heuristic()
