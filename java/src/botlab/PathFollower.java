@@ -55,7 +55,7 @@ public class PathFollower implements LCMSubscriber
 		lcm.subscribe("6_POSE",this);
 		lcm.subscribe("6_WAYPOINT",this);
 
-        pidAngle.setIntegratorClamp(10);
+        pidAngle.setIntegratorClamp(15);
 	}
 
 	//goToPoint will follow a straight line path to the x,y coordinate from whereever it is
