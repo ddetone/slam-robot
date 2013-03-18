@@ -15,6 +15,7 @@ import april.image.*;
 import april.jmat.geom.*;
 
 import botlab.lcmtypes.*;
+import botlab.util.*;
 
 import lcm.lcm.*;
 
@@ -36,6 +37,11 @@ public class PathFollower implements LCMSubscriber
 	double Kp = 1;
 	double Kd_turn = 0.001;
 	double Kd = 0.001;
+	
+	//The PID controller for finer turning
+	double[] KPID = new double[]{1, 0.001, 0.5};
+	PidController pidAngle = new PidController(KPID[0], KPID[1], KPID[2]);
+
 
 	PathFollower()
 	{
@@ -46,10 +52,11 @@ public class PathFollower implements LCMSubscriber
 
 	//goToPoint will follow a straight line path to the x,y coordinate from whereever it is
 	//it should pulbish an LCM message saying it reached destination?
-	void goToPoint(double x, double y)
+	void goToPoint(double[] xyt)
 	{
-		destXYT[0] = x;
-		destXYT[1] = y;
+		destXYT[0] = xyt[0];
+		destXYT[1] = xyt[1];
+		destXYT[2] = xyt[2];
 		isFollow = true;
 	}
 
@@ -60,23 +67,28 @@ public class PathFollower implements LCMSubscriber
 		isFollow = false;
 	}
 
+
+
 	void moveRobot()
 	{
 		double x_c = currXYT[0], y_c = currXYT[1];
 		double x_d = destXYT[0], y_d = destXYT[1];
 
+		//This errorAngle is the orientation of the robot its needs to go forward on
 		double destAngle = Math.atan2((y_d - y_c),(x_d - x_c));
 		double errorAngle = destAngle - currXYT[2];
+
+		//This error angle is the final orientation of the robot when it reached its destination. This will only be used when the robot is within 3cm of the final robot orientation
+		double errorAngleFinal = destXYT[2] - currXYT[2];
 
 		//errorAngle = Math	(Math.Pi * 2);
 		while(errorAngle > Math.PI)errorAngle -= 2 * Math.PI;
 		while(errorAngle < -Math.PI)errorAngle += 2 * Math.PI;
 
 		double errorDist = LinAlg.distance(new double[]{x_c,y_c}, new double[]{x_d, y_d});
-
 		double left, right;
 
-		if(Math.abs(errorAngle) > Math.toRadians(10))
+		if(Math.abs(errorAngle) > Math.toRadians(10))//First Orient the robot to face moving direction 
 		{
 			right =  Kp_turn * errorAngle - Kd_turn * currDotXYT[2];
 			left  = -Kp_turn * errorAngle + Kd_turn * currDotXYT[2];
@@ -85,22 +97,33 @@ public class PathFollower implements LCMSubscriber
 					+ "  dest Angle:" + Math.toDegrees(destAngle) 
 					+ "  curr Angle:" + Math.toDegrees(currXYT[2]));
 		}
-		else
+		else //now in correct orientation, start moving forward
 		{
 			if(verbose)System.out.println("distance error:" + errorDist);
+			//Far from robot go straight(full speed)
 			if(errorDist > 0.10)//10cm
 			{
 				right = 0.5;
 				left  = 0.5;
 			}
-			else if(errorDist > 0.03)
+			else if(errorDist > 0.03)//closing in on destination(start slowing down)
 			{
 				right = 0.5 * errorDist;
 				left  = 0.5 * errorDist;
 			}
+			//Now instead of stopping(when the robot is 3 cm within its goal), we will turn to the angle specified in xyt
 			else{
-				stop();
-				return;
+				if(errorAngleFinal < Math.toRadians(1)){
+					double pid = pidAngle.getOutput(destXYT[2]-currXYT[2]);
+					right = pid;
+					left = -pid;
+				}
+				else{
+					//Reset Controller for next run
+					pidAngle.resetController();
+					stop();
+					return;
+				}
 			}
 
 			double delta = Kp * errorAngle - Kd * currDotXYT[2];
@@ -113,7 +136,7 @@ public class PathFollower implements LCMSubscriber
 
 		setMotorCommand(left, right);
 	}
-
+/*
 	void rotateBot(int rotations)
 	{
 		//double curangle = currXYT[2];
@@ -131,7 +154,7 @@ public class PathFollower implements LCMSubscriber
 		}
 
 	}
-
+*/
 	void setMotorCommand(double left, double right)
 	{
 		diff_drive_t motor = new diff_drive_t();
@@ -175,7 +198,7 @@ public class PathFollower implements LCMSubscriber
 			else if(channel.equals("6_WAYPOINT"))
 			{
 				xyt_t dest = new xyt_t(dins);
-				goToPoint(dest.xyt[0],dest.xyt[1]);
+				goToPoint(dest.xyt);
 			}
 
 		}
