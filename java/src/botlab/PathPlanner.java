@@ -30,7 +30,7 @@ public class PathPlanner implements LCMSubscriber
 	xyt_t goal = null;
 	xyt_t lastPlannedWaypoint = null;
 
-	final boolean verbose = false;
+	final boolean verbose = true;
 
 	PathPlanner()
 	{
@@ -54,28 +54,6 @@ public class PathPlanner implements LCMSubscriber
 			{
 				map = new map_t(dins);
 				//TODO: switch to only run when near waypoint or waypoint's cost is too high
-
-				if(verbose)System.out.println("starting map");
-				if(map != null && status != null && goal != null){
-					if(verbose)System.out.println("found everything");
-				
-					if(lastPlannedWaypoint == null || LinAlg.distance(status.xyt, lastPlannedWaypoint.xyt, 2) < 0.2 || 
-								(map.cost[(int) (lastPlannedWaypoint.xyt[0]/map.scale)+map.size/2][ (int) (lastPlannedWaypoint.xyt[1]/map.scale)+map.size/2] & 0xFF) > 0.6 * map.max)
-					{
-						if(verbose)System.out.println("attempting A Star");
-						if(aStar(false)){
-							if(verbose)System.out.println("A Start finished finding next waypoint");
-							xyt_t waypoint = nextWaypoint();
-							if(verbose)System.out.println("publishing");
-							lcm.publish("6_WAYPOINT",waypoint);
-						} else {
-							if(verbose)System.out.println("No possible path to goal, trying to get close");
-							aStar(true);
-							xyt_t waypoint = nextWaypoint();
-							lcm.publish("6_WAYPOINT",waypoint);
-						}
-					}
-				}
 			}
 			else if(channel.equals("6_POSE"))
 			{
@@ -97,6 +75,29 @@ public class PathPlanner implements LCMSubscriber
 				goal = new xyt_t(dins);
 				goal.xyt[0] += (map.size/2)*map.scale;
 				goal.xyt[1] += (map.size/2)*map.scale;
+
+				if(verbose)System.out.println("starting map");
+
+				if(map != null && status != null && goal != null && slamBot != null && openLoopBot != null){
+					if(verbose)System.out.println("found everything");
+				
+					if(lastPlannedWaypoint == null || LinAlg.distance(status.xyt, lastPlannedWaypoint.xyt, 2) < 0.2 || 
+								(map.cost[(int) (lastPlannedWaypoint.xyt[0]/map.scale)+map.size/2][ (int) (lastPlannedWaypoint.xyt[1]/map.scale)+map.size/2] & 0xFF) > 0.6 * map.max)
+					{
+						if(verbose)System.out.println("attempting A Star");
+						if(aStar(false)){
+							if(verbose)System.out.println("A Start finished finding next waypoint");
+							xyt_t waypoint = nextWaypoint();
+							if(verbose)System.out.println("publishing");
+							lcm.publish("6_WAYPOINT",waypoint);
+						} else {
+							if(verbose)System.out.println("No possible path to goal, trying to get close");
+							aStar(true);
+							xyt_t waypoint = nextWaypoint();
+							lcm.publish("6_WAYPOINT",waypoint);
+						}
+					}
+				}
 			}
 		}
 		catch (IOException e)
@@ -139,7 +140,7 @@ public class PathPlanner implements LCMSubscriber
 
 				if(!plan_through_walls && (map.cost[neighbor.x][neighbor.y] & 0xFF) > 0.6 * map.max)
 					continue;
-				int tentative_g_score = travel_cost_map[current.x][current.y] + 10 + (map.cost[neighbor.x][neighbor.y] & 0xFF);
+				int tentative_g_score = travel_cost_map[current.x][current.y] + 15 + (map.cost[neighbor.x][neighbor.y] & 0xFF);
 
 				boolean in_closed_set = false;
 				for(MapNode compare : closed_set) {
@@ -177,7 +178,7 @@ public class PathPlanner implements LCMSubscriber
 		MapNode secMinNeighbor = null;
 
 		//if changed, change in map builder
-		double knowledge_dist = 0.9/map.scale;
+		double knowledge_dist = 0.4/map.scale;
 
 		//plan long path
 		for(int i = 0; i < knowledge_dist; ++i) {
@@ -206,8 +207,8 @@ public class PathPlanner implements LCMSubscriber
 					intoWall = true;
 					break;
 				}
-				if((map.knowledge[rpos[0]][rpos[1]] != 1) && (false)){
-					intoWall = true; //consider the edge of knowledge to be a sort of "fake" wall limiting travel
+				if(travel_cost_map[rpos[0]][rpos[1]] == Integer.MAX_VALUE){
+					intoWall = true; //sanity check
 					break;
 				}
 			}
