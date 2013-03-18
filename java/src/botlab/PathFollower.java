@@ -98,6 +98,10 @@ public class PathFollower implements LCMSubscriber
 		double errorDist = LinAlg.distance(new double[]{x_c,y_c}, new double[]{x_d, y_d});
 		double left, right;
 
+        if(errorDist < 0.03){
+            state = 1;
+        }
+
 		//First Orient the robot to face moving direction
 		if((state == 0) && (Math.abs(errorAngle) > Math.toRadians(10)))
 		{
