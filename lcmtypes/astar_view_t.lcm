@@ -1,0 +1,6 @@
+struct astar_view_t
+{
+	int32_t size;
+	double scale;
+	int32_t cost[size][size];
+}
