@@ -154,8 +154,8 @@ public class MapBuilder implements LCMSubscriber
 					bot_status.xyt[1] += (map.size/2)*map.scale;
 
 					//if changed, change in path planner
-					double knowledge_dist = 0.4/map.scale;
-					double knowledge_dist_absolute = 0.1/map.scale;
+					double knowledge_dist = 0.5/map.scale;
+					double knowledge_dist_absolute = 0.15/map.scale;
 					//*
 					for(int i = (int) ((bot_status.xyt[0]-knowledge_dist_absolute)/map.scale); i < (bot_status.xyt[0]+knowledge_dist_absolute)/map.scale; ++i){
 						for(int j = (int) ((bot_status.xyt[1]-knowledge_dist_absolute)/map.scale); j < (bot_status.xyt[0]+knowledge_dist_absolute)/map.scale; ++j){

@@ -58,10 +58,12 @@ public class PathFollower implements LCMSubscriber
 	{
 		this.lcm =  LCM.getSingleton();
 		laser = new Laser();
-		pidAngle.setIntegratorClamp(15);
+		pidAngle.setIntegratorClamp(10);
 
 		lcm.subscribe("6_POSE",this);
 		lcm.subscribe("6_WAYPOINT",this);
+		lcm.subscribe("6_LASER",this);
+		lcm.subscribe("6_SPIN",this);
 	}
 
 	//goToPoint will follow a straight line path to the x,y coordinate from whereever it is
@@ -207,6 +209,40 @@ public class PathFollower implements LCMSubscriber
 	}
 
 
+ void rotateBot(int rotations)
+	{
+	
+		int scale = 1;
+		
+		if (rotations < 0)
+		{
+			scale = -1;	
+		}
+	
+		double total_radians = Math.abs(rotations * (2*Math.PI));
+
+		double first = currXYT[2];
+		double curr;
+		while (true) //counterclockwise is positive
+		{
+			curr = currXYT[2] - first;
+			if (Math.abs(curr) >= total_radians)
+			{			
+				stop();
+				return;
+			}
+			
+			setMotorCommand(-0.5F*scale,0.5F*scale);
+			try {
+				Thread.sleep(50);
+			}
+			catch(InterruptedException e)
+			{}
+		
+		
+		}
+
+	}
 /*
 	void rotateBot(int rotations)
 	{
@@ -271,7 +307,13 @@ public class PathFollower implements LCMSubscriber
 				xyt_t dest = new xyt_t(dins);
 				goToPoint(dest.xyt);
 			}
-
+			else if(channel.equals("6_SPIN")){
+				stop();
+				lcm.unsubscribe("6_WAYPOINT", this);
+				rotateBot(1);
+				rotateBot(-1);
+				lcm.unsubscribe("6_POSE", this);
+			}
 			else if(channel.equals("6_LASER"))
 			{
 				lcm.unsubscribe("6_WAYPOINT", this);
