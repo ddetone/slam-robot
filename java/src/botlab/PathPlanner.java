@@ -140,7 +140,7 @@ public class PathPlanner implements LCMSubscriber
 
 				if(!plan_through_walls && (map.cost[neighbor.x][neighbor.y] & 0xFF) > 0.6 * map.max)
 					continue;
-				int tentative_g_score = travel_cost_map[current.x][current.y] + 15 + (map.cost[neighbor.x][neighbor.y] & 0xFF);
+				int tentative_g_score = travel_cost_map[current.x][current.y] + 9 + (map.cost[neighbor.x][neighbor.y] & 0xFF);
 
 				boolean in_closed_set = false;
 				for(MapNode compare : closed_set) {
@@ -178,7 +178,8 @@ public class PathPlanner implements LCMSubscriber
 		MapNode secMinNeighbor = null;
 
 		//if changed, change in map builder
-		double knowledge_dist = 0.4/map.scale;
+		//double knowledge_dist = 0.4/map.scale;
+		double knowledge_dist = 0.2/map.scale;
 
 		//plan long path
 		for(int i = 0; i < knowledge_dist; ++i) {
@@ -203,7 +204,7 @@ public class PathPlanner implements LCMSubscriber
 				int[] rpos = new int[2];
 				rpos[0] = (int)(nextPoint[0] * j/(2*dist) + startPoint[0]* (1- (j/(2*dist))));
 				rpos[1] = (int)(nextPoint[1] * j/(2*dist) + startPoint[1]* (1- (j/(2*dist))));
-				if(((map.cost[rpos[0]][rpos[1]] & 0xFF) > 0.5 * map.max) && !(((map.cost[start.x][start.y] & 0xFF) > 0.6 * map.max))){
+				if(((map.cost[rpos[0]][rpos[1]] & 0xFF) > 0.6 * map.max) && !(((map.cost[start.x][start.y] & 0xFF) > 0.6 * map.max))){
 					intoWall = true;
 					break;
 				}
@@ -213,7 +214,7 @@ public class PathPlanner implements LCMSubscriber
 				}
 			}
 			//if path goes into a wall or if lowest cost neighbor has a higher cost than this node
-			if(intoWall || travel_cost_map[minNeighbor.x][minNeighbor.y] > travel_cost_map[current.x][current.y]){
+			if((intoWall || travel_cost_map[minNeighbor.x][minNeighbor.y] > travel_cost_map[current.x][current.y] && (current != start))){
 				break;
 			} else {
 				current = minNeighbor;

@@ -372,7 +372,7 @@ public class MapSLAM implements LCMSubscriber
 						
 						double sigmaT_xx = (alpha*ge.z[0])*(alpha*ge.z[0])+.001;
 						double sigmaT_yy = (bravo*ge.z[1])*(bravo*ge.z[1])+.001;
-						double sigmaT_tt = Math.toRadians(180)*Math.toRadians(180);
+						double sigmaT_tt = Math.toRadians(90)*Math.toRadians(90);
 
 						double[][] Jt = new double[][]{	{ca,-sa, 0 },
 										{sa, ca, 0 },
@@ -418,7 +418,7 @@ public class MapSLAM implements LCMSubscriber
 						
 						double sigmaT_xx = (alpha*ge.z[0])*(alpha*ge.z[0])+.001;
 						double sigmaT_yy = (bravo*ge.z[1])*(bravo*ge.z[1])+.001;
-						double sigmaT_tt = Math.toRadians(180)*Math.toRadians(180);
+						double sigmaT_tt = Math.toRadians(90)*Math.toRadians(90);
 
 						double[][] Jt = new double[][]{	{ca,-sa, 0 },
 										{sa, ca, 0 },

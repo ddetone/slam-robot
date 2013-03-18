@@ -41,7 +41,9 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 
 	ArrayList<double[]> robotTraj = new ArrayList<double[]>();
 	final boolean DEFAULT_SEND_WAYPOINT = false;
+	final boolean DEFAULT_DISP_CONV = false;
 	boolean sendWayPoint = DEFAULT_SEND_WAYPOINT;
+	boolean dispConv = DEFAULT_DISP_CONV;
 
 	RobotGUI()
 	{
@@ -66,12 +68,14 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 		jf.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
 		pg.addCheckBoxes("sendWayPoint", "Send Waypoint", DEFAULT_SEND_WAYPOINT);
+		pg.addCheckBoxes("dispConv", "Display Exploded Wall Map", DEFAULT_DISP_CONV);
 
 
 		pg.addListener(new ParameterListener() {
 			public void parameterChanged(ParameterGUI pg, String name)
 			{
 				if(name == "sendWayPoint")sendWayPoint = pg.gb("sendWayPoint");
+				else if(name == "dispConv")dispConv = pg.gb("dispConv");
 			}
 		});
 
@@ -117,11 +121,13 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 	public void drawMap(map_t map)
 	{
 		//System.out.println("drawMap");
+		double dispConvThresh = 0.99;
+		if(dispConv == true)dispConvThresh = 0.6;
 		boolean found_point = false;
 		VisWorld.Buffer vb = vw.getBuffer("Map");
 		for(int i = 0; i < map.size; ++i){
 			for(int j = 0; j < map.size; ++j){
-				if((int) (map.cost[i][j] & 0xFF) > 0.99*255){
+				if((int) (map.cost[i][j] & 0xFF) > dispConvThresh*255){
 					VzBox mapBox = new VzBox(map.scale,map.scale,((double)((int)(map.cost[i][j] & 0xFF)))/map.max*.06*3, new VzMesh.Style(Color.red));
 					VisObject vo_mapBox = new VisChain(LinAlg.translate(i*map.scale-map.size/2*map.scale,j*map.scale-map.size/2*map.scale,0.0),mapBox);
 
@@ -161,15 +167,20 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 
 				drawRobot();
 				//drawCovariance();
+
+				VisWorld.Buffer vb = vw.getBuffer("Battery");
+				if(bot_status.voltage < 8.5){
+					vb.addBack(new VisPixCoords(VisPixCoords.ORIGIN.CENTER, 
+									new VzText(VzText.ANCHOR.CENTER, 
+									"<<sansserif-bold-16,white>>LOW BATTERY VOLTAGE:" + 
+									String.format("%.3g%n", bot_status.voltage))));
+				}
+				vb.swap();
+
 				last_bot_status = curr_bot_status;
 			}
 			else if(channel.equals("6_BATTERY"))
 			{
-				VisWorld.Buffer vb = vw.getBuffer("Battery");
-				battery = new battery_t(dins);
-
-				if(battery.voltage < 10)vb.addBack(new VisPixCoords(VisPixCoords.ORIGIN.CENTER, new VzText(VzText.ANCHOR.CENTER, "<<sansserif-bold-16,white>>LOW BATTERY VOLTAGE:" + String.format("%.3g%n", battery.voltage))));
-				vb.swap();
 
 			}
 			else if(channel.equals("6_MAP"))

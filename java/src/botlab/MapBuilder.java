@@ -205,7 +205,7 @@ public class MapBuilder implements LCMSubscriber
 								if(lambda3 < 0.0 || lambda3 > 1.0)
 									continue;
 								if(i > 0 && i < map.size && j > 0 && j < map.size) {
-									map.cost[i][j] = (byte) 0;
+									//map.cost[i][j] = (byte) 0;
 									map.knowledge[i][j] = (byte) 1;
 								}
 							}

@@ -33,7 +33,7 @@ public class PathFollower implements LCMSubscriber
 	static double[] currDotXYT = new double[3];
 	static double[] destXYT = new double[3];
 
-	static final double MAX_SPEED = 0.3;
+	static final double MAX_SPEED = 0.35;
 	
 	double Kp_turn = 0.7;
 	double Kp = 1;
