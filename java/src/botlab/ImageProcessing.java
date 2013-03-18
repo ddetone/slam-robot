@@ -24,7 +24,7 @@ public class ImageProcessing extends VisEventAdapter
 	static final double DEFAULT_GREEN_THRESH = 355;
 	static final double DEFAULT_SAT_THRESH = 0.6977;
 	static final double DEFAULT_VALUE_THRESH = 0.55;
-	static final double DEFAULT_HALF_BOX_THRESH = 300;
+	static final double DEFAULT_HALF_BOX_THRESH = 210;
 	static final double DEFAULT_BLUE_THRESH = 200;
 	static final double DEFAULT_THRESH_VAL = 34;
 	static final int DEFAULT_NUM_STEPS = 200;
@@ -519,7 +519,8 @@ public class ImageProcessing extends VisEventAdapter
 
 
 	public boolean within(double val, double mean, double tolerance){
-		return(val > mean - tolerance) && (val < mean + tolerance);
+		if((val > mean - tolerance) && (val < mean + tolerance))return true;
+		else return false;
 	}
 
 
@@ -529,36 +530,34 @@ public class ImageProcessing extends VisEventAdapter
 		UnionFind uf = new UnionFind(width * searchHeight);
 		byte costMap[] = new byte[width * searchHeight];
 		//pre compute first row of values for optimization of union find
-		for(int i = 0; i < width; i+=2){
+		for(int i = 0; i < width; i++){
 			float[] pixel = hsvImage[i];
 			if(within(colorScore(i,height - searchHeight, GREEN), greenThresh, 10) && within(pixel[1], saturationThresh, .17) && within(pixel[2], valueThresh, .4))
 				costMap[i] = 1;
 			else costMap[i] = 0;
 		}
-		
-		int jstep = 1;
 
-		for(int j = height - searchHeight; j < height; j+=jstep){
+		for(int j = height - searchHeight; j < height; j++){
 			int tempj = j - height + searchHeight;
-			for(int i = 0; i < width; i+=2){
-				if(j != height - jstep){
+			for(int i = 0; i < width; i++){
+				if(j != height - 1){
 					float[] pixel = hsvImage[tempj * width + i];
 					if(within(colorScore(i,j,GREEN), greenThresh, 10) && within(pixel[1], saturationThresh, .17) && within(pixel[2], valueThresh, .4))
-						costMap[(tempj + jstep) * width + i] = 1;
-					else costMap[(tempj + jstep) * width + i] = 0;
+						costMap[(tempj + 1) * width + i] = 1;
+					else costMap[(tempj + 1) * width + i] = 0;
 				}
 
 				if(costMap[(tempj * width) + i] == 1){
-					if(j != height - jstep){
-						if(costMap[(tempj + jstep) * width + i] == 1){
-							uf.connectNodes((tempj + jstep) * width + i,
+					if(j != height - 1){
+						if(costMap[(tempj + 1) * width + i] == 1){
+							uf.connectNodes((tempj + 1) * width + i,
 									tempj * width + i);
 						}
 
 					}
-					if(i != width - 2){
-						if(costMap[(tempj * width) + i + 2] == 1){
-							uf.connectNodes((tempj * width) + i + 2,
+					if(i != width - 1){
+						if(costMap[(tempj * width) + i + 1] == 1){
+							uf.connectNodes((tempj * width) + i + 1,
 									tempj * width + i);
 						}
 					}
@@ -571,9 +570,9 @@ public class ImageProcessing extends VisEventAdapter
 		ArrayList<Integer> reps = new ArrayList<Integer>();
 		// Go back through and reorganize clusters into a hash table.
 		// Create a list of all valid, unique ids in the hash table
-		for(int j = height - searchHeight; j < height; j+=2){
+		for(int j = height - searchHeight; j < height; j++){
 			int tempj = j - height + searchHeight;
-			for(int i = 0; i < width; i+=2){
+			for(int i = 0; i < width; i++){
 				if(costMap[tempj * width + i] == 1){
 					int rep = uf.getRepresentative(tempj * width + i);
 					if(!reps.contains(rep)) reps.add(new Integer(rep));
@@ -605,8 +604,8 @@ public class ImageProcessing extends VisEventAdapter
 			//if(isCircular(eigens)
 			//	 && (eigens[1] > minSizeThreshold) && (eigens[0] < maxSizeThreshold)
 			//	&& (points.size() > 60)){
-			if((Math.abs(cluster.areaBox() / 2.0 - (cluster.points.size() * 4)) < halfBoxThresh) &&
-				(cluster.points.size() > 50) && (cluster.aspectRatio() > .6)){
+			if((Math.abs(cluster.areaBox() / 2.0 - cluster.points.size()) < halfBoxThresh) &&
+				(cluster.points.size() > 200) && (cluster.aspectRatio() > .6)){
 			//if(cluster.points.size() > 50){
 
 				triangles.addTriangle(cluster.getMean(),
@@ -618,8 +617,8 @@ public class ImageProcessing extends VisEventAdapter
 		}
 
 		if(dispTriMap){
-			for(int j = height - searchHeight; j < height; j+=2){
-				for(int i = 0; i < width; i+=2){
+			for(int j = height - searchHeight; j < height; j++){
+				for(int i = 0; i < width; i++){
 					double cost = costMap[(j - height + searchHeight) * width + i];
 					if(cost == 1) data[j * width + i] = 0xff0000ff;
 					else data[j * width + i] = 0xff000000;
@@ -696,7 +695,7 @@ public class ImageProcessing extends VisEventAdapter
 		Arrays.fill(state, BLUE_STATE.PREBLUE);
 
 		for(int j = height - 1; ((j >= height - searchHeight) && (numPostBlue < width)); j--){
-			for(int i = 0; ((i < width) && (numPostBlue < width)); i += 8){
+			for(int i = 0; ((i < width) && (numPostBlue < width)); i += 9){
 				if(state[i] != BLUE_STATE.POSTBLUE){
 					if(colorScore(i, j, BLUE) > blueThresh){
 					//if((data[j * width + i] & 0x000000ff) > blueThresh){
@@ -719,9 +718,10 @@ public class ImageProcessing extends VisEventAdapter
 	}
 
 	public void convertToHSV(){
-		for(int j = height - searchHeight; j < height; j+=1){
+		for(int j = height - searchHeight; j < height; j++){
 			int tempj = j - height + searchHeight;
-			for(int i = 0; i < width; i+=2){
+			for(int i = 0; i < width; i++){
+				//System.out.println((height - j) * width + i);
 				int aRGB = data[j * width + i];
 				Color.RGBtoHSB(((aRGB & 0x00FF0000) >> 16), ((aRGB & 0x0000FF00) >> 8), (aRGB & 0x000000FF), hsvImage[tempj * width + i]);
 				float temp = hsvImage[tempj * width + i][0];
@@ -786,11 +786,8 @@ public class ImageProcessing extends VisEventAdapter
 		calculateLookupTable();
 
 		alf = new AgglomerativeLineFitter(threshold, numSteps, pointSpreadMax, cornerAngleThresh);
-		
-		double totalTime = 10;
-		
+
 		while(true) {
-			Tic total = new Tic();
 			// read a frame
 			byte buf[] = is.getFrame().data;
 			buf = is.getFrame().data;
@@ -803,23 +800,18 @@ public class ImageProcessing extends VisEventAdapter
 			BufferedImage im = ImageConvert.convertToImage(fmt.format, fmt.width, fmt.height, buf);
 
 			data = ((DataBufferInt) (im.getRaster().getDataBuffer())).getData();
-			
-			Tic tmr = new Tic();
+
 			calibrate();
-			//System.out.println("Time for calibrate: " + (tmr.toctic()/totalTime));
 			convertToHSV();
-			//System.out.println("Time for hsv conversion: " + (tmr.toctic()/totalTime));
 
 			ArrayList<double []> topBluePixels = findTape();
-			//System.out.println("Time for wall finding: " + (tmr.toctic()/totalTime));
 			Triangles triangles = findTriangles();
-			//System.out.println("Time for triangle finding: " + (tmr.toctic()/totalTime));
 
 
 			Collections.sort(topBluePixels,new PointComparator());
 			alf.setPoints(topBluePixels);
 			alf.findSegs();
-			
+
 			VisChain chain = new VisChain(LinAlg.rotateX(Math.PI),LinAlg.translate(0,-height,-1));
 
 			if(dispGUI && (dispTriangles)) chain.add(new VzPoints(new VisVertexData(triangles.means),new VzPoints.Style(Color.blue, 5)));
@@ -842,7 +834,7 @@ public class ImageProcessing extends VisEventAdapter
 
 			publish(triangles, alf.getLineSegs());
 
-			//System.out.println("total time: " + (totalTime = total.toc()));
+
 		}
 	}
 
@@ -879,7 +871,7 @@ public class ImageProcessing extends VisEventAdapter
 		}
 
 		ImageSource is = ImageSource.make(url);
-		/*
+		//*
 		new ImageProcessing(is, false).run();
 		//*/new ImageProcessing(is, true).run();
 	}

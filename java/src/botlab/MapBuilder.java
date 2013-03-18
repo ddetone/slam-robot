@@ -247,7 +247,7 @@ public class MapBuilder implements LCMSubscriber
 										continue;
 									double w[] = {x,y};
 									double d[] = {j,k};
-									map.cost[j][k] = (byte) Math.max(255.0 - (600.0*map.scale * LinAlg.distance(w,d)), (int)(map.cost[j][k] & 0xFF));
+									map.cost[j][k] = (byte) Math.max(255.0 - (500.0*map.scale * LinAlg.distance(w,d)), (int)(map.cost[j][k] & 0xFF));
 									//System.out.println(Math.max(255.0 - (408.0*map.scale * LinAlg.distance(w,d)), (int)(map.cost[j][k] & 0xFF)));
 								}
 							}

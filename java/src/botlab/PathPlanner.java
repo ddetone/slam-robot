@@ -139,7 +139,7 @@ public class PathPlanner implements LCMSubscriber
 
 				if(!plan_through_walls && (map.cost[neighbor.x][neighbor.y] & 0xFF) > 0.6 * map.max)
 					continue;
-				int tentative_g_score = travel_cost_map[current.x][current.y] + 1 + (map.cost[neighbor.x][neighbor.y] & 0xFF);
+				int tentative_g_score = travel_cost_map[current.x][current.y] + 10 + (map.cost[neighbor.x][neighbor.y] & 0xFF);
 
 				boolean in_closed_set = false;
 				for(MapNode compare : closed_set) {
@@ -206,7 +206,7 @@ public class PathPlanner implements LCMSubscriber
 					intoWall = true;
 					break;
 				}
-				if(map.knowledge[rpos[0]][rpos[1]] != 1){
+				if((map.knowledge[rpos[0]][rpos[1]] != 1) && (false)){
 					intoWall = true; //consider the edge of knowledge to be a sort of "fake" wall limiting travel
 					break;
 				}
@@ -243,7 +243,7 @@ public class PathPlanner implements LCMSubscriber
 		} else { //we're at the goal
 			ret.xyt[2] = goal.xyt[2];
 		}
-		ret.xyt = LinAlg.xytMultiply(ret.xyt,LinAlg.xytInvMul31(slamBot, openLoopBot.xyt));
+		ret.xyt = LinAlg.xytMultiply(LinAlg.xytInvMul31(slamBot, openLoopBot.xyt), ret.xyt);
 		return ret;
 	}
 
