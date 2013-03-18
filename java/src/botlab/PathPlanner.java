@@ -206,7 +206,7 @@ public class PathPlanner implements LCMSubscriber
 					intoWall = true;
 					break;
 				}
-				if(map.knowledge[rpos[0]][rpos[1]] != 1){
+				if((map.knowledge[rpos[0]][rpos[1]] != 1) && (false)){
 					intoWall = true; //consider the edge of knowledge to be a sort of "fake" wall limiting travel
 					break;
 				}
@@ -243,7 +243,7 @@ public class PathPlanner implements LCMSubscriber
 		} else { //we're at the goal
 			ret.xyt[2] = goal.xyt[2];
 		}
-		ret.xyt = LinAlg.xytMultiply(ret.xyt,LinAlg.xytInvMul31(slamBot, openLoopBot.xyt));
+		ret.xyt = LinAlg.xytMultiply(LinAlg.xytInvMul31(slamBot, openLoopBot.xyt), ret.xyt);
 		return ret;
 	}
 

@@ -221,7 +221,8 @@ public class MapSLAM implements LCMSubscriber
 					
 					double sigmaT_xx = (alpha*ge.z[0])*(alpha*ge.z[0])+0.00000001;
 					double sigmaT_yy = (bravo *ge.z[0])*(bravo *ge.z[0])+0.00000001;
-					double sigmaT_tt = (charlie*ge.z[2])*(charlie*ge.z[2])+0.00000001;
+					double sigmaT_tt = (Math.toRadians(3) / 60.0 * 1.0/20.0);
+					//double sigmaT_tt = (charlie*ge.z[2])*(charlie*ge.z[2])+0.00000001;
 
 					double[][] Jt = new double[][]{	{ca,-sa, 0 },
 									{sa, ca, 0 },
@@ -334,7 +335,7 @@ public class MapSLAM implements LCMSubscriber
 						testEdge.P = dp.getEdge(closeFeatureIndex).P;
 						
 						//dist = mahalanobisDistance(featureState, g.nodes.get(closeFeatureIndex).state, LinAlg.diag(new double[]{1,1,0.001}));
-						dist = mahalanobisDistance(testEdge, oldFeatureDist);
+						dist = mahalanobisDistance(testEdge, 0.5);
 						if(dist < minDist){
 							minDist = dist;
 							closestFeatureNode = closeFeatureIndex;
