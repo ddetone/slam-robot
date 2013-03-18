@@ -33,6 +33,8 @@ public class PathFollower implements LCMSubscriber
 	static double[] currDotXYT = new double[3];
 	static double[] destXYT = new double[3];
 
+	static final double MAX_SPEED = 0.3;
+	
 	double Kp_turn = 0.7;
 	double Kp = 1;
 	double Kd_turn = 0.001;
@@ -103,13 +105,13 @@ public class PathFollower implements LCMSubscriber
 			//Far from robot go straight(full speed)
 			if(errorDist > 0.10)//10cm
 			{
-				right = 0.5;
-				left  = 0.5;
+				right = MAX_SPEED;
+				left  = MAX_SPEED;
 			}
 			else if(errorDist > 0.03)//closing in on destination(start slowing down)
 			{
-				right = 0.5 * errorDist;
-				left  = 0.5 * errorDist;
+				right = MAX_SPEED * errorDist;
+				left  = MAX_SPEED * errorDist;
 			}
 			//Now instead of stopping(when the robot is 3 cm within its goal), we will turn to the angle specified in xyt
 			else{
@@ -164,8 +166,8 @@ public class PathFollower implements LCMSubscriber
 
 		motor.utime = TimeUtil.utime();
 
-		left = LinAlg.clamp(left, -0.5, 0.5);
-		right = LinAlg.clamp(right, -0.5, 0.5);
+		left = LinAlg.clamp(left, -MAX_SPEED, MAX_SPEED);
+		right = LinAlg.clamp(right, -MAX_SPEED, MAX_SPEED);
 
 		motor.left = (float)left;
 		motor.right = (float)right;
