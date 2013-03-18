@@ -115,20 +115,7 @@ public class RobotController implements LCMSubscriber
 							lcm.publish("6_GOAL", new_goal);
 						}
 					}
-				}
-			} else if(channel.equals("6_SLAM_POSES")){
-				slam_vec = new slam_vector_t(dins);
-				robotPose = slam_vec.xyt[slam_vec.numPoses - 1];
-			} else if(channel.equals("6_POSE")){
-				bot_status = new bot_status_t(dins);
-				if(state == "spinning"){
-					//TODO: spinning logic
-					//TODO: if done spinning
-						//TODO: finished
-				}
-			} else if(channel.equals("6_FEATURES")){
-				features = new map_features_t(dins);
-				if(state == "aligning to triangle"){
+					if(state == "aligning to triangle"){
 					double min_dist = Double.MAX_VALUE;
 					int min_triangle = 0;
 					for(int i = 0; i < features.ntriangles; ++i){
@@ -150,13 +137,27 @@ public class RobotController implements LCMSubscriber
 						}
 						else{
 							xyt_t new_angle = new xyt_t();
-							new_angle.xyt = new double[]{bot_status.xyt[0],bot_status.xyt[1],bot_status.xyt[2]+angle};
+							new_angle.xyt = new double[]{robotPose.xyt[0],robotPose.xyt[1],robotPose.xyt[2]+angle};
 
 							//publish waypoint of angle
 							lcm.publish("6_GOAL", new_angle);
 						}
 					}
 				}
+				}
+			} else if(channel.equals("6_SLAM_POSES")){
+				slam_vec = new slam_vector_t(dins);
+				robotPose = slam_vec.xyt[slam_vec.numPoses - 1];
+			} else if(channel.equals("6_POSE")){
+				bot_status = new bot_status_t(dins);
+				if(state == "spinning"){
+					//TODO: spinning logic
+					//TODO: if done spinning
+						//TODO: finished
+				}
+			} else if(channel.equals("6_FEATURES")){
+				features = new map_features_t(dins);
+				
 			}
 		}
 		catch (IOException e)
