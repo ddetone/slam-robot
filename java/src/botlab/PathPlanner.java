@@ -24,7 +24,9 @@ public class PathPlanner implements LCMSubscriber
 	LCM lcm;
 	map_t map = null;
 	int travel_cost_map[][];
-	bot_status_t status = null;
+	bot_status_t openLoopBot = null;
+	xyt_t status = null;
+	double[] slamBot = null;
 	xyt_t goal = null;
 	xyt_t lastPlannedWaypoint = null;
 
@@ -37,9 +39,11 @@ public class PathPlanner implements LCMSubscriber
 		}catch(IOException e){
 			this.lcm = LCM.getSingleton();
 		}
+		status = new xyt_t();
 		lcm.subscribe("6_POSE",this);
 		lcm.subscribe("6_MAP",this);
 		lcm.subscribe("6_GOAL",this);
+		lcm.subscribe("6_SLAM_POSES",this);
 	}
 
 	public void messageReceived(LCM lcm, String channel, LCMDataInputStream dins)
@@ -73,17 +77,21 @@ public class PathPlanner implements LCMSubscriber
 					}
 				}
 			}
-			if(channel.equals("6_POSE"))
+			else if(channel.equals("6_POSE"))
 			{
+				openLoopBot = new bot_status_t(dins);
+			}
+			else if(channel.equals("6_SLAM_POSES")){
 				
 				if(map != null){
-					
-					status = new bot_status_t(dins);
-					status.xyt[0] += (map.size/2)*map.scale;
-					status.xyt[1] += (map.size/2)*map.scale;
+					slam_vector_t temp = new slam_vector_t(dins);
+					slamBot = LinAlg.copy(temp.xyt[temp.numPoses - 1].xyt);
+					status.xyt[0] = temp.xyt[temp.numPoses-1].xyt[0] + (map.size/2)*map.scale;
+					status.xyt[1] = temp.xyt[temp.numPoses-1].xyt[1] + (map.size/2)*map.scale;
 				}
+				
 			}
-			if(channel.equals("6_GOAL"))
+			else if(channel.equals("6_GOAL"))
 			{
 				if(verbose)System.out.println("goal");
 				goal = new xyt_t(dins);
@@ -168,8 +176,11 @@ public class PathPlanner implements LCMSubscriber
 		MapNode minNeighbor = null;
 		MapNode secMinNeighbor = null;
 
+		//if changed, change in map builder
+		double knowledge_dist = 0.9/map.scale;
+
 		//plan long path
-		for(int i = 0; i < 30; ++i) {
+		for(int i = 0; i < knowledge_dist; ++i) {
 			if(verbose)System.out.println(LinAlg.distance(new double[]{current.x,current.y}, new double[]{status.xyt[0]/map.scale, status.xyt[1]/map.scale}) + " xy:" +current.x + ","+ current.y+" cost:"+travel_cost_map[current.x][current.y]);
 			//find lowest cost neighbor to crrent
 			minNeighbor = null;
@@ -193,6 +204,10 @@ public class PathPlanner implements LCMSubscriber
 				rpos[1] = (int)(nextPoint[1] * j/(2*dist) + startPoint[1]* (1- (j/(2*dist))));
 				if((map.cost[rpos[0]][rpos[1]] & 0xFF) > 0.6 * map.max){
 					intoWall = true;
+					break;
+				}
+				if(map.knowledge[rpos[0]][rpos[1]] != 1){
+					intoWall = true; //consider the edge of knowledge to be a sort of "fake" wall limiting travel
 					break;
 				}
 			}
@@ -228,6 +243,7 @@ public class PathPlanner implements LCMSubscriber
 		} else { //we're at the goal
 			ret.xyt[2] = goal.xyt[2];
 		}
+		ret.xyt = LinAlg.xytMultiply(ret.xyt,LinAlg.xytInvMul31(slamBot, openLoopBot.xyt));
 		return ret;
 	}
 

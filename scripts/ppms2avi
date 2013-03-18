@@ -1,0 +1,12 @@
+#!/bin/bash
+
+if (( $# < 1 ))
+then
+    echo "usage: `basename $0` <input_file.ppms.gz>"
+    exit 1
+fi
+
+shift 2
+
+# convert a .ppms.gz file (produced by viewer) into an avi file, using high quality.
+zcat $* | avconv -y -f image2pipe -vcodec ppm -i - -vcodec mpeg4 $*.avi
