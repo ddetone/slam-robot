@@ -68,11 +68,21 @@ public class PathPlanner implements LCMSubscriber
 							xyt_t waypoint = nextWaypoint(true);
 							if(verbose)System.out.println("publishing");
 							lcm.publish("6_WAYPOINT",waypoint);
+							/*astar_view_t view = new astar_view_t();
+							view.size = map.size;
+							view.scale = map.scale;
+							view.cost = travel_cost_map;
+							lcm.publish("6_ASTAR",view);*/
 						} else {
 							if(verbose)System.out.println("No possible path to goal, trying to get close");
 							aStar(true);
 							xyt_t waypoint = nextWaypoint(false);
-							lcm.publish("6_WAYPOINT",waypoint);
+							lcm.publish("6_WAYPOINT",waypoint);/*
+							astar_view_t view = new astar_view_t();
+							view.size = map.size;
+							view.scale = map.scale;
+							view.cost = travel_cost_map;
+							lcm.publish("6_ASTAR",view);*/
 						}
 					}
 				}
@@ -82,22 +92,21 @@ public class PathPlanner implements LCMSubscriber
 				openLoopBot = new bot_status_t(dins);
 			}
 			else if(channel.equals("6_SLAM_POSES")){
-				
 				if(map != null){
 					slam_vector_t temp = new slam_vector_t(dins);
 					slamBot = LinAlg.copy(temp.xyt[temp.numPoses - 1].xyt);
 					status.xyt[0] = temp.xyt[temp.numPoses-1].xyt[0] + (map.size/2)*map.scale;
 					status.xyt[1] = temp.xyt[temp.numPoses-1].xyt[1] + (map.size/2)*map.scale;
 				}
-				
 			}
 			else if(channel.equals("6_GOAL"))
 			{
 				if(verbose)System.out.println("goal");
-				goal = new xyt_t(dins);
-				goal.xyt[0] += (map.size/2)*map.scale;
-				goal.xyt[1] += (map.size/2)*map.scale;
-				
+				if(map != null){
+					goal = new xyt_t(dins);
+					goal.xyt[0] += (map.size/2)*map.scale;
+					goal.xyt[1] += (map.size/2)*map.scale;
+				}
 			}
 		}
 		catch (IOException e)
@@ -140,7 +149,7 @@ public class PathPlanner implements LCMSubscriber
 
 				if(!plan_through_walls && (map.cost[neighbor.x][neighbor.y] & 0xFF) > 0.6 * map.max)
 					continue;
-				int tentative_g_score = travel_cost_map[current.x][current.y] + 9 + (map.cost[neighbor.x][neighbor.y] & 0xFF);
+				int tentative_g_score = travel_cost_map[current.x][current.y] + 9;// + (map.cost[neighbor.x][neighbor.y] & 0xFF);
 
 				boolean in_closed_set = false;
 				for(MapNode compare : closed_set) {
@@ -187,9 +196,12 @@ public class PathPlanner implements LCMSubscriber
 			//find lowest cost neighbor to crrent
 			minNeighbor = null;
 			secMinNeighbor = null;
+			double min_dist_to_start = 0;
 			for(MapNode neighbor : current.neighbors()){
-				if(minNeighbor == null || travel_cost_map[neighbor.x][neighbor.y] < travel_cost_map[minNeighbor.x][minNeighbor.y]){
+				double distance_to_start = LinAlg.squaredDistance(new double[]{neighbor.x,neighbor.y}, new double[]{goal.xyt[0]/map.scale,goal.xyt[1]/map.scale});
+				if(minNeighbor == null || travel_cost_map[neighbor.x][neighbor.y] < travel_cost_map[minNeighbor.x][minNeighbor.y] || travel_cost_map[neighbor.x][neighbor.y] == travel_cost_map[minNeighbor.x][minNeighbor.y] && distance_to_start < min_dist_to_start){
 					minNeighbor = neighbor;
+					min_dist_to_start = distance_to_start;
 				}
 			}
 
@@ -234,6 +246,7 @@ public class PathPlanner implements LCMSubscriber
 	
 		//if !goal find the angle of the second min neighbor
 		if(travel_cost_map[current.x][current.y] < travel_cost_map[start.x][start.y] && secMinNeighbor != null){ //normal
+
 			if(secMinNeighbor.x < current.x - .01)
 				ret.xyt[2] = Math.PI;
 			else if(secMinNeighbor.x > current.x + .01)
@@ -245,7 +258,7 @@ public class PathPlanner implements LCMSubscriber
 		} else { //we're at the goal
 			ret.xyt[2] = goal.xyt[2];
 		}
-		ret.xyt = LinAlg.xytMultiply(openLoopBot.xyt, LinAlg.xytInvMul31(slamBot, ret.xyt));
+		//ret.xyt = LinAlg.xytMultiply(openLoopBot.xyt, LinAlg.xytInvMul31(slamBot, ret.xyt));
 		return ret;
 	}
 
