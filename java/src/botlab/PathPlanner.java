@@ -139,7 +139,7 @@ public class PathPlanner implements LCMSubscriber
 
 				if(!plan_through_walls && (map.cost[neighbor.x][neighbor.y] & 0xFF) > 0.6 * map.max)
 					continue;
-				int tentative_g_score = travel_cost_map[current.x][current.y] + 1 + (map.cost[neighbor.x][neighbor.y] & 0xFF);
+				int tentative_g_score = travel_cost_map[current.x][current.y] + 10 + (map.cost[neighbor.x][neighbor.y] & 0xFF);
 
 				boolean in_closed_set = false;
 				for(MapNode compare : closed_set) {
