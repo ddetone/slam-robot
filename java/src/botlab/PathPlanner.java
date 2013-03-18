@@ -246,7 +246,9 @@ public class PathPlanner implements LCMSubscriber
 	
 		//if !goal find the angle of the second min neighbor
 		if(travel_cost_map[current.x][current.y] < travel_cost_map[start.x][start.y] && secMinNeighbor != null){ //normal
-
+			
+			ret.xyt[2] = Math.atan2((goal.xyt[1] - (map.size/2)*map.scale) - ret.xyt[1], (goal.xyt[0] - (map.size/2)*map.scale) - ret.xyt[0]);
+			/*
 			if(secMinNeighbor.x < current.x - .01)
 				ret.xyt[2] = Math.PI;
 			else if(secMinNeighbor.x > current.x + .01)
@@ -255,10 +257,11 @@ public class PathPlanner implements LCMSubscriber
 				ret.xyt[2] = 3.0* Math.PI / 2.0;
 			else 
 				ret.xyt[2] = Math.PI/2.0;
+			*/
 		} else { //we're at the goal
 			ret.xyt[2] = goal.xyt[2];
 		}
-		//ret.xyt = LinAlg.xytMultiply(openLoopBot.xyt, LinAlg.xytInvMul31(slamBot, ret.xyt));
+		ret.xyt = LinAlg.xytMultiply(openLoopBot.xyt, LinAlg.xytInvMul31(slamBot, ret.xyt));
 		return ret;
 	}
 

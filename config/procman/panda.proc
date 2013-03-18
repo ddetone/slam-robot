@@ -17,10 +17,10 @@ proc# : process {
     name = "Pose Generator";
 }
 
-proc# : process {
-    cmd = "java botlab.Laser";
-    name = "Laser";
-}
+//proc# : process {
+//    cmd = "java botlab.Laser";
+//    name = "Laser";
+//}
 
 proc# : process {
     cmd = "java botlab.ImageProcessing dc1394://b09d0100aea34b";

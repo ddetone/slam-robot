@@ -101,7 +101,7 @@ public class RobotController implements LCMSubscriber
 								triangle = slam_vec.triangles[i];
 							}
 						}
-						if(LinAlg.distance(robotPose.xyt, triangle, 2) < 10) { //1 meters shooting distance
+						if(LinAlg.distance(robotPose.xyt, triangle, 2) < 2) { //1 meters shooting distance
 							state = "aligning to triangle";
 							//calculate angle to where slam says it is
 							double angle = Math.atan2((triangle[1] - robotPose.xyt[1]),(triangle[0] - robotPose.xyt[0]));
@@ -119,7 +119,7 @@ public class RobotController implements LCMSubscriber
 						}
 					}
 					if(state == "aligning to triangle"){
-						System.out.println("alinging to triangle");
+						System.out.println("alinging to triangle. Num features found:" + features.ntriangles);
 						double min_dist = Double.MAX_VALUE;
 						int min_triangle = 0;
 						for(int i = 0; i < features.ntriangles; ++i){
@@ -130,8 +130,9 @@ public class RobotController implements LCMSubscriber
 						}
 						if(min_dist != Double.MAX_VALUE){
 							
-							System.out.println("alinging to triangle, in here");
 							double angle = Math.atan2(features.triangles[min_triangle][1], features.triangles[min_triangle][0]);
+							System.out.println("alinging to triangle, angle:" + angle);
+							System.out.println("features:" + features.triangles[min_triangle][0] + ", " + features.triangles[min_triangle][1]);
 							//if angle dead on
 							if(angle < 0.02){
 								//shoot laser

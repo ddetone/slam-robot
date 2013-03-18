@@ -16,6 +16,10 @@ import april.jmat.geom.*;
 
 import botlab.lcmtypes.*;
 import botlab.util.*;
+import botlab.Laser;
+
+import orc.Orc;
+import orc.DigitalOutput;
 
 import lcm.lcm.*;
 
@@ -23,6 +27,7 @@ import lcm.lcm.*;
 public class PathFollower implements LCMSubscriber
 {
 
+	Laser laser;
 	final boolean verbose = true;
 	final boolean verbose2 = true;
 	LCM lcm;
@@ -45,17 +50,18 @@ public class PathFollower implements LCMSubscriber
 	int state = 0;
 	boolean turnEnd = false;
 	//The PID controller for finer turning
-	double[] KPID = new double[]{0.46, 0.004, 0.13};
+	double[] KPID = new double[]{0.46, 0.006, 0.10};
 	PidController pidAngle = new PidController(KPID[0], KPID[1], KPID[2]);
 
 
 	PathFollower()
 	{
 		this.lcm =  LCM.getSingleton();
+		laser = new Laser();
+		pidAngle.setIntegratorClamp(15);
+
 		lcm.subscribe("6_POSE",this);
 		lcm.subscribe("6_WAYPOINT",this);
-
-		pidAngle.setIntegratorClamp(10);
 	}
 
 	//goToPoint will follow a straight line path to the x,y coordinate from whereever it is
@@ -105,7 +111,7 @@ public class PathFollower implements LCMSubscriber
 		double errorDist = LinAlg.distance(new double[]{x_c,y_c}, new double[]{x_d, y_d});
 		double left, right;
 
-			if(errorDist < 0.05){
+			if(errorDist < 0.1){
 				state = 1;
 			}
 
@@ -266,6 +272,11 @@ public class PathFollower implements LCMSubscriber
 				goToPoint(dest.xyt);
 			}
 
+			else if(channel.equals("6_LASER"))
+			{
+				laser_t laserlcm = new laser_t(dins);
+				laser.shoot(laserlcm.num);
+			}
 		}
 		catch (IOException e)
 		{
