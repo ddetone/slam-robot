@@ -63,7 +63,7 @@ public class PathPlanner implements LCMSubscriber
 								(map.cost[(int) (lastPlannedWaypoint.xyt[0]/map.scale)+map.size/2][ (int) (lastPlannedWaypoint.xyt[1]/map.scale)+map.size/2] & 0xFF) > 0.6 * map.max)
 					{
 						if(verbose)System.out.println("attempting A Star");
-						if(aStar(false)){
+						if(aStar(true)){
 							if(verbose)System.out.println("A Start finished finding next waypoint");
 							xyt_t waypoint = nextWaypoint(true);
 							if(verbose)System.out.println("publishing");
@@ -147,9 +147,9 @@ public class PathPlanner implements LCMSubscriber
 					continue;
 				}
 
-				if(!plan_through_walls && (map.cost[neighbor.x][neighbor.y] & 0xFF) > 0.6 * map.max)
-					continue;
 				int tentative_g_score = travel_cost_map[current.x][current.y] + 9;// + (map.cost[neighbor.x][neighbor.y] & 0xFF);
+				if(plan_through_walls && (map.cost[neighbor.x][neighbor.y] & 0xFF) > 0.6 * map.max)
+					tentative_g_score = travel_cost_map[current.x][current.y] + 9 + (map.cost[neighbor.x][neighbor.y] & 0xFF);
 
 				boolean in_closed_set = false;
 				for(MapNode compare : closed_set) {
