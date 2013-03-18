@@ -188,7 +188,7 @@ public class PathPlanner implements LCMSubscriber
 
 		//if changed, change in map builder
 		//double knowledge_dist = 0.4/map.scale;
-		double knowledge_dist = 0.2/map.scale;
+		double knowledge_dist = 0.3/map.scale;
 
 		//plan long path
 		for(int i = 0; i < knowledge_dist; ++i) {

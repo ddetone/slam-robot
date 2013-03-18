@@ -101,7 +101,8 @@ public class RobotController implements LCMSubscriber
 								triangle = slam_vec.triangles[i];
 							}
 						}
-						if(LinAlg.distance(robotPose.xyt, triangle, 2) < 2) { //1 meters shooting distance
+						double dist = LinAlg.distance(robotPose.xyt, triangle, 2);
+						if(dist < 1.5) { //1 meters shooting distance
 							state = "aligning to triangle";
 							//calculate angle to where slam says it is
 							double angle = Math.atan2((triangle[1] - robotPose.xyt[1]),(triangle[0] - robotPose.xyt[0]));
@@ -110,16 +111,17 @@ public class RobotController implements LCMSubscriber
 							//publish new goal
 							lcm.publish("6_GOAL", alignment_goal);
 							System.out.println("going to alinging to triangle");
-						} else {
+						}else if(dist < 2){
 							
 							System.out.println("moving closer to triangle");
 							xyt_t new_goal = new xyt_t();
 							new_goal.xyt = new double[]{triangle[0], triangle[1], triangle[2]};
 							lcm.publish("6_GOAL", new_goal);
-						}
+						}else planFrontier();
 					}
 					if(state == "aligning to triangle"){
 						System.out.println("alinging to triangle. Num features found:" + features.ntriangles);
+						if(features.ntriangles == 0)state="moving to point";
 						double min_dist = Double.MAX_VALUE;
 						int min_triangle = 0;
 						for(int i = 0; i < features.ntriangles; ++i){

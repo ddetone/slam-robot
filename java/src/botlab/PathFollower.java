@@ -111,7 +111,7 @@ public class PathFollower implements LCMSubscriber
 		double errorDist = LinAlg.distance(new double[]{x_c,y_c}, new double[]{x_d, y_d});
 		double left, right;
 
-			if(errorDist < 0.08){
+			if(errorDist < 0.05){
 				state = 1;
 			}
 
@@ -249,7 +249,7 @@ public class PathFollower implements LCMSubscriber
 	//}
 
 	//Needs to subscribe to 6_POSE to know where it is
-	public void messageReceived(LCM lcm, String channel, LCMDataInputStream dins)
+	public synchronized void messageReceived(LCM lcm, String channel, LCMDataInputStream dins)
 	{
 		try
 		{
