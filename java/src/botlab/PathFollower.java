@@ -39,7 +39,7 @@ public class PathFollower implements LCMSubscriber
 	double Kd = 0.001;
 	
 	//The PID controller for finer turning
-	double[] KPID = new double[]{0, 0, 0};
+	double[] KPID = new double[]{1, 0.001, 0.5};
 	PidController pidAngle = new PidController(KPID[0], KPID[1], KPID[2]);
 
 
