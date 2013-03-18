@@ -226,7 +226,7 @@ public class PathPlanner implements LCMSubscriber
 				}
 			}
 			//if path goes into a wall or if lowest cost neighbor has a higher cost than this node
-			if((intoWall || travel_cost_map[minNeighbor.x][minNeighbor.y] > travel_cost_map[current.x][current.y] && (current != start))){
+			if((intoWall && dist > 0.13|| travel_cost_map[minNeighbor.x][minNeighbor.y] > travel_cost_map[current.x][current.y] && (current != start))){
 				break;
 			} else {
 				current = minNeighbor;
