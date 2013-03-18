@@ -134,7 +134,7 @@ public class RobotController implements LCMSubscriber
 					}
 					else if(state == "aligning to triangle"){
 						System.out.println("alinging to triangle. Num features found:" + features.ntriangles);
-						if(features.ntriangles == 0)state="explore";//XXX
+						if(features.ntriangles == 0)state="moving to point";//XXX
 						double min_dist = Double.MAX_VALUE;
 						int min_triangle = 0;
 						for(int i = 0; i < features.ntriangles; ++i){
