@@ -72,6 +72,7 @@ public class RobotController implements LCMSubscriber
 				map = new map_t(dins);
 				if(robotPose != null && bot_status != null && features != null){
 					if(state == "explore"){
+						System.out.println("Explore");
 						if(Math.abs(robotPose.xyt[0]) < 0.10 && Math.abs(robotPose.xyt[1]) < 0.10 && done_searching){
 							state = "spinning";
 						}
@@ -93,6 +94,7 @@ public class RobotController implements LCMSubscriber
 						}
 					}
 					if(state == "moving to point"){
+						System.out.println("moving to point");
 						double[] triangle = null;
 						for(int i = 0; i < slam_vec.numTriangles; ++i){
 							if(triangle_to_kill == slam_vec.triangles[i][3]){
@@ -107,13 +109,17 @@ public class RobotController implements LCMSubscriber
 							alignment_goal.xyt = new double[]{robotPose.xyt[0], robotPose.xyt[1], angle};
 							//publish new goal
 							lcm.publish("6_GOAL", alignment_goal);
+							System.out.println("going to alinging to triangle");
 						} else {
+							
+							System.out.println("moving closer to triangle");
 							xyt_t new_goal = new xyt_t();
 							new_goal.xyt = new double[]{triangle[0], triangle[1], triangle[2]};
 							lcm.publish("6_GOAL", new_goal);
 						}
 					}
 					if(state == "aligning to triangle"){
+						System.out.println("alinging to triangle");
 						double min_dist = Double.MAX_VALUE;
 						int min_triangle = 0;
 						for(int i = 0; i < features.ntriangles; ++i){
@@ -123,20 +129,27 @@ public class RobotController implements LCMSubscriber
 							}
 						}
 						if(min_dist != Double.MAX_VALUE){
+							
+							System.out.println("alinging to triangle, in here");
 							double angle = Math.atan2(features.triangles[min_triangle][1], features.triangles[min_triangle][0]);
 							//if angle dead on
 							if(angle < 0.02){
 								//shoot laser
-								Laser laser = new Laser();
-								laser.shoot();
+								System.out.println("KILLing TRIANGLE " );
+								laser_t laser = new laser_t();
+								laser.num = 3;
+								lcm.publish("6_LASER",laser);
+								//Laser laser = new Laser();
+								//laser.shoot();
 								//add triangle_to_kill to killed list
 								killedTriangles.add(new Double(triangle_to_kill));
 								state = "explore";
+								System.out.println("KILLED TRIANGLE " );
 							}
 							else{
 								xyt_t new_angle = new xyt_t();
 								new_angle.xyt = new double[]{robotPose.xyt[0],robotPose.xyt[1],robotPose.xyt[2]+angle};
-
+								System.out.println("Delta Angle: " + angle );
 								//publish waypoint of angle
 								lcm.publish("6_GOAL", new_angle);
 							}
@@ -158,7 +171,7 @@ public class RobotController implements LCMSubscriber
 				features = new map_features_t(dins);
 				
 			}
-			System.out.println("state at end of recieve message ="+state);
+			//System.out.println("state at end of recieve message ="+state);
 		}
 		catch (IOException e)
 		{

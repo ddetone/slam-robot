@@ -3,15 +3,41 @@ package botlab;
 import orc.DigitalOutput;
 import orc.Orc;
 
-public class Laser
+import java.io.*;
+import java.util.*;
+import java.awt.*;
+import java.awt.image.*;
+import java.awt.event.*;
+import javax.swing.*;
+import lcm.lcm.*;
+import botlab.lcmtypes.*;
+public class Laser implements LCMSubscriber
 {
 
 	Orc orc;
 	DigitalOutput laser;
-
+	
+	LCM lcm;	
+	
 	Laser(){
+		lcm = LCM.getSingleton();
 		orc = Orc.makeOrc();
 		laser = new DigitalOutput(orc, 0);
+		lcm.subscribe("6_LASER", this);
+	}
+	
+	public void messageReceived(LCM lcm, String channel, LCMDataInputStream dins)
+	{
+		try{
+			if(channel.equals("6_LASER"))
+			{
+				laser_t laserlcm = new laser_t(dins);
+				shoot(laserlcm.num);
+			}
+		}
+		catch(IOException e){
+			e.printStackTrace();
+		}
 	}
 
 	public void turnOn(){
@@ -40,13 +66,10 @@ public class Laser
 	}
 
 	public static void main(String args[]){
-		
 		Laser laser = new Laser();
-
+		
 		while (true) {
 		    try {
-			System.out.println("Shooting...");
-			laser.shoot();
 			Thread.sleep(1000);
 		    } catch (InterruptedException ex) {
 		    }
