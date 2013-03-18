@@ -22,8 +22,8 @@ public class ImageProcessing extends VisEventAdapter
 
 	static final double DEFAULT_CALIBRATE_VAL = -2500;
 	static final double DEFAULT_GREEN_THRESH = 355;
-	static final double DEFAULT_SAT_THRESH = 0.6977;
-	static final double DEFAULT_VALUE_THRESH = 0.55;
+	static final double DEFAULT_SAT_THRESH = 0.724;
+	static final double DEFAULT_VALUE_THRESH = 0.745;
 	static final double DEFAULT_HALF_BOX_THRESH = 210;
 	static final double DEFAULT_BLUE_THRESH = 200;
 	static final double DEFAULT_THRESH_VAL = 34;
@@ -605,7 +605,7 @@ public class ImageProcessing extends VisEventAdapter
 			//	 && (eigens[1] > minSizeThreshold) && (eigens[0] < maxSizeThreshold)
 			//	&& (points.size() > 60)){
 			if((Math.abs(cluster.areaBox() / 2.0 - cluster.points.size()) < halfBoxThresh) &&
-				(cluster.points.size() > 200) && (cluster.aspectRatio() > .6)){
+				(cluster.points.size() > 200) && (cluster.aspectRatio() > .7)){
 			//if(cluster.points.size() > 50){
 
 				triangles.addTriangle(cluster.getMean(),

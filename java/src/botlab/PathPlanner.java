@@ -243,7 +243,7 @@ public class PathPlanner implements LCMSubscriber
 		} else { //we're at the goal
 			ret.xyt[2] = goal.xyt[2];
 		}
-		ret.xyt = LinAlg.xytMultiply(LinAlg.xytInvMul31(slamBot, openLoopBot.xyt), ret.xyt);
+		ret.xyt = LinAlg.xytMultiply(openLoopBot.xyt, LinAlg.xytInvMul31(slamBot,  ret.xyt));
 		return ret;
 	}
 

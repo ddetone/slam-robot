@@ -34,8 +34,9 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 	final boolean verbose = false;
 
 	bot_status_t bot_status = new bot_status_t();
-	bot_status_t curr_bot_status;
-	bot_status_t last_bot_status;
+	bot_status_t curr_bot_status = null;
+	bot_status_t last_bot_status = null;
+	double[] slamBot = null;
 	battery_t battery;
 
 	ArrayList<double[]> robotTraj = new ArrayList<double[]>();
@@ -97,9 +98,19 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 			double temp[] = ray.intersectPlaneXY();
 			wayPoint.utime = TimeUtil.utime();
 			wayPoint.xyt = new double[]{temp[0], temp[1], 0};
-
-			double[] T = LinAlg.xytInvMul31(bot_status.xyt, curr_bot_status.xyt);
-			wayPoint.xyt = LinAlg.xytMultiply(T, wayPoint.xyt);
+			
+			if((slamBot == null) || (curr_bot_status.xyt == null))
+				return true;
+			double[] T = LinAlg.xytInvMul31(slamBot, wayPoint.xyt);
+			//System.out.println("Waypoint:");
+			//LinAlg.print(wayPoint.xyt);
+			wayPoint.xyt = LinAlg.xytMultiply(curr_bot_status.xyt, T);
+			//System.out.println("Slam pose: " + slamBot[0] + ", " + slamBot[1] + ", " + slamBot[2]);
+			//System.out.println("Open pose: " + curr_bot_status.xyt[0] + ", " + curr_bot_status.xyt[1] + ", " + curr_bot_status.xyt[2]);
+			//System.out.println("Waypoint after transformation:");
+			LinAlg.print(wayPoint.xyt);
+			//System.out.println("T: ");
+			//LinAlg.print(T);
 			lcm.publish("6_WAYPOINT", wayPoint);
 
 			//pg.sb("sendWayPoint",false);
@@ -115,7 +126,7 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 		VisWorld.Buffer vb = vw.getBuffer("Map");
 		for(int i = 0; i < map.size; ++i){
 			for(int j = 0; j < map.size; ++j){
-				if((int) (map.cost[i][j] & 0xFF) > 0.6*255){
+				if((int) (map.cost[i][j] & 0xFF) > 0.99*255){
 					VzBox mapBox = new VzBox(map.scale,map.scale,((double)((int)(map.cost[i][j] & 0xFF)))/map.max*.06*3, new VzMesh.Style(Color.red));
 					VisObject vo_mapBox = new VisChain(LinAlg.translate(i*map.scale-map.size/2*map.scale,j*map.scale-map.size/2*map.scale,0.0),mapBox);
 
@@ -200,6 +211,7 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 					vec.add(new double[]{ slamVec.xyt[i].xyt[0], slamVec.xyt[i].xyt[1], 0.005 });
 
 				bot_status.xyt = slamVec.xyt[slamVec.numPoses - 1].xyt;
+				slamBot = LinAlg.copy(slamVec.xyt[slamVec.numPoses - 1].xyt);
 
 				VisWorld.Buffer vb = vw.getBuffer("Robot_Path_SLAM");
 				vb.addBack(new VzPoints(new VisVertexData(vec), new VzPoints.Style(Color.magenta,2)));
