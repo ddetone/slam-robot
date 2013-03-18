@@ -178,7 +178,7 @@ public class PathPlanner implements LCMSubscriber
 		MapNode secMinNeighbor = null;
 
 		//if changed, change in map builder
-		double knowledge_dist = 0.9/map.scale;
+		double knowledge_dist = 0.4/map.scale;
 
 		//plan long path
 		for(int i = 0; i < knowledge_dist; ++i) {
