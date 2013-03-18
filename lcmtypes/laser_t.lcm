@@ -1,0 +1,5 @@
+struct laser_t
+{
+
+	int32_t num;
+}

@@ -111,7 +111,7 @@ public class PathFollower implements LCMSubscriber
 		double errorDist = LinAlg.distance(new double[]{x_c,y_c}, new double[]{x_d, y_d});
 		double left, right;
 
-			if(errorDist < 0.1){
+			if(errorDist < 0.08){
 				state = 1;
 			}
 

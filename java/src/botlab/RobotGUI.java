@@ -192,7 +192,7 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 				//drawCovariance();
 
 				VisWorld.Buffer vb = vw.getBuffer("Battery");
-				if((bot_status.voltage < 8.5) && (bot_status.voltage != 0)){
+				if((bot_status.voltage < 9.5) && (bot_status.voltage != 0)){
 					vb.addBack(new VisPixCoords(VisPixCoords.ORIGIN.CENTER, 
 									new VzText(VzText.ANCHOR.CENTER, 
 									"<<sansserif-bold-16,white>>LOW BATTERY VOLTAGE:" + 
