@@ -112,20 +112,21 @@ public class RobotController implements LCMSubscriber
 						size_not_in_wall++;
 				}
 				double lowest_distance = 0;
-				if(size_not_in_wall > max_size){
-					max_size = size_not_in_wall;
-					for(int j = 0; j < counter.get(i); ++j){
-						if((int)(map.cost[mean_x.get(i).get(j).intValue()][mean_y.get(i).get(j).intValue()] & 255) < 255*0.6){
-							double[] robotXY = new double[]{robotPose.xyt[0]/map.scale + map.size/2,robotPose.xyt[1]/map.scale + map.size/2};
-							double dist = LinAlg.squaredDistance(robotXY, new double[]{mean_x.get(i).get(j), mean_y.get(i).get(j)});
-							if(dist > lowest_distance){
-								lowest_distance = dist;
+				for(int j = 0; j < counter.get(i); ++j){
+					if((int)(map.cost[mean_x.get(i).get(j).intValue()][mean_y.get(i).get(j).intValue()] & 255) < 255*0.6){
+						double[] robotXY = new double[]{robotPose.xyt[0]/map.scale + map.size/2,robotPose.xyt[1]/map.scale + map.size/2};
+						double dist = LinAlg.squaredDistance(robotXY, new double[]{mean_x.get(i).get(j), mean_y.get(i).get(j)});
+						if(dist > lowest_distance){
+							lowest_distance = dist;
+							if(size_not_in_wall - 1.0*map.scale*lowest_distance > max_size){
+								max_size = (int) (size_not_in_wall - 1.0*map.scale*lowest_distance);
 								goal_x = mean_x.get(i).get(j)*map.scale - (map.size/2)*map.scale;
 								goal_y = mean_y.get(i).get(j)*map.scale - (map.size/2)*map.scale;
 							}
 						}
 					}
 				}
+				
 			}
 
 			if(max_size < 0.10/map.scale){ //map explored return to start
