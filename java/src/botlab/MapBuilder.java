@@ -155,14 +155,19 @@ public class MapBuilder implements LCMSubscriber
 
 					//if changed, change in path planner
 					double knowledge_dist = 0.9/map.scale;
-					/*
-					for(int i = (int) ((bot_status.xyt[0]-knowledge_dist)/map.scale); i < (bot_status.xyt[0]+knowledge_dist)/map.scale; ++i){
-						for(int j = (int) ((bot_status.xyt[1]-knowledge_dist)/map.scale); j < (bot_status.xyt[0]+knowledge_dist)/map.scale; ++j){
-							if(i > 0 && i < map.size && j > 0 && j < map.size) {
+					double knowledge_dist_absolute = 0.2/map.scale;
+					//*
+					for(int i = (int) ((bot_status.xyt[0]-knowledge_dist_absolute)/map.scale); i < (bot_status.xyt[0]+knowledge_dist_absolute)/map.scale; ++i){
+						for(int j = (int) ((bot_status.xyt[1]-knowledge_dist_absolute)/map.scale); j < (bot_status.xyt[0]+knowledge_dist_absolute)/map.scale; ++j){
+							if(i > 0 && i < map.size && j > 0 && j < map.size && 
+								(LinAlg.squaredDistance(new double[]{bot_status.xyt[0]/map.scale,
+												bot_status.xyt[1]/map.scale},
+												new double[]{i,j}) < knowledge_dist_absolute * knowledge_dist_absolute)) {
 								map.knowledge[i][j] = (byte) 1;
 							}
 						}
-					}*/
+					}
+					//*/
 
 					for(int f = 0; f < features.nlineSegs; ++f){
 						//System.out.println("adding_feature");
@@ -200,7 +205,7 @@ public class MapBuilder implements LCMSubscriber
 								if(lambda3 < 0.0 || lambda3 > 1.0)
 									continue;
 								if(i > 0 && i < map.size && j > 0 && j < map.size) {
-									map.cost[i][j] = (byte) 0;
+									//map.cost[i][j] = (byte) 0;
 									map.knowledge[i][j] = (byte) 1;
 								}
 							}

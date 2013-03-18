@@ -34,13 +34,16 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 	final boolean verbose = false;
 
 	bot_status_t bot_status = new bot_status_t();
-	bot_status_t curr_bot_status;
-	bot_status_t last_bot_status;
+	bot_status_t curr_bot_status = null;
+	bot_status_t last_bot_status = null;
+	double[] slamBot = null;
 	battery_t battery;
 
 	ArrayList<double[]> robotTraj = new ArrayList<double[]>();
 	final boolean DEFAULT_SEND_WAYPOINT = false;
+	final boolean DEFAULT_DISP_CONV = false;
 	boolean sendWayPoint = DEFAULT_SEND_WAYPOINT;
+	boolean dispConv = DEFAULT_DISP_CONV;
 
 	RobotGUI()
 	{
@@ -65,12 +68,14 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 		jf.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
 		pg.addCheckBoxes("sendWayPoint", "Send Waypoint", DEFAULT_SEND_WAYPOINT);
+		pg.addCheckBoxes("dispConv", "Display Exploded Wall Map", DEFAULT_DISP_CONV);
 
 
 		pg.addListener(new ParameterListener() {
 			public void parameterChanged(ParameterGUI pg, String name)
 			{
 				if(name == "sendWayPoint")sendWayPoint = pg.gb("sendWayPoint");
+				else if(name == "dispConv")dispConv = pg.gb("dispConv");
 			}
 		});
 
@@ -96,10 +101,15 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 			xyt_t wayPoint = new xyt_t();
 			double temp[] = ray.intersectPlaneXY();
 			wayPoint.utime = TimeUtil.utime();
-			wayPoint.xyt = new double[]{temp[0], temp[1], 0};
-
-			double[] T = LinAlg.xytInvMul31(bot_status.xyt, curr_bot_status.xyt);
-			wayPoint.xyt = LinAlg.xytMultiply(T, wayPoint.xyt);
+			wayPoint.xyt = new double[]{temp[0], temp[1], Math.toRadians(30)};
+			
+			if((slamBot == null) || (curr_bot_status.xyt == null))
+				return true;
+			
+			//*
+			double[] T = LinAlg.xytInvMul31(slamBot, wayPoint.xyt);
+			wayPoint.xyt = LinAlg.xytMultiply(curr_bot_status.xyt, T);
+			//*/
 			lcm.publish("6_WAYPOINT", wayPoint);
 
 			//pg.sb("sendWayPoint",false);
@@ -111,11 +121,13 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 	public void drawMap(map_t map)
 	{
 		//System.out.println("drawMap");
+		double dispConvThresh = 0.99;
+		if(dispConv == true)dispConvThresh = 0.6;
 		boolean found_point = false;
 		VisWorld.Buffer vb = vw.getBuffer("Map");
 		for(int i = 0; i < map.size; ++i){
 			for(int j = 0; j < map.size; ++j){
-				if((int) (map.cost[i][j] & 0xFF) > 0.6*255){
+				if((int) (map.cost[i][j] & 0xFF) > dispConvThresh*255){
 					VzBox mapBox = new VzBox(map.scale,map.scale,((double)((int)(map.cost[i][j] & 0xFF)))/map.max*.06*3, new VzMesh.Style(Color.red));
 					VisObject vo_mapBox = new VisChain(LinAlg.translate(i*map.scale-map.size/2*map.scale,j*map.scale-map.size/2*map.scale,0.0),mapBox);
 
@@ -155,15 +167,20 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 
 				drawRobot();
 				//drawCovariance();
+
+				VisWorld.Buffer vb = vw.getBuffer("Battery");
+				if((bot_status.voltage < 8.5) && (bot_status.voltage != 0)){
+					vb.addBack(new VisPixCoords(VisPixCoords.ORIGIN.CENTER, 
+									new VzText(VzText.ANCHOR.CENTER, 
+									"<<sansserif-bold-16,white>>LOW BATTERY VOLTAGE:" + 
+									String.format("%.3g%n", bot_status.voltage))));
+				}
+				vb.swap();
+
 				last_bot_status = curr_bot_status;
 			}
 			else if(channel.equals("6_BATTERY"))
 			{
-				VisWorld.Buffer vb = vw.getBuffer("Battery");
-				battery = new battery_t(dins);
-
-				if(battery.voltage < 10)vb.addBack(new VisPixCoords(VisPixCoords.ORIGIN.CENTER, new VzText(VzText.ANCHOR.CENTER, "<<sansserif-bold-16,white>>LOW BATTERY VOLTAGE:" + String.format("%.3g%n", battery.voltage))));
-				vb.swap();
 
 			}
 			else if(channel.equals("6_MAP"))
@@ -200,6 +217,7 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 					vec.add(new double[]{ slamVec.xyt[i].xyt[0], slamVec.xyt[i].xyt[1], 0.005 });
 
 				bot_status.xyt = slamVec.xyt[slamVec.numPoses - 1].xyt;
+				slamBot = LinAlg.copy(slamVec.xyt[slamVec.numPoses - 1].xyt);
 
 				VisWorld.Buffer vb = vw.getBuffer("Robot_Path_SLAM");
 				vb.addBack(new VzPoints(new VisVertexData(vec), new VzPoints.Style(Color.magenta,2)));
