@@ -23,7 +23,6 @@ public class RobotController implements LCMSubscriber
 
 	LCM lcm;
 	bot_status_t bot_status;
-	botlab.PoseTracker tracker;
 	boolean finished = false;
 	boolean done_searching = false;
 	map_t map;
@@ -43,7 +42,6 @@ public class RobotController implements LCMSubscriber
 		}catch(IOException e){
 			this.lcm = LCM.getSingleton();
 		}
-		tracker = botlab.PoseTracker.getSingleton();
 		map = null;
 		robotPose = null;
 		slam_vec = null;
@@ -101,7 +99,7 @@ public class RobotController implements LCMSubscriber
 								triangle = slam_vec.triangles[i];
 							}
 						}
-						if(LinAlg.distance(robotPose.xyt, triangle,2) < 1.0) { //1 meters shooting distance
+						if(LinAlg.distance(robotPose.xyt, triangle, 2) < 10) { //1 meters shooting distance
 							state = "aligning to triangle";
 							//calculate angle to where slam says it is
 							double angle = Math.atan2((triangle[1] - robotPose.xyt[1]),(triangle[0] - robotPose.xyt[0]));
@@ -126,7 +124,7 @@ public class RobotController implements LCMSubscriber
 					}
 					if(min_dist != Double.MAX_VALUE){
 						double angle = Math.atan2(features.triangles[min_triangle][1], features.triangles[min_triangle][0]);
-						//TODO: if angle dead on
+						//if angle dead on
 						if(angle < 0.02){
 							//shoot laser
 							Laser laser = new Laser();
@@ -145,6 +143,7 @@ public class RobotController implements LCMSubscriber
 					}
 				}
 				}
+				System.out.println(state);
 			} else if(channel.equals("6_SLAM_POSES")){
 				slam_vec = new slam_vector_t(dins);
 				robotPose = slam_vec.xyt[slam_vec.numPoses - 1];

@@ -2,8 +2,9 @@ package botlab.util;
 
 import java.util.*;
 import april.util.*;
+import april.jmat.*;
 
-public class PidController 
+public class PidController
 {
 	double Kp;
 	double Ki;
@@ -12,9 +13,12 @@ public class PidController
 	//double error;
 	double prevError; //static
 
-	double integral; //static
+	public double integral; //static
 
 	double prevUtime;
+
+    boolean isClampIntegrator;
+    double clamp;
 
 	public PidController(double Kp, double Ki, double Kd)
 	{
@@ -25,13 +29,19 @@ public class PidController
 		prevError = 0;
 		integral = 0;
 	}
-	
+
 	public void resetController()
 	{
 		prevUtime = 0;
 		prevError = 0;
 		integral = 0;
 	}
+
+    public void setIntegratorClamp(double clamp)
+    {
+        this.clamp = clamp;
+        isClampIntegrator = true;
+    }
 
 	public double getOutput(double error)
 	{
@@ -44,9 +54,15 @@ public class PidController
 		else
 			dt = currUtime - prevUtime;
 
-		integral += error*dt;
-		
-		double derivative = (error - prevError)/dt;
+		//integral += error*dt;
+		integral += error;
+
+        if(isClampIntegrator){
+            integral = LinAlg.clamp(integral, -clamp, clamp);
+        }
+
+		//double derivative = (error - prevError)/dt;
+		double derivative = (error - prevError);
 
 		double output = Kp * error + Ki * integral + Kd * derivative;
 
@@ -56,7 +72,7 @@ public class PidController
 		return(output);
 	}
 
-	
+
 }
 
 

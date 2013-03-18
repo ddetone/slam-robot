@@ -101,16 +101,17 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 			xyt_t wayPoint = new xyt_t();
 			double temp[] = ray.intersectPlaneXY();
 			wayPoint.utime = TimeUtil.utime();
+			
 			wayPoint.xyt = new double[]{temp[0], temp[1], Math.toRadians(30)};
 			
 			if((slamBot == null) || (curr_bot_status.xyt == null))
 				return true;
 			
-			//*
+			/*
 			double[] T = LinAlg.xytInvMul31(slamBot, wayPoint.xyt);
 			wayPoint.xyt = LinAlg.xytMultiply(curr_bot_status.xyt, T);
 			//*/
-			lcm.publish("6_WAYPOINT", wayPoint);
+			lcm.publish("6_GOAL", wayPoint);
 
 			//pg.sb("sendWayPoint",false);
 			return true;
@@ -204,7 +205,7 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 				if(verbose)System.out.println("found goal at: "+point.xyt[0]+","+point.xyt[1]);
 				VisWorld.Buffer vb = vw.getBuffer("Goal");
 				VzCircle pointBox = new VzCircle(.03, new VzMesh.Style(Color.white));
-				VisObject vo_pointBox = new VisChain(LinAlg.translate(point.xyt[0], point.xyt[1], 0.01),pointBox);
+				VisObject vo_pointBox = new VisChain(LinAlg.translate(point.xyt[0], point.xyt[1], 0.10),pointBox);
 				vb.addBack(vo_pointBox);
 				vb.swap();
 			}
