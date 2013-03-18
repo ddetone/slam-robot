@@ -274,8 +274,13 @@ public class PathFollower implements LCMSubscriber
 
 			else if(channel.equals("6_LASER"))
 			{
+				lcm.unsubscribe("6_WAYPOINT", this);
+				lcm.unsubscribe("6_POSE", this);
+				stop();
 				laser_t laserlcm = new laser_t(dins);
 				laser.shoot(laserlcm.num);
+				lcm.subscribe("6_POSE",this);
+				lcm.subscribe("6_WAYPOINT",this);
 			}
 		}
 		catch (IOException e)
