@@ -65,7 +65,7 @@ public class RobotController implements LCMSubscriber
 		try
 		{
 			if(finished){
-				return;
+				//return;
 			}
 
 			if(channel.equals("6_MAP")){
@@ -114,34 +114,34 @@ public class RobotController implements LCMSubscriber
 						}
 					}
 					if(state == "aligning to triangle"){
-					double min_dist = Double.MAX_VALUE;
-					int min_triangle = 0;
-					for(int i = 0; i < features.ntriangles; ++i){
-						if(LinAlg.distance(new double[]{0.0,0.0},features.triangles[i],2) < min_dist){
-							min_dist = LinAlg.distance(new double[]{0.0,0.0},features.triangles[i],2);
-							min_triangle = i;
+						double min_dist = Double.MAX_VALUE;
+						int min_triangle = 0;
+						for(int i = 0; i < features.ntriangles; ++i){
+							if(LinAlg.distance(new double[]{0.0,0.0},features.triangles[i],2) < min_dist){
+								min_dist = LinAlg.distance(new double[]{0.0,0.0},features.triangles[i],2);
+								min_triangle = i;
+							}
 						}
-					}
-					if(min_dist != Double.MAX_VALUE){
-						double angle = Math.atan2(features.triangles[min_triangle][1], features.triangles[min_triangle][0]);
-						//if angle dead on
-						if(angle < 0.02){
-							//shoot laser
-							Laser laser = new Laser();
-							laser.shoot();
-							//add triangle_to_kill to killed list
-							killedTriangles.add(new Double(triangle_to_kill));
-							state = "explore";
-						}
-						else{
-							xyt_t new_angle = new xyt_t();
-							new_angle.xyt = new double[]{robotPose.xyt[0],robotPose.xyt[1],robotPose.xyt[2]+angle};
+						if(min_dist != Double.MAX_VALUE){
+							double angle = Math.atan2(features.triangles[min_triangle][1], features.triangles[min_triangle][0]);
+							//if angle dead on
+							if(angle < 0.02){
+								//shoot laser
+								Laser laser = new Laser();
+								laser.shoot();
+								//add triangle_to_kill to killed list
+								killedTriangles.add(new Double(triangle_to_kill));
+								state = "explore";
+							}
+							else{
+								xyt_t new_angle = new xyt_t();
+								new_angle.xyt = new double[]{robotPose.xyt[0],robotPose.xyt[1],robotPose.xyt[2]+angle};
 
-							//publish waypoint of angle
-							lcm.publish("6_GOAL", new_angle);
+								//publish waypoint of angle
+								lcm.publish("6_GOAL", new_angle);
+							}
 						}
 					}
-				}
 				}
 				System.out.println(state);
 			} else if(channel.equals("6_SLAM_POSES")){
@@ -158,6 +158,7 @@ public class RobotController implements LCMSubscriber
 				features = new map_features_t(dins);
 				
 			}
+			System.out.println("state at end of recieve message ="+state);
 		}
 		catch (IOException e)
 		{
