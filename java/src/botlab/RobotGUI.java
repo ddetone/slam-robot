@@ -98,8 +98,8 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 			wayPoint.utime = TimeUtil.utime();
 			wayPoint.xyt = new double[]{temp[0], temp[1], 0};
 
-			double[] T = LinAlg.xytInvMul31(curr_bot_status.xyt, bot_status.xyt);
-			wayPoint.xyt = LinAlg.xytMultiply(wayPoint.xyt, T);
+			double[] T = LinAlg.xytInvMul31(bot_status.xyt, curr_bot_status.xyt);
+			wayPoint.xyt = LinAlg.xytMultiply(T, wayPoint.xyt);
 			lcm.publish("6_WAYPOINT", wayPoint);
 
 			//pg.sb("sendWayPoint",false);
@@ -115,7 +115,7 @@ public class RobotGUI extends VisEventAdapter implements LCMSubscriber
 		VisWorld.Buffer vb = vw.getBuffer("Map");
 		for(int i = 0; i < map.size; ++i){
 			for(int j = 0; j < map.size; ++j){
-				if((int) (map.cost[i][j] & 0xFF) > 0.99*255){
+				if((int) (map.cost[i][j] & 0xFF) > 0.6*255){
 					VzBox mapBox = new VzBox(map.scale,map.scale,((double)((int)(map.cost[i][j] & 0xFF)))/map.max*.06*3, new VzMesh.Style(Color.red));
 					VisObject vo_mapBox = new VisChain(LinAlg.translate(i*map.scale-map.size/2*map.scale,j*map.scale-map.size/2*map.scale,0.0),mapBox);
 
