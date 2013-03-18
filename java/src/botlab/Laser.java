@@ -11,6 +11,8 @@ import java.awt.event.*;
 import javax.swing.*;
 import lcm.lcm.*;
 import botlab.lcmtypes.*;
+import april.util.*;
+
 public class Laser implements LCMSubscriber
 {
 
@@ -56,9 +58,13 @@ public class Laser implements LCMSubscriber
 		try{
 			for(int i = 0; i < numTimes; i++){
 				turnOn();
-				Thread.sleep(150);
+				long time = TimeUtil.utime() + 150000;
+				while(TimeUtil.utime() < time);
+				//Thread.sleep(150);
 				turnOff();
 				Thread.sleep(150);
+				time = TimeUtil.utime() + 150000;
+				while(TimeUtil.utime() < time);
 			}
 		}catch(InterruptedException e){
 			e.printStackTrace();
