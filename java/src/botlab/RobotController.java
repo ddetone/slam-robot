@@ -269,7 +269,7 @@ public class RobotController implements LCMSubscriber
 
 			xyt_t goal = new xyt_t();
 			goal.utime = TimeUtil.utime();
-			double xyt[] = {goal_x, goal_y, 0.0};
+			double xyt[] = {goal_x, goal_y, 5.0*Math.PI};
 			goal.xyt = xyt;
 			lcm.publish("6_GOAL", goal);
 		}	
